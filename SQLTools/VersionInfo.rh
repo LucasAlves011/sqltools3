@@ -1,6 +1,6 @@
-/*
+ï»¿/*
     SQLTools is a tool for Oracle database developers and DBAs.
-    Copyright (C) 1997-2015 Aleksey Kochetov
+    Copyright (C) 1997-2026 Aleksey Kochetov
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,15 +33,16 @@
 #define SQLTOOLS_PLATFORM_SHORT "x64"
 #endif
 
-#define SQLTOOLS_COPYRIGHT      "Copyright © 1997-2026 Aleksey Kochetov\r\n"\
+#define SQLTOOLS_COPYRIGHT      "Copyright (C) 1997-2026 Aleksey Kochetov\r\n"\
                                 "Contributors: Tomasz Drzewiecki, Ken Clubok,\r\n"\
                                 "converted to 64 bit by Wilson Yeung,\r\n"\
-                                "many improvements taken from SQLTools++ by Randolf Geist"
+                                "many improvements taken from SQLTools++ by Randolf Geist\r\n"\
+                                "Increased by Lucas Matheus"
 
-#define SQLTOOLS_BUILD          39
-#define SQLTOOLS_BUILD_S        "39"
-#define SQLTOOLS_RELEASE_STR    "SQLTools 2"
-#define SQLTOOLS_BUILD_STR      " build " SQLTOOLS_BUILD_S
-#define SQLTOOLS_VERSION        SQLTOOLS_RELEASE_STR SQLTOOLS_BUILD_STR SQLTOOLS_PLATFORM SQLTOOLS_BUILD_TYPE
-#define SQLTOOLS_VERSION_ID     2, 0, 0, SQLTOOLS_BUILD
-#define SQLTOOLS_VERSION_STR    "2, 0, 0, " SQLTOOLS_BUILD_S
+#define SQLTOOLS_BUILD          1
+#define SQLTOOLS_BUILD_S        "1"
+#define SQLTOOLS_RELEASE_STR    "SQLTools 3.0.1 by Lucas Matheus"
+#define SQLTOOLS_BUILD_STR      ""
+#define SQLTOOLS_VERSION        SQLTOOLS_RELEASE_STR SQLTOOLS_PLATFORM SQLTOOLS_BUILD_TYPE
+#define SQLTOOLS_VERSION_ID     3, 0, 1, 1
+#define SQLTOOLS_VERSION_STR    "3, 0, 1, 1"

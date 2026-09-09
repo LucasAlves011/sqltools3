@@ -33,6 +33,7 @@
 #include "GridManager.h"
 #include "OCISource.h"
 #include "OCIGridView.h"
+#include "ValuePanelWnd.h"
 #include "ServerBackgroundThread\TaskQueue.h"
 #include "ThreadCommunication/MessageOnlyWindow.h"
 #include "COMMON\AppGlobal.h"
@@ -113,6 +114,11 @@ static char THIS_FILE[] = __FILE__;
                 fetch(dir, GetPrefetch());
 
             GridManager::AfterMove(dir, oldVal);
+
+            if (OciGridView* pGrid = dynamic_cast<OciGridView*>(m_pClientWnd))
+            {
+                pGrid->UpdateValuePanel();
+            }
         }
 
         virtual void AfterScroll (eDirection dir)
@@ -166,6 +172,9 @@ OciGridView::OciGridView()
     m_pManager->m_Options.RangeSelect = true;
     m_uPopupMenuId = IDR_DATA_GRID_POPUP;
     m_nIDHelp = IDR_DATAGRID;
+
+    m_bValuePanelVisible = AfxGetApp()->GetProfileInt(_T("GridValuePanel"), _T("Visible"), 1) != 0;
+    m_nValuePanelWidth   = AfxGetApp()->GetProfileInt(_T("GridValuePanel"), _T("Width"), 350);
 }
 
 OciGridView::~OciGridView()
@@ -178,7 +187,19 @@ OciGridView::~OciGridView()
     _DESTRUCTOR_HANDLER_;
 }
 
+BOOL OciGridView::PreCreateWindow(CREATESTRUCT& cs)
+{
+    if (!GridView::PreCreateWindow(cs))
+        return FALSE;
+    cs.style |= WS_CLIPCHILDREN;
+    return TRUE;
+}
+
 BEGIN_MESSAGE_MAP(OciGridView, GridView)
+    ON_WM_CREATE()
+    ON_WM_SIZE()
+    ON_WM_VSCROLL()
+    ON_WM_LBUTTONDOWN()
     ON_WM_INITMENUPOPUP()
 	ON_WM_LBUTTONDBLCLK()
 
@@ -189,13 +210,156 @@ BEGIN_MESSAGE_MAP(OciGridView, GridView)
     ON_COMMAND(ID_GRID_ROTATE, OnRotate)
     ON_COMMAND(ID_GRID_ROTATE, OnRotate)
 
+    ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
+    ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, OnUpdate_ValuePanelEdit)
     ON_COMMAND(ID_EDIT_SELECT_ALL, OnEditSelectAll)
-    ON_UPDATE_COMMAND_UI(ID_EDIT_SELECT_ALL, OnUpdateEditGroup)
+    ON_UPDATE_COMMAND_UI(ID_EDIT_SELECT_ALL, OnUpdate_ValuePanelEdit)
 
     ON_COMMAND(ID_HELP, OnHelp)
     ON_MESSAGE(WM_COMMANDHELP, OnCommandHelp)
     ON_MESSAGE(WM_HELPHITTEST, OnHelpHitTest)
 END_MESSAGE_MAP()
+
+int OciGridView::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+    if (GridView::OnCreate(lpCreateStruct) == -1)
+        return -1;
+
+    m_wndVScrollBar.Create(WS_CHILD | WS_VISIBLE | SBS_VERT, CRect(0, 0, 0, 0), this, 10100);
+    SetVScroller(m_wndVScrollBar.m_hWnd);
+
+    m_pSplitter = std::make_unique<CValueSplitterBar>(this);
+    m_pSplitter->Create(this, 10110);
+    m_pSplitter->SetCollapsed(!m_bValuePanelVisible);
+
+    m_pValuePanel = std::make_unique<CValuePanelWnd>(this);
+    m_pValuePanel->Create(this, 10120);
+
+    ShowScrollBar(SB_VERT, FALSE);
+
+    return 0;
+}
+
+void OciGridView::OnSize(UINT nType, int cx, int cy)
+{
+    CView::OnSize(nType, cx, cy);
+
+    if (cx <= 0 || cy <= 0 || !m_pManager)
+        return;
+
+    int sbW = ::GetSystemMetrics(SM_CXVSCROLL);
+    int splitterW = m_bValuePanelVisible ? 7 : 16;
+    int panelW = m_bValuePanelVisible ? (std::max)(120, (std::min)(m_nValuePanelWidth, cx - 120)) : 0;
+    int gridW = (std::max)(30, cx - panelW - splitterW - sbW);
+
+    if (m_wndVScrollBar.GetSafeHwnd())
+    {
+        m_wndVScrollBar.MoveWindow(gridW, 0, sbW, cy);
+    }
+
+    if (m_pSplitter && m_pSplitter->GetSafeHwnd())
+    {
+        m_pSplitter->SetCollapsed(!m_bValuePanelVisible);
+        m_pSplitter->MoveWindow(gridW + sbW, 0, splitterW, cy);
+    }
+
+    if (m_pValuePanel && m_pValuePanel->GetSafeHwnd())
+    {
+        if (m_bValuePanelVisible)
+        {
+            m_pValuePanel->ShowWindow(SW_SHOW);
+            m_pValuePanel->MoveWindow(gridW + sbW + splitterW, 0, panelW, cy);
+        }
+        else
+        {
+            m_pValuePanel->ShowWindow(SW_HIDE);
+        }
+    }
+
+    m_pManager->EvSize(CSize(gridW, cy));
+    Invalidate(TRUE);
+}
+
+void OciGridView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+    if (m_wndVScrollBar.GetSafeHwnd() && (pScrollBar == &m_wndVScrollBar || (pScrollBar && pScrollBar->m_hWnd == m_wndVScrollBar.m_hWnd)))
+    {
+        SCROLLINFO scrollInfo;
+        scrollInfo.cbSize = sizeof(scrollInfo);
+        scrollInfo.fMask = SIF_TRACKPOS;
+        m_wndVScrollBar.GetScrollInfo(&scrollInfo);
+        m_pManager->EvScroll(edVert, nSBCode, scrollInfo.nTrackPos);
+        return;
+    }
+    GridView::OnVScroll(nSBCode, nPos, pScrollBar);
+}
+
+void OciGridView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+    GridView::OnLButtonDown(nFlags, point);
+    UpdateValuePanel();
+}
+
+void OciGridView::ToggleValuePanel()
+{
+    SetValuePanelVisible(!m_bValuePanelVisible);
+}
+
+void OciGridView::SetValuePanelVisible(bool bVisible)
+{
+    m_bValuePanelVisible = bVisible;
+    CRect rc;
+    GetClientRect(rc);
+    OnSize(SIZE_RESTORED, rc.Width(), rc.Height());
+    Invalidate();
+
+    if (m_bValuePanelVisible)
+        UpdateValuePanel();
+
+    AfxGetApp()->WriteProfileInt(_T("GridValuePanel"), _T("Visible"), m_bValuePanelVisible ? 1 : 0);
+}
+
+void OciGridView::SetValuePanelWidth(int nWidth)
+{
+    CRect rc;
+    GetClientRect(rc);
+    int maxW = rc.Width() - 120;
+    if (nWidth < 120) nWidth = 120;
+    if (nWidth > maxW) nWidth = maxW;
+
+    if (m_nValuePanelWidth != nWidth)
+    {
+        m_nValuePanelWidth = nWidth;
+        OnSize(SIZE_RESTORED, rc.Width(), rc.Height());
+        Invalidate();
+        AfxGetApp()->WriteProfileInt(_T("GridValuePanel"), _T("Width"), m_nValuePanelWidth);
+    }
+}
+
+void OciGridView::UpdateValuePanel()
+{
+    if (!m_pValuePanel || !m_pValuePanel->GetSafeHwnd() || !m_bValuePanelVisible)
+        return;
+
+    if (!m_pManager || !m_pOciSource)
+    {
+        m_pValuePanel->ClearData();
+        return;
+    }
+
+    int row = m_pManager->GetCurrentPos(edVert);
+    int col = m_pManager->GetCurrentPos(edHorz);
+
+    if (row < 0 || col < 0 || row >= m_pOciSource->GetCount(edVert) || col >= m_pOciSource->GetCount(edHorz))
+    {
+        m_pValuePanel->ClearData();
+        return;
+    }
+
+    std::string cellText;
+    m_pOciSource->GetCellStr(cellText, row, col);
+    m_pValuePanel->SetCellData(cellText);
+}
 
 void OciGridView::Clear ()
 {
@@ -203,6 +367,8 @@ void OciGridView::Clear ()
 
         m_pOciSource->Clear();
         m_pManager->Clear();
+        if (m_pValuePanel && m_pValuePanel->GetSafeHwnd())
+            m_pValuePanel->ClearData();
     }
     _DEFAULT_HANDLER_
 }
@@ -475,10 +641,68 @@ void OciGridView::SetPaleColors (bool pale)
     }
 }
 
+bool OciGridView::IsValuePanelFocused() const
+{
+    if (!m_bValuePanelVisible || !m_pValuePanel || !m_pValuePanel->GetSafeHwnd())
+        return false;
+    HWND hFocus = ::GetFocus();
+    return (hFocus && (hFocus == m_pValuePanel->GetSafeHwnd() || ::IsChild(m_pValuePanel->GetSafeHwnd(), hFocus)));
+}
+
+void OciGridView::OnUpdate_ValuePanelEdit(CCmdUI* pCmdUI)
+{
+    if (IsValuePanelFocused())
+    {
+        pCmdUI->Enable(TRUE);
+        return;
+    }
+    OnUpdateEditGroup(pCmdUI);
+}
+
+void OciGridView::OnEditCopy()
+{
+    if (IsValuePanelFocused())
+    {
+        m_pValuePanel->CopySelection();
+        return;
+    }
+    GridView::OnEditCopy();
+}
+
 void OciGridView::OnEditSelectAll ()
 {
+    if (IsValuePanelFocused())
+    {
+        m_pValuePanel->SelectAll();
+        return;
+    }
     m_pOciSource->FetchAll();
     m_pManager->SelectAll();
+}
+
+BOOL OciGridView::PreTranslateMessage(MSG* pMsg)
+{
+    if (IsValuePanelFocused())
+    {
+        if (pMsg->message == WM_KEYDOWN)
+        {
+            bool bCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+            if (bCtrl)
+            {
+                if (pMsg->wParam == 'A' || pMsg->wParam == 'a')
+                {
+                    m_pValuePanel->SelectAll();
+                    return TRUE;
+                }
+                if (pMsg->wParam == 'C' || pMsg->wParam == 'c')
+                {
+                    m_pValuePanel->CopySelection();
+                    return TRUE;
+                }
+            }
+        }
+    }
+    return GridView::PreTranslateMessage(pMsg);
 }
 
 void OciGridView::OnHelp ()

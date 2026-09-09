@@ -336,9 +336,12 @@ void ListCtrlManager::doSort()
     hditem.fmt |= (m_sortDir == ASC) ? HDF_SORTDOWN : HDF_SORTUP;
     header->SetItem(m_sortColumn, &hditem);
 
-    int selInx = m_list.GetNextItem(-1, LVNI_SELECTED);
-    if (selInx != -1) 
-        m_list.EnsureVisible(selInx, FALSE);
+    if (m_list.GetItemCount() > 0)
+    {
+        m_list.EnsureVisible(0, FALSE);
+        if (m_list.GetTopIndex() > 0)
+            m_list.Scroll(CSize(0, -100000));
+    }
 }
 
 int CALLBACK ListCtrlManager::CompProc (LPARAM lparam1, LPARAM lparam2, LPARAM lparam3)

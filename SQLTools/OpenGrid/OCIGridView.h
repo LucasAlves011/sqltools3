@@ -23,12 +23,22 @@
 #include "GridView.h"
 
     class OciGridSource;
+namespace OG2 {
+    class CValueSplitterBar;
+    class CValuePanelWnd;
+}
 
 class OciGridView : public OG2::GridView
 {
 protected:
     DECLARE_DYNCREATE(OciGridView)
     OciGridSource* m_pOciSource;
+
+    CScrollBar                              m_wndVScrollBar;
+    std::unique_ptr<OG2::CValueSplitterBar> m_pSplitter;
+    std::unique_ptr<OG2::CValuePanelWnd>    m_pValuePanel;
+    bool                                    m_bValuePanelVisible;
+    int                                     m_nValuePanelWidth;
 
     CString m_statusText;
     UINT m_nIDHelp;
@@ -66,9 +76,26 @@ public:
     
     void SetPaleColors (bool pale);
 
+    // Value Panel operations
+    void ToggleValuePanel();
+    void SetValuePanelVisible(bool bVisible);
+    bool IsValuePanelVisible() const { return m_bValuePanelVisible; }
+    void SetValuePanelWidth(int nWidth);
+    int  GetValuePanelWidth() const { return m_nValuePanelWidth; }
+    void UpdateValuePanel();
+
+    bool IsValuePanelFocused() const;
+
 protected:
+    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
+
     DECLARE_MESSAGE_MAP()
 
+    afx_msg int  OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+    afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
     afx_msg void OnInitMenuPopup (CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
     afx_msg void OnChangeColumnFit (UINT);
     afx_msg void OnUpdate_ColumnFit(CCmdUI *pCmdUI);
@@ -77,7 +104,9 @@ protected:
 public:
     afx_msg void OnUpdate_OciGridIndicator (CCmdUI* pCmdUI); // called from CPLSWorksheetDoc
 protected:
+    afx_msg void OnEditCopy ();
     afx_msg void OnEditSelectAll ();
+    afx_msg void OnUpdate_ValuePanelEdit (CCmdUI* pCmdUI);
     afx_msg void OnHelp ();
     afx_msg LRESULT OnCommandHelp (WPARAM, LPARAM lParam);
     afx_msg LRESULT OnHelpHitTest (WPARAM, LPARAM);

@@ -738,6 +738,8 @@ echo.
     <ClInclude Include="OpenGrid\GridWnd.h" />
     <ClInclude Include="OpenGrid\OCIGridView.h" />
     <ClInclude Include="OpenGrid\OCISource.h" />
+    <ClInclude Include="OpenGrid\ValueFormatters.h" />
+    <ClInclude Include="OpenGrid\ValuePanelWnd.h" />
     <ClInclude Include="OpenGrid\PopupViewer.h" />
     <ClInclude Include="OpenGrid\StringTable.h" />
     <ClInclude Include="Oci8\ACursor.h" />
@@ -1323,6 +1325,8 @@ makehm /h ID_,HID_,0x10000 IDM_,HIDM_,0x10000 "..\OpenEditor\OpenEditorInc.rh" &
     <ClCompile Include="OpenGrid\GridWnd.cpp" />
     <ClCompile Include="OpenGrid\OCIGridView.cpp" />
     <ClCompile Include="OpenGrid\OCISource.cpp" />
+    <ClCompile Include="OpenGrid\ValueFormatters.cpp" />
+    <ClCompile Include="OpenGrid\ValuePanelWnd.cpp" />
     <ClCompile Include="OpenGrid\PopupViewer.cpp" />
     <ClCompile Include="OpenGrid\StringTable.cpp" />
     <ClCompile Include="Oci8\ACursor.cpp" />

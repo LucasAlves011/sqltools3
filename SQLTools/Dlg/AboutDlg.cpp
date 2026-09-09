@@ -31,9 +31,12 @@ CAboutDlg::CAboutDlg(CWnd* pParent /*=NULL*/)
 //    , m_license(_T(""))
 {
     m_license = SQLTOOLS_VERSION
-        "\r\nDevelopment tools for Oracle 8i/9i/10g/11g/12c"
-        "\r\nwww.sqltools.net"
-        "\r\n" SQLTOOLS_COPYRIGHT
+        "\r\nDevelopment tools for Oracle database"
+        "\r\n"
+        "\r\nThis is an enhanced version modified by Lucas Matheus."
+        "\r\nSource code and releases are publicly available at:"
+        "\r\nhttps://github.com/LucasAlves011/sqltools3"
+        "\r\n\r\n" SQLTOOLS_COPYRIGHT
         //"\r\n\r\nThis program is free software; you can redistribute it and/or modify it" 
         //" under the terms of the GNU General Public License as published by the Free Software Foundation;" 
         //" either version 2 of the License, or (at your option) any later version." 

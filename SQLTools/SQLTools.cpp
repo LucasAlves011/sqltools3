@@ -155,7 +155,7 @@ END_MESSAGE_MAP()
 // CSQLToolsApp construction
 
     CWinThread* CSQLToolsApp::m_pServerBackgroundThread = NULL;
-    CString CSQLToolsApp::m_displayNotConnected = _T("Não Conectado (Lucas Dev)");
+    CString CSQLToolsApp::m_displayNotConnected = "Not connected";
 
 SQLToolsSettings& CSQLToolsApp::getSettings ()
 {
@@ -275,6 +275,7 @@ BOOL CSQLToolsApp::InitInstance()
         m_pFavoritesList = shared_ptr<FavoritesList>(new FavoritesList);
 
         InitCommonControls();
+        AfxInitRichEdit2();
         Common::SetAppInfoFn(app_info);
         SEException::InstallSETranslator();
         set_terminate(Common::terminate);
@@ -329,10 +330,8 @@ BOOL CSQLToolsApp::InitInstance()
         OEWorkspaceManager::Get().SetUpdateApplicationTitle(update_application_title);
 
         m_orgMainWndTitle = SQLTOOLS_RELEASE_STR;
-        m_orgMainWndTitle += 'b';
-        m_orgMainWndTitle += SQLTOOLS_BUILD_S;
-        m_orgMainWndTitle += SQLTOOLS_PLATFORM_SHORT;
-        m_orgMainWndTitle += L" [Edição Lucas Dev]";
+        m_orgMainWndTitle += " ";
+        m_orgMainWndTitle += SQLTOOLS_PLATFORM_SHORT;        
 
         InitGUICommand();
         // create main MDI Frame window

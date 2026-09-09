@@ -670,6 +670,12 @@
     <ClInclude Include="OpenGrid\OCISource.h">
       <Filter>OpenGrid</Filter>
     </ClInclude>
+    <ClInclude Include="OpenGrid\ValueFormatters.h">
+      <Filter>OpenGrid</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenGrid\ValuePanelWnd.h">
+      <Filter>OpenGrid</Filter>
+    </ClInclude>
     <ClInclude Include="OpenGrid\StringTable.h">
       <Filter>OpenGrid</Filter>
     </ClInclude>
@@ -1549,6 +1555,12 @@
       <Filter>OpenGrid</Filter>
     </ClCompile>
     <ClCompile Include="OpenGrid\OCISource.cpp">
+      <Filter>OpenGrid</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenGrid\ValueFormatters.cpp">
+      <Filter>OpenGrid</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenGrid\ValuePanelWnd.cpp">
       <Filter>OpenGrid</Filter>
     </ClCompile>
     <ClCompile Include="OpenGrid\StringTable.cpp">

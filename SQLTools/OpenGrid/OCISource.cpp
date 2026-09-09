@@ -381,6 +381,7 @@ void OciGridSource::SetCursor (OciGridView& view, std::unique_ptr<OCI8::AutoCurs
                 m_source.AppendFetched(m_result, m_allRowsFetched, m_lastFetchTime);
                 if (m_source.IsTableOrientation())
                     m_view.AutofitColumns(-1, rowsBefore);
+                m_view.UpdateValuePanel();
             }
         }
 
