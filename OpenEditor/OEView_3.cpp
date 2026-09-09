@@ -117,10 +117,20 @@ void COEditorView::SetBraceHighlighting (const BraceHighlighting& highlighting)
         if (m_braceHighlighting.broken)
             m_braceHighlighting.line[1] = -1;
 
-        for (int j(0); j < sizeof(highlighting.line)/sizeof(highlighting.line[0]); j++)
-            if (m_braceHighlighting.line[j] != -1)
+        if (m_hWnd)
+        {
+            if (m_braceHighlighting.line[0] != -1 && m_braceHighlighting.line[1] != -1)
             {
-                if (m_hWnd)
+                InvalidateLines(min(m_braceHighlighting.line[0], m_braceHighlighting.line[1]),
+                                max(m_braceHighlighting.line[0], m_braceHighlighting.line[1]));
+            }
+            if (m_braceHighlighting.exprLine != -1)
+            {
+                InvalidateLines(m_braceHighlighting.exprLine, m_braceHighlighting.exprLine);
+            }
+
+            for (int j(0); j < sizeof(highlighting.line)/sizeof(highlighting.line[0]); j++)
+                if (m_braceHighlighting.line[j] != -1)
                 {
                     Square sqr;
                     sqr.start.line   = sqr.end.line = m_braceHighlighting.line[j];
@@ -128,7 +138,16 @@ void COEditorView::SetBraceHighlighting (const BraceHighlighting& highlighting)
                     sqr.end.column   = m_braceHighlighting.offset[j] + m_braceHighlighting.length[j];
                     InvalidateSquare(sqr);
                 }
+
+            if (m_braceHighlighting.exprLine != -1)
+            {
+                Square sqr;
+                sqr.start.line   = sqr.end.line = m_braceHighlighting.exprLine;
+                sqr.start.column = m_braceHighlighting.exprOffset;
+                sqr.end.column   = m_braceHighlighting.exprOffset + m_braceHighlighting.exprLength;
+                InvalidateSquare(sqr);
             }
+        }
     }
 
     m_highlightingPosCache = GetPosition();
@@ -143,17 +162,39 @@ void COEditorView::HideHighlighting ()
     m_nFistHighlightedLine = -1;
     m_nLastHighlightedLine = -1;
 
+    if (m_hWnd)
+    {
+        if (m_braceHighlighting.line[0] != -1 && m_braceHighlighting.line[1] != -1)
+        {
+            InvalidateLines(min(m_braceHighlighting.line[0], m_braceHighlighting.line[1]),
+                            max(m_braceHighlighting.line[0], m_braceHighlighting.line[1]));
+        }
+        if (m_braceHighlighting.exprLine != -1)
+        {
+            InvalidateLines(m_braceHighlighting.exprLine, m_braceHighlighting.exprLine);
+        }
 
-    for (int j(0); j < sizeof(m_braceHighlighting.line)/sizeof(m_braceHighlighting.line[0]); j++)
-        if (m_braceHighlighting.line[j] != -1)
+        for (int j(0); j < sizeof(m_braceHighlighting.line)/sizeof(m_braceHighlighting.line[0]); j++)
+            if (m_braceHighlighting.line[j] != -1)
+            {
+                Square sqr;
+                sqr.start.line   = sqr.end.line = m_braceHighlighting.line[j];
+                sqr.start.column = m_braceHighlighting.offset[j];
+                sqr.end.column   = m_braceHighlighting.offset[j] + m_braceHighlighting.length[j];
+                InvalidateSquare(sqr);
+                m_braceHighlighting.line[j] = -1;
+            }
+
+        if (m_braceHighlighting.exprLine != -1)
         {
             Square sqr;
-            sqr.start.line   = sqr.end.line = m_braceHighlighting.line[j];
-            sqr.start.column = m_braceHighlighting.offset[j];
-            sqr.end.column   = m_braceHighlighting.offset[j] + m_braceHighlighting.length[j];
+            sqr.start.line   = sqr.end.line = m_braceHighlighting.exprLine;
+            sqr.start.column = m_braceHighlighting.exprOffset;
+            sqr.end.column   = m_braceHighlighting.exprOffset + m_braceHighlighting.exprLength;
             InvalidateSquare(sqr);
-            m_braceHighlighting.line[j] = -1;
+            m_braceHighlighting.exprLine = -1;
         }
+    }
 }
 
 void COEditorView::EnableSyntaxHighlight (BOOL enable)

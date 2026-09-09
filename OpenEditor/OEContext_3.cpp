@@ -51,6 +51,8 @@
 #include <COMMON/ExceptionHelper.h>
 #include <COMMON/StrHelpers.h>
 #include "OpenEditor/OEContext.h"
+#include "OpenEditor/OEView.h"
+#include "OpenEditor/OEPlsSqlSmartIndent.h"
 
 
 #ifdef _DEBUG
@@ -184,13 +186,15 @@ void EditContext::DoCarriageReturn ()
         switch (GetIndentType())
         {
         case eiAuto:
+        case eiSmart:
             if (m_curPos.line > 0 && m_curPos.line < GetLineCount())
             {
                 OEStringW lineBuff;
                 Position pos = GetPosition();
 
                 // 16.03.2003 bug fix, autoindent always uses a previos line as base even the line is empty
-                for (int baseLine = pos.line - 1; baseLine >= 0 && lineBuff.length() == 0; baseLine--)
+                int baseLine = pos.line - 1;
+                for (; baseLine >= 0 && lineBuff.length() == 0; baseLine--)
                     GetLineW(baseLine, lineBuff);
 
                 int len = lineBuff.length();
@@ -200,6 +204,17 @@ void EditContext::DoCarriageReturn ()
                 for (; i < len && iswspace(str[i]); i++);
 
                 pos.column = inx2pos(str, len, i);
+
+                COEditorView* pView = dynamic_cast<COEditorView*>(this);
+                if (pView && GetSettings().GetLanguage() == "PL/SQL")
+                {
+                    if (baseLine >= 0)
+                    {
+                        PlSqlSmartIndent::AdjustLineIndentIfClosing(pView, baseLine, GetIndentSpacing());
+                        pos.column = PlSqlSmartIndent::GetLineIndentColumn(pView, baseLine);
+                        pos.column = PlSqlSmartIndent::CalculateNewLineColumn(pView, baseLine, pos.column, GetIndentSpacing());
+                    }
+                }
 
                 if (!(GetCursorBeyondEOL() && GetLineLength(pos.line) == 0))
                 {

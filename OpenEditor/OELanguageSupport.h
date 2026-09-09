@@ -45,7 +45,8 @@ namespace OpenEditor
         { 
             bool found, backward, partial, broken; 
             int line[2], offset[2], length[2]; 
-            void reset ()                               { memset(this, 0, sizeof(*this)); }
+            int exprLine, exprOffset, exprLength;
+            void reset ()                               { memset(this, 0, sizeof(*this)); exprLine = exprOffset = exprLength = -1; }
             Match ()                                    { reset(); }
             bool operator == (const Match& other) const { return !memcmp(this, &other, sizeof(*this)); }
         };

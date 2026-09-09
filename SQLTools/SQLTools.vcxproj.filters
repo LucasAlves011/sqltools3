@@ -1213,6 +1213,18 @@
     <ClInclude Include="..\OpenEditor\OEPlsSqlFormatter.h">
       <Filter>OpenEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\OpenEditor\OEPlsSqlCursorScanner.h">
+      <Filter>OpenEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OpenEditor\OECursorPeekDlg.h">
+      <Filter>OpenEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OpenEditor\OEPlsSqlBlockMatcher.h">
+      <Filter>OpenEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OpenEditor\OEPlsSqlSmartIndent.h">
+      <Filter>OpenEditor</Filter>
+    </ClInclude>
     <ClInclude Include="AutomatedTesting\handlers\SqlFormatterHandler.h">
       <Filter>SQLToolsApp\AutomatedTesting</Filter>
     </ClInclude>
@@ -2134,6 +2146,18 @@
       <Filter>OpenEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\OpenEditor\OEPlsSqlFormatter2.cpp">
+      <Filter>OpenEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OpenEditor\OEPlsSqlCursorScanner.cpp">
+      <Filter>OpenEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OpenEditor\OECursorPeekDlg.cpp">
+      <Filter>OpenEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OpenEditor\OEPlsSqlBlockMatcher.cpp">
+      <Filter>OpenEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OpenEditor\OEPlsSqlSmartIndent.cpp">
       <Filter>OpenEditor</Filter>
     </ClCompile>
     <ClCompile Include="AutomatedTesting\handlers\SqlFormatterHandler.cpp">

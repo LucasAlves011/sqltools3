@@ -1248,6 +1248,10 @@ makehm /h ID_,HID_,0x10000 IDM_,HIDM_,0x10000 "..\OpenEditor\OpenEditorInc.rh" &
     <ClCompile Include="..\OpenEditor\OEPlsSqlSyntax.cpp" />
     <ClCompile Include="..\OpenEditor\OEPlsSqlSyntaxImpl.cpp" />
     <ClCompile Include="..\OpenEditor\OEPlsSqlSyntaxImpl2.cpp" />
+    <ClCompile Include="..\OpenEditor\OEPlsSqlCursorScanner.cpp" />
+    <ClCompile Include="..\OpenEditor\OECursorPeekDlg.cpp" />
+    <ClCompile Include="..\OpenEditor\OEPlsSqlBlockMatcher.cpp" />
+    <ClCompile Include="..\OpenEditor\OEPlsSqlSmartIndent.cpp" />
     <ClCompile Include="..\OpenEditor\OEPrintPageSetup.cpp" />
     <ClCompile Include="..\OpenEditor\OEPropPage.cpp" />
     <ClCompile Include="..\OpenEditor\OESaveModifiedDlg.cpp" />

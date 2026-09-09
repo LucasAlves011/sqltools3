@@ -562,6 +562,43 @@ void COEditorView::OnPaint ()
 
             memDc.FillSolidRect(&rcLine, color);
 
+            // Linha guia vertical de escopo para blocos PL/SQL (Scope Guide)
+            int actualLine = i + m_Rulers[1].m_Topmost;
+            if (m_braceHighlighting.line[0] != -1 && m_braceHighlighting.line[1] != -1 &&
+                !m_braceHighlighting.broken && m_braceHighlighting.line[1] > m_braceHighlighting.line[0])
+            {
+                if (actualLine >= m_braceHighlighting.line[0] && actualLine <= m_braceHighlighting.line[1])
+                {
+                    int guideX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[0] - m_Rulers[0].m_Topmost);
+                    if (guideX >= (int)m_Rulers[0].m_Indent)
+                    {
+                        COLORREF scopeLineCol = RGB(0, 160, 230);
+                        if (actualLine == m_braceHighlighting.line[0])
+                        {
+                            CRect rcGuide(guideX, rcLine.top + rcLine.Height() / 2, guideX + 2, rcLine.bottom);
+                            memDc.FillSolidRect(&rcGuide, scopeLineCol);
+                        }
+                        else if (actualLine > m_braceHighlighting.line[0] && actualLine < m_braceHighlighting.line[1])
+                        {
+                            CRect rcGuide(guideX, rcLine.top, guideX + 2, rcLine.bottom);
+                            memDc.FillSolidRect(&rcGuide, scopeLineCol);
+                        }
+                        else if (actualLine == m_braceHighlighting.line[1])
+                        {
+                            CRect rcGuide(guideX, rcLine.top, guideX + 2, rcLine.top + rcLine.Height() / 2);
+                            memDc.FillSolidRect(&rcGuide, scopeLineCol);
+
+                            int endWordX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[1] - m_Rulers[0].m_Topmost);
+                            if (endWordX > guideX)
+                            {
+                                CRect rcHoriz(guideX, rcLine.top + rcLine.Height() / 2 - 1, min(endWordX, guideX + 14), rcLine.top + rcLine.Height() / 2 + 1);
+                                memDc.FillSolidRect(&rcHoriz, scopeLineCol);
+                            }
+                        }
+                    }
+                }
+            }
+
             for (int j(0); j < sizeof(m_braceHighlighting.line)/sizeof(m_braceHighlighting.line[0]); j++)
                 if (m_braceHighlighting.line[j] != -1
                 && (m_braceHighlighting.line[j] - m_Rulers[1].m_Topmost) == i)
@@ -569,10 +606,67 @@ void COEditorView::OnPaint ()
                     rcBar.left   = m_Rulers[0].InxToPix(m_braceHighlighting.offset[j] - m_Rulers[0].m_Topmost);
                     rcBar.right  = m_Rulers[0].InxToPix(m_braceHighlighting.offset[j] - m_Rulers[0].m_Topmost + m_braceHighlighting.length[j]);
                     if (!m_braceHighlighting.broken)
-                        memDc.FillSolidRect(&rcBar, m_paintAccessories->m_HighlightingBackground);
+                    {
+                        memDc.FillSolidRect(&rcBar, RGB(220, 235, 252));
+                        memDc.Draw3dRect(&rcBar, RGB(0, 120, 215), RGB(0, 120, 215));
+                    }
                     else
                         memDc.FillSolidRect(&rcBar, m_paintAccessories->m_ErrorHighlightingBackground);
                 }
+
+            // Destaque para THEN / LOOP na expressão
+            if (m_braceHighlighting.exprLine != -1
+                && (m_braceHighlighting.exprLine - m_Rulers[1].m_Topmost) == i
+                && !m_braceHighlighting.broken)
+            {
+                CRect rcExprBox;
+                rcExprBox.top    = rcLine.top;
+                rcExprBox.bottom = rcLine.bottom;
+                rcExprBox.left   = m_Rulers[0].InxToPix(m_braceHighlighting.exprOffset - m_Rulers[0].m_Topmost);
+                rcExprBox.right  = m_Rulers[0].InxToPix(m_braceHighlighting.exprOffset - m_Rulers[0].m_Topmost + m_braceHighlighting.exprLength);
+                memDc.FillSolidRect(&rcExprBox, RGB(220, 235, 252));
+                memDc.Draw3dRect(&rcExprBox, RGB(0, 120, 215), RGB(0, 120, 215));
+            }
+
+            // Sublinhado da expressão (ex: IF/FOR até THEN/LOOP)
+            if (m_braceHighlighting.exprLine != -1 && !m_braceHighlighting.broken)
+            {
+                int exprStartLine = min(m_braceHighlighting.line[0], m_braceHighlighting.exprLine);
+                int exprEndLine   = max(m_braceHighlighting.line[0], m_braceHighlighting.exprLine);
+                if (actualLine >= exprStartLine && actualLine <= exprEndLine)
+                {
+                    int startX = 0;
+                    int endX = 0;
+                    if (actualLine == exprStartLine && actualLine == exprEndLine)
+                    {
+                        startX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[0] - m_Rulers[0].m_Topmost);
+                        endX   = m_Rulers[0].InxToPix(m_braceHighlighting.exprOffset - m_Rulers[0].m_Topmost + m_braceHighlighting.exprLength);
+                    }
+                    else if (actualLine == exprStartLine)
+                    {
+                        startX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[0] - m_Rulers[0].m_Topmost);
+                        endX   = rcLine.right;
+                    }
+                    else if (actualLine == exprEndLine)
+                    {
+                        startX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[0] - m_Rulers[0].m_Topmost);
+                        endX   = m_Rulers[0].InxToPix(m_braceHighlighting.exprOffset - m_Rulers[0].m_Topmost + m_braceHighlighting.exprLength);
+                    }
+                    else
+                    {
+                        startX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[0] - m_Rulers[0].m_Topmost);
+                        endX   = rcLine.right;
+                    }
+
+                    startX = max(startX, (int)m_Rulers[0].m_Indent);
+                    if (endX > startX)
+                    {
+                        COLORREF scopeLineCol = RGB(0, 160, 230);
+                        CRect rcExprLine(startX, rcLine.bottom - 2, endX, rcLine.bottom);
+                        memDc.FillSolidRect(&rcExprLine, scopeLineCol);
+                    }
+                }
+            }
 
             if (blockExist && blk.line_in_rect(i))
             {

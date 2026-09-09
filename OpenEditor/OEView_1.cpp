@@ -68,6 +68,10 @@
 #include "COMMON/StrHelpers.h"
 #include "COMMON/InputDlg.h"
 #include "COMMON/CustomShellContextMenu.h"
+#include "OpenEditor/OEPlsSqlCursorScanner.h"
+#include "OpenEditor/OECursorPeekDlg.h"
+#include "OpenEditor/OEPlsSqlBlockMatcher.h"
+#include "OpenEditor/OEPlsSqlSmartIndent.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -169,6 +173,8 @@ BEGIN_MESSAGE_MAP(COEditorView, CView)
     ON_COMMAND(ID_EDIT_SORT, OnEditSort)
     ON_COMMAND(ID_EDIT_FIND_MATCH, OnEditFindMatch)
     ON_COMMAND(ID_EDIT_FIND_MATCH_N_SELECT, OnEditFindMatchAndSelect)
+    ON_COMMAND(ID_EDIT_PEEK_CURSOR, OnEditPeekCursor)
+    ON_COMMAND(ID_EDIT_REINDENT_BLOCK, OnEditReindentBlock)
     ON_COMMAND(ID_EDIT_COMMENT, OnEditComment)
     ON_COMMAND(ID_EDIT_UNCOMMENT, OnEditUncomment)
     ON_UPDATE_COMMAND_UI(ID_EDIT_COMMENT, OnUpdate_CommentUncomment)
@@ -312,6 +318,8 @@ COEditorView::COEditorView ()
 COEditorView::~COEditorView ()
 {
     try { EXCEPTION_FRAME;
+
+        COECursorPeekDlg::CloseAllForEditor(this);
 
         for (int i(0); i < 2; i++)
             DetachSibling(i);
@@ -677,6 +685,14 @@ void COEditorView::OnKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
     default:
         CView::OnKeyUp(nChar, nRepCnt, nFlags);
         return;
+
+    case VK_F12:
+        if (0xFF00 & GetKeyState(VK_MENU))
+        {
+            OnEditPeekCursor();
+            return;
+        }
+        break;
 
     case VK_INSERT:
         if (!_shift && !_cntrl && !(0xFF00 & GetKeyState(VK_MENU)))
@@ -1274,7 +1290,7 @@ void COEditorView::OnUpdate_Pos (CCmdUI* pCmdUI)
         m_posCache = pos;
         m_selCache = blk;
 
-        WCHAR buff[80]; 
+        WCHAR buff[256]; 
         const int buff_size = sizeof(buff)/sizeof(buff[0]);
         buff[buff_size-1] = 0;
         //_snprintf(buff, sizeof(buff)-1, " Ln: %d, Col: %d", pos.line + 1, pos.column + 1);
@@ -1360,6 +1376,17 @@ void COEditorView::OnUpdate_Pos (CCmdUI* pCmdUI)
         else
             _snwprintf(buff, buff_size-1, L" Ln: %d, Col: %d", pos.line + 1, pos.column + 1);
 
+        // Indicador de escopo do bloco atual para PL/SQL
+        if (GetSettings().GetLanguage() == "PL/SQL")
+        {
+            std::wstring scopeDesc;
+            if (PlSqlBlockMatcher::GetEnclosingBlockInfo(this, pos, scopeDesc))
+            {
+                wcsncat(buff, L" | ", buff_size - wcslen(buff) - 1);
+                wcsncat(buff, scopeDesc.c_str(), buff_size - wcslen(buff) - 1);
+            }
+        }
+
         pCmdUI->SetText(buff);
     }
     pCmdUI->Enable(TRUE);
@@ -1396,12 +1423,37 @@ void COEditorView::OnUpdate_Pos (CCmdUI* pCmdUI)
                     m_highlightedText = text;
                     Invalidate(FALSE);
                 }
+
+                // Visualizador e Editor Flutuante de Cursor
+                if (curSelChanged && GetSettings().GetLanguage() == "PL/SQL")
+                {
+                    std::wstring selWord = text;
+                    while (!selWord.empty() && iswspace(selWord.front())) selWord.erase(selWord.begin());
+                    while (!selWord.empty() && iswspace(selWord.back())) selWord.pop_back();
+
+                    PlSqlObjectInfo objInfo;
+                    if (!selWord.empty() && PlSqlCursorScanner::FindLocalObjectByName(this, selWord, objInfo))
+                    {
+                        CPoint ptScreen;
+                        ptScreen.x = m_Rulers[0].PosToPix(selection.start.column);
+                        ptScreen.y = m_Rulers[1].PosToPix(selection.start.line);
+                        ClientToScreen(&ptScreen);
+
+                        // Canto superior direito de onde clicou, afastado ~5 a 10 cm (~240px X e -130px Y)
+                        ptScreen.x += 240;
+                        ptScreen.y -= 130;
+
+                        COECursorPeekDlg::OpenPeek(this, objInfo, ptScreen);
+                    }
+                }
             }
         }
         else if (!m_highlightedText.empty())
         {
             m_highlightedText.clear();
             Invalidate(FALSE);
+
+            COECursorPeekDlg::CloseAllUnpinned(this);
         }
     }
 }
@@ -1413,8 +1465,19 @@ void COEditorView::HighlightBraces ()
     && pos.column <= GetLineLength(pos.line))
     {
         LanguageSupport::Match match;
-        if (GetMatchInfo(GetPosition()/*pos*/, match))
+        if (GetMatchInfo(pos, match))
+        {
             SetBraceHighlighting(match);
+        }
+        else if (GetSettings().GetLanguage() == "PL/SQL" && PlSqlBlockMatcher::FindMatchingBlock(this, pos, match))
+        {
+            SetBraceHighlighting(match);
+        }
+        else
+        {
+            match.reset();
+            SetBraceHighlighting(match);
+        }
     }
 }
 
@@ -2093,7 +2156,19 @@ void COEditorView::OnContextMenu (CWnd*, CPoint point)
     CMenu* pPopup = menu.GetSubMenu(0);
 
     if (resid == IDR_OE_EDIT_POPUP)
+    {
         GetDocument()->OnContextMenuInit(pPopup);
+
+        if (GetSettings().GetLanguage() == "PL/SQL")
+        {
+            PlSqlCursorInfo cInfo;
+            if (PlSqlCursorScanner::IsCursorUnderPosition(this, GetPosition(), cInfo))
+            {
+                pPopup->InsertMenu(0, MF_BYPOSITION | MF_STRING, ID_EDIT_PEEK_CURSOR, _T("Visualizar Cursor (Alt+F12)..."));
+                pPopup->InsertMenu(1, MF_BYPOSITION | MF_SEPARATOR);
+            }
+        }
+    }
 
     ASSERT(pPopup != NULL);
     ASSERT_KINDOF(CFrameWnd, AfxGetMainWnd());
@@ -2329,6 +2404,47 @@ void COEditorView::OnEditFindMatchAndSelect()
 {
     CWaitCursor wait;
     EditContext::FindMatch(true);
+}
+
+void COEditorView::OnEditPeekCursor()
+{
+    if (GetSettings().GetLanguage() != "PL/SQL")
+        return;
+
+    Position pos = GetPosition();
+    PlSqlObjectInfo objInfo;
+    if (PlSqlCursorScanner::IsObjectUnderPosition(this, pos, objInfo))
+    {
+        CPoint ptScreen;
+        ptScreen.x = m_Rulers[0].PosToPix(pos.column);
+        ptScreen.y = m_Rulers[1].PosToPix(pos.line);
+        ClientToScreen(&ptScreen);
+
+        // Canto superior direito de onde clicou, afastado ~5 a 10 cm (~240px X e -130px Y)
+        ptScreen.x += 240;
+        ptScreen.y -= 130;
+
+        COECursorPeekDlg::OpenPeek(this, objInfo, ptScreen);
+    }
+}
+
+void COEditorView::OnEditReindentBlock()
+{
+    if (GetSettings().GetLanguage() != "PL/SQL")
+        return;
+
+    UndoGroup undoGroup(*this);
+    if (!IsSelectionEmpty())
+    {
+        Square sel;
+        GetSelection(sel);
+        sel.normalize();
+        PlSqlSmartIndent::ReindentRange(this, sel.start.line, sel.end.line, GetIndentSpacing());
+    }
+    else
+    {
+        PlSqlSmartIndent::ReindentRange(this, 0, GetLineCount() - 1, GetIndentSpacing());
+    }
 }
 
 void COEditorView::OnUpdate_CommentUncomment (CCmdUI* pCmdUI)
@@ -2790,8 +2906,41 @@ void COEditorView::OnEditSelectLine ()
     SelectLine(GetPosition().line);
 }
 
-BOOL COEditorView::OnMouseWheel(UINT /*nFlags*/, short zDelta, CPoint /*pt*/)
+BOOL COEditorView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
+    // Ctrl + Wheel: Aumentar / Diminuir tamanho da fonte (Zoom)
+    if (nFlags & MK_CONTROL)
+    {
+        try
+        {
+            VisualAttributesSet& vaset = const_cast<VisualAttributesSet&>(GetSettings().GetVisualAttributesSet());
+            const VisualAttribute& constTextAttr = vaset.FindByName("Text");
+            int curSize = constTextAttr.m_FontSize;
+            int step = (zDelta > 0 ? 1 : -1);
+            int newSize = curSize + step;
+            if (newSize >= 6 && newSize <= 48 && newSize != curSize)
+            {
+                for (int i = 0; i < vaset.GetCount(); ++i)
+                {
+                    vaset[i].m_FontSize = newSize;
+                }
+                OnSettingsChanged();
+            }
+            return TRUE;
+        }
+        catch (...)
+        {
+        }
+    }
+
+    // Shift + Wheel: Rolamento lateral (horizontal)
+    if (nFlags & MK_SHIFT)
+    {
+        for (int step = 0; step < 3; ++step)
+            DoHScroll(zDelta > 0 ? SB_LINELEFT : SB_LINERIGHT, TRUE);
+        return TRUE;
+    }
+
     SCROLLINFO scrollInfo;
     scrollInfo.cbSize = sizeof(scrollInfo);
     scrollInfo.fMask = SIF_TRACKPOS;

@@ -161,6 +161,8 @@ BEGIN_MESSAGE_MAP(CDbSourceWnd, CDialog)
     ON_BN_CLICKED(IDC_DS_SETTINGS, OnSettings)
     ON_BN_CLICKED(IDC_DS_FILTER, OnFilter)
     ON_BN_CLICKED(IDC_DS_REFRESH, OnRefresh)
+    ON_BN_CLICKED(10111, OnBnClickedDbamv)
+    ON_BN_CLICKED(10112, OnBnClickedMvintegra)
 
     ON_COMMAND(ID_DS_REFRESH, OnRefresh)
     ON_COMMAND(ID_DS_SETTINGS, OnSettings)
@@ -230,6 +232,24 @@ BOOL CDbSourceWnd::OnInitDialog()
     ::SendMessage(::GetDlgItem(*this, IDC_DS_INVALID), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_INVALID));
     ::SendMessage(::GetDlgItem(*this, IDC_DS_FILTER), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_FILTER));
     ::SendMessage(::GetDlgItem(*this, IDC_DS_SETTINGS), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_SETTINGS));
+
+    CRect rcSettings;
+    if (CWnd* pSettings = GetDlgItem(IDC_DS_SETTINGS))
+    {
+        pSettings->GetWindowRect(&rcSettings);
+        ScreenToClient(&rcSettings);
+
+        int btnTop = rcSettings.top;
+        int btnHeight = rcSettings.Height();
+
+        CRect rcDbamv(rcSettings.right + 6, btnTop, rcSettings.right + 6 + 56, btnTop + btnHeight);
+        m_btnDbamv.Create(_T("DBAMV"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, rcDbamv, this, 10111);
+        m_btnDbamv.SetFont(GetFont());
+
+        CRect rcMvintegra(rcDbamv.right + 4, btnTop, rcDbamv.right + 4 + 80, btnTop + btnHeight);
+        m_btnMvintegra.Create(_T("MVINTEGRA"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, rcMvintegra, this, 10112);
+        m_btnMvintegra.SetFont(GetFont());
+    }
 
     int nTab = AfxGetApp()->GetProfileInt(L"Code", L"nTab", 0);
     _ASSERTE((unsigned int)nTab < m_wndTabLists.size());
@@ -589,10 +609,19 @@ void CDbSourceWnd::InitSchemaList ()
                 vector<string>::const_iterator it = m_schemas.begin();
             
                 for (; it != m_schemas.end(); ++it)
-                    m_dbSourceWnd.m_wndSchemaList.AddString(Common::wstr(*it).c_str());
+                {
+                    CString ws = Common::wstr(*it).c_str();
+                    if (m_dbSourceWnd.m_wndSchemaList.FindStringExact(-1, ws) == CB_ERR)
+                        m_dbSourceWnd.m_wndSchemaList.AddString(ws);
+                }
 
                 // TODO: reimplement PUBLIC support! Forgot how :(
-                m_dbSourceWnd.m_wndSchemaList.AddString(L"PUBLIC");
+                if (m_dbSourceWnd.m_wndSchemaList.FindStringExact(-1, L"PUBLIC") == CB_ERR)
+                    m_dbSourceWnd.m_wndSchemaList.AddString(L"PUBLIC");
+
+                int curInx = m_dbSourceWnd.m_wndSchemaList.FindStringExact(-1, m_dbSourceWnd.m_strSchema);
+                if (curInx != CB_ERR)
+                    m_dbSourceWnd.m_wndSchemaList.SetCurSel(curInx);
 
                 if (dropped) 
                     m_dbSourceWnd.m_wndSchemaList.ShowDropDown(TRUE);
@@ -659,6 +688,42 @@ void CDbSourceWnd::OnSchemaChanged ()
     int nTab = GetCurrentTabIndex();
     if (nTab != -1)
         m_wndTabLists[nTab]->Refresh();
+}
+
+void CDbSourceWnd::SelectSchema (const wchar_t* schemaName)
+{
+    CWaitCursor wait;
+
+    m_strSchema = schemaName;
+    int inx = m_wndSchemaList.FindStringExact(-1, schemaName);
+    if (inx == CB_ERR)
+    {
+        inx = m_wndSchemaList.AddString(schemaName);
+    }
+    if (inx != CB_ERR)
+    {
+        m_wndSchemaList.SetCurSel(inx);
+    }
+
+    m_wndSchemaList.Invalidate();
+    m_wndSchemaList.UpdateWindow();
+
+    addToRecentSchemas(m_strSchema);
+    SetSchemaForObjectLists();
+
+    int nTab = GetCurrentTabIndex();
+    if (nTab != -1 && (unsigned int)nTab < m_wndTabLists.size())
+        m_wndTabLists[nTab]->Refresh();
+}
+
+void CDbSourceWnd::OnBnClickedDbamv ()
+{
+    SelectSchema(L"DBAMV");
+}
+
+void CDbSourceWnd::OnBnClickedMvintegra ()
+{
+    SelectSchema(L"MVINTEGRA");
 }
 
 void CDbSourceWnd::OnToolbarFilterChanged ()

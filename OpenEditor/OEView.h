@@ -31,7 +31,13 @@
 
     using std::shared_ptr;
     class COEDocument;
-    namespace OpenEditor { class HighlighterBase; };
+    namespace OpenEditor { 
+        class HighlighterBase; 
+        class PlSqlCursorScanner;
+        class PlSqlBlockMatcher;
+        class PlSqlSmartIndent;
+        class COECursorPeekDlg;
+    };
     enum SearchDirection { esdDown, esdUp, esdDefault };
 
 
@@ -55,6 +61,10 @@ class COEditorView : public CView, protected OpenEditor::EditContext
     m_Rulers[2];
    
     friend COEAutocompleteCtrl;
+    friend class OpenEditor::PlSqlCursorScanner;
+    friend class OpenEditor::PlSqlBlockMatcher;
+    friend class OpenEditor::PlSqlSmartIndent;
+    friend class OpenEditor::COECursorPeekDlg;
     static COEAutocompleteCtrl m_autocompleteList; // an embedded control
 
     static BOOL m_isOverWriteMode;     // overwrite mode for text input
@@ -193,6 +203,12 @@ public:
     using EditContext::ClearSelection;
     
     using EditContext::GetBlockOrWordUnderCursor;
+    using EditContext::WordFromPoint;
+    using EditContext::pos2inx;
+    using EditContext::GetSettings;
+    using EditContext::GetIndentSpacing;
+    using EditContext::GetTabSpacing;
+    using EditContext::GetTabExpand;
 
     // not implemented yet
     void SetQueueBookmark (int, bool = true);
@@ -411,6 +427,8 @@ protected:
     afx_msg void OnEditSort();
     afx_msg void OnEditFindMatch();
     afx_msg void OnEditFindMatchAndSelect();
+    afx_msg void OnEditPeekCursor();
+    afx_msg void OnEditReindentBlock();
     afx_msg void OnUpdate_CommentUncomment (CCmdUI* pCmdUI);
     afx_msg void OnEditComment();
     afx_msg void OnEditUncomment();

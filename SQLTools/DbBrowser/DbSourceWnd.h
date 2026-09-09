@@ -107,6 +107,11 @@ public:
 	virtual void OnOK ();
 	virtual void OnCancel();
 
+    CButton m_btnDbamv;
+    CButton m_btnMvintegra;
+
+    void SelectSchema (const wchar_t* schemaName);
+
 protected:
 	int  GetCurrentTabIndex () const;
 	void OnUseCombo ();
@@ -116,6 +121,8 @@ protected:
     afx_msg void OnDropDownSchema();
     afx_msg void OnSetFocusSchema();
     afx_msg void OnSchemaChanged();
+    afx_msg void OnBnClickedDbamv();
+    afx_msg void OnBnClickedMvintegra();
     afx_msg void OnToolbarFilterChanged();
     afx_msg void OnRefresh();
     afx_msg void OnShowAsList();

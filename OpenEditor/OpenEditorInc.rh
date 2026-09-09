@@ -388,6 +388,8 @@
 #define ID_FILE_RENAME                  50083
 #define ID_EDIT_CREATE_TEMPLATE         50084
 #define ID_FILE_COPY_NAME               50085
+#define ID_EDIT_PEEK_CURSOR             50095
+#define ID_EDIT_REINDENT_BLOCK          50096
 
 #define ID_FPW_REFRESH_DRIVERS          50100
 #define ID_FPW_OPEN                     50101
