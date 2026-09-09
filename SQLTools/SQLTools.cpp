@@ -155,7 +155,7 @@ END_MESSAGE_MAP()
 // CSQLToolsApp construction
 
     CWinThread* CSQLToolsApp::m_pServerBackgroundThread = NULL;
-    CString CSQLToolsApp::m_displayNotConnected = "Not connected";
+    CString CSQLToolsApp::m_displayNotConnected = "Não Conectado (Lucas Dev)";
 
 SQLToolsSettings& CSQLToolsApp::getSettings ()
 {
@@ -332,6 +332,7 @@ BOOL CSQLToolsApp::InitInstance()
         m_orgMainWndTitle += 'b';
         m_orgMainWndTitle += SQLTOOLS_BUILD_S;
         m_orgMainWndTitle += SQLTOOLS_PLATFORM_SHORT;
+        m_orgMainWndTitle += L" [Edição Lucas Dev]";
 
         InitGUICommand();
         // create main MDI Frame window

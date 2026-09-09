@@ -1,0 +1,32 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/SQLTools",
+        "${workspaceFolder}/OpenEditor",
+        "${workspaceFolder}/Common",
+        "${workspaceFolder}/3dParty",
+        "${workspaceFolder}/3dParty/boost_1_88_0",
+        "${workspaceFolder}/../oracle/OCI.x64/include"
+      ],
+      "defines": [
+        "_DEBUG",
+        "_WINDOWS",
+        "_AFXDLL",
+        "WIN32",
+        "_UNICODE",
+        "UNICODE",
+        "BUILD_TYPE=1",
+        "TIXML_USE_STL",
+        "DINKUMWARE_CE"
+      ],
+      "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-msvc-x64"
+    }
+  ],
+  "version": 4
+}

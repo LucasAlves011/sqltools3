@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug SQLTools (x64)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/_output_/Debug.x64/SQLTools.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/_output_/Debug.x64",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "C:\\Program Files\\Oracle Client\\instantclient_23_26;${env:PATH}"
+        }
+      ],
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build SQLTools (Debug x64)"
+    }
+  ]
+}

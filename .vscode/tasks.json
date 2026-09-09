@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build SQLTools (Debug x64)",
+      "type": "shell",
+      "command": "& 'C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe' SQLTools/SQLTools.sln /p:Configuration=Debug /p:Platform=x64 /m",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build SQLTools (Release x64)",
+      "type": "shell",
+      "command": "& 'C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe' SQLTools/SQLTools.sln /p:Configuration=Release /p:Platform=x64 /m",
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Clean SQLTools (Debug x64)",
+      "type": "shell",
+      "command": "& 'C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe' SQLTools/SQLTools.sln /p:Configuration=Debug /p:Platform=x64 /t:Clean",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Run SQLTools (Sem Debug)",
+      "type": "shell",
+      "command": "$env:PATH = 'C:\\Program Files\\Oracle Client\\instantclient_23_26;' + $env:PATH; Start-Process -FilePath '.\\_output_\\Debug.x64\\SQLTools.exe'",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+# ==========================================
+# SQLTools Build Outputs (Binários e Compilação)
+# ==========================================
+_output_/
+[Dd]ebug/
+[Dd]ebug.*/
+[Rr]elease/
+[Rr]elease.*/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Oo]bjs/
+
+# ==========================================
+# Visual Studio / MSBuild (Arquivos Temporários e Locais)
+# ==========================================
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.aps
+*.tlog
+*.lastbuildstate
+*.unsuccessfulbuild
+
+# Arquivos intermediários de compilação C++
+*.obj
+*.o
+*.pch
+*.idb
+*.pdb
+*.ilk
+*.exp
+*.res
+*.tlb
+
+# ==========================================
+# Arquivos de Ajuda Compilados dinamicamente
+# ==========================================
+SQLTools/hlp/sqltools.chm
+SQLTools/hlp/HTMLDefines.h
+
+# ==========================================
+# Artefatos do Windows
+# ==========================================
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# ==========================================
+# VS Code (Manter apenas tarefas e debug compartilháveis)
+# ==========================================
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/c_cpp_properties.json
