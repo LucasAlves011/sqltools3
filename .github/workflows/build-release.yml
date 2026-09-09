@@ -1,4 +1,4 @@
-﻿name: Build and Release
+name: Build and Release
 
 on:
   release:
@@ -25,7 +25,7 @@ jobs:
 
       - name: Build SQLTools Solution (Release x64)
         run: |
-          msbuild SQLTools\SQLTools.sln /p:Configuration=Release /p:Platform=x64 /m /v:m
+          msbuild SQLTools\SQLTools.sln /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion="10.0" /m /v:m
 
       - name: Prepare Release Package
         shell: pwsh
