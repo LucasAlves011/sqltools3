@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="us-ascii" ?>
+<programs default="0" detailed_labels="1">
+    <program id="4" name="the current build with 19c" executable="D:\_cpp\sqlt.20\_output_\Debug.x64\SQLTools.exe" oracle_bin_path="C:\Apps\instantclient_19_12_64bit" oracle_home="C:\Apps\instantclient_19_12_64bit" />
+    <program id="1" name="sqltools 20b19 with 10g client" executable="D:\_cpp\SQLTools_20b19_x64\SQLTools_x64.exe" oracle_bin_path="C:\Apps\instantclient_10_2" tns_admin="C:\Apps\instantclient_10_2" />
+    <program id="2" name="sqltools 20b23 with 10g client" executable="D:\_cpp\SQLTools_20b23_x64\SQLTools_x64.exe" oracle_bin_path="C:\Apps\instantclient_10_2" />
+    <program id="3" name="sqltools 20b24 with 11g client" executable="D:\_cpp\SQLTools_20b24_x64\SQLTools_x64.exe" oracle_bin_path="C:\Apps\instantclient_11_2" oracle_home="C:\Apps\instantclient_11_2" />
+</programs>

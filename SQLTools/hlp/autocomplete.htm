@@ -1,0 +1,246 @@
+<HTML>
+<HEAD>
+    <TITLE></TITLE>
+    <meta charset="utf-8">
+    <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+    <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+        <style type="text/css">
+            .setting-col {
+                width: 260px;
+                font-family: Courier New, monospace;
+                font-size: 1.0em;
+            }
+            .default-col {
+                width: 70px;
+                text-align: center;
+            }
+            .syn {
+                font-family: Courier New, monospace;
+                font-size: 1.05em;
+                background-color: #D4E4F7;
+                border-left: 3px solid #0050B2;
+                padding: 4px 10px;
+                margin: 6px 0 8px 0;
+                display: block;
+            }
+            .note {
+                background-color: #FFFADC;
+                border-left: 3px solid #C8A000;
+                padding: 4px 10px;
+                margin: 6px 0;
+            }
+            .firstver {
+                background-color: #EAF4EA;
+                border-left: 3px solid #3A7A3A;
+                padding: 6px 12px;
+                margin: 8px 0 14px 0;
+            }
+            code {
+                font-family: Courier New, monospace;
+            }
+            pre {
+                background-color: #F4F4F4;
+                border-left: 3px solid #AAAAAA;
+                padding: 6px 10px;
+                margin: 4px 0 10px 0;
+                font-size: 0.95em;
+            }
+        </style>
+</HEAD>
+<BODY>
+    <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject" VIEWASTEXT>
+        <PARAM NAME="Keyword" VALUE="Autocomplete">
+        <PARAM NAME="Keyword" VALUE="Autocomplete Settings">
+        <PARAM NAME="Keyword" VALUE="Write SQL">
+        <PARAM NAME="Keyword" VALUE="Write PL/SQL">
+    </OBJECT>
+
+    <h3><a href="#Autocomplete">Autocomplete</a></h3>
+    <h3><a href="#Alias-Resolving">Alias-Resolving Logic</a></h3>
+    <h3><a href="#Settings">Autocomplete Settings</a></h3>
+
+    <HR SIZE="3">
+
+    <a name="Autocomplete"></a>
+    <h3>Autocomplete</h3>
+
+    <p>
+        SQLTools provides an autocomplete feature to assist with writing SQL and PL/SQL code.
+    </p>
+
+    <p>
+        Press <strong>Ctrl+Shift+Space</strong> to display a list of objects belonging to the current user.
+        You can limit which types of objects appear — for example, only tables and views — in the
+        <a href="#Settings"><strong>Autocomplete</strong> Settings</a>.
+    </p>
+
+    <p>
+        If the cursor is placed after a schema name followed by a dot, the autocomplete list will show
+        the objects of that schema.
+    </p>
+
+    <p>
+        If the cursor is placed after a table name or table alias followed by a dot, the autocomplete
+        list will show the columns of that table. SQLTools includes sophisticated alias‑resolution logic
+        (see the linked documentation).
+    </p>
+
+    <p>
+        PL/SQL packages are handled similarly: place the cursor after a package name and a dot, and the
+        autocomplete list will show all package procedures along with their parameters.
+    </p>
+
+    <p>
+        Normally, the autocomplete list allows you to select a single item and insert it at the cursor
+        position by pressing <strong>Enter</strong>.
+    </p>
+
+    <p>
+        However, SQLTools also supports an advanced mode for working with table and view columns.
+        You can select multiple columns in the desired order using <strong>Space</strong>,
+        <strong>Ins</strong>, or <strong>Ctrl + Left Click</strong>. All selected columns will then be
+        inserted at the cursor position. The inserted text will be formatted either as a single line or
+        multiple lines, depending on the <a href="#Settings"><strong>Autocomplete</strong> Settings</a>.
+    </p>
+
+    <p>See the example:</p>
+
+    <img src="Images/autocomplete_multi_column_selection.jpg" />
+
+    <p>The SQL before (the <code>^</code> shows the cursor position):</p>
+
+<pre><code>SELECT
+  b.^
+FROM bonus b
+  WHERE ...
+</code></pre>
+
+    <p>The SQL after:</p>
+
+<pre><code>SELECT
+  b.ename
+  , b.sal
+  , b.job
+  , ^
+FROM bonus b
+  WHERE ...
+</code></pre>
+
+    <HR SIZE="3">
+
+    <a name="Alias-Resolving"></a>
+    <h3>Alias-Resolving Logic</h3>
+
+    <p>
+        When you write SQL queries in SQLTools, the editor helps you by understanding and resolving
+        table and subquery aliases in your SQL statements. This makes writing, navigating, and
+        understanding complex SQL much easier.
+    </p>
+
+    <h4>Table and Alias Resolution</h4>
+    <ul>
+        <li>
+            When you use an alias for a table (e.g., <code>SELECT e.name FROM employees e</code>),
+            SQLTools tracks which alias refers to which table.
+        </li>
+        <li>
+            The tool supports standard SQL aliasing patterns, such as:
+            <ul>
+                <li><code>SELECT ... FROM schema.table alias</code></li>
+                <li><code>SELECT ... FROM table AS alias</code></li>
+                <li><code>SELECT ... FROM (SELECT ...) subquery_alias</code></li>
+            </ul>
+        </li>
+        <li>
+            When you reference columns using an alias (e.g., <code>alias.column</code>),
+            SQLTools resolves which table or subquery that alias refers to.
+        </li>
+    </ul>
+
+    <h4>Subquery Handling</h4>
+    <ul>
+        <li>
+            SQLTools recognizes subqueries in the <code>FROM</code> clause, such as
+            <code>FROM (SELECT ...) subquery_alias</code>.
+        </li>
+        <li>
+            For simple subqueries (those selecting from a single table and using
+            <code>SELECT *</code> or <code>SELECT alias.*</code>), SQLTools can resolve the
+            underlying table name. Even if you use an alias for the subquery, the tool can often
+            determine which real table is being referenced.
+        </li>
+        <li>
+            For more complex subqueries, SQLTools maintains alias isolation: aliases defined inside
+            a subquery are not visible outside, and outer aliases are not visible inside. This
+            matches SQL’s scoping rules and prevents confusion between different query levels.
+        </li>
+    </ul>
+
+    <h4>Alias Scope and Isolation</h4>
+    <ul>
+        <li>
+            Each query and subquery has its own alias scope. Aliases defined in a subquery do not
+            leak into the outer query, and outer aliases are not visible inside subqueries.
+        </li>
+        <li>
+            This ensures that when you reuse the same alias name in different subqueries or at
+            different nesting levels, SQLTools keeps them separate and resolves them correctly
+            according to SQL rules.
+        </li>
+    </ul>
+
+    <h4>What You Need to Do</h4>
+    <ul>
+        <li>Use standard SQL syntax for aliases and subqueries.</li>
+        <li>Reference columns using the correct alias for the current query or subquery scope.</li>
+    </ul>
+
+    <h5>Example 1</h5>
+<pre><code>SELECT e.name, d.department_name
+FROM employees e
+JOIN departments d ON e.department_id = d.id
+WHERE e.salary > 1000
+</code></pre>
+    <p>
+        In this example, <code>e</code> and <code>d</code> are aliases for <code>employees</code> and
+        <code>departments</code>, and SQLTools resolves them automatically.
+    </p>
+
+    <h5>Example 2</h5>
+<pre><code>SELECT d.name
+FROM (SELECT * FROM departments) d
+WHERE d.department_id > 10
+</code></pre>
+    <p>
+        Here, <code>d</code> is an alias for the subquery, and SQLTools resolves that it refers to the
+        <code>departments</code> table.
+    </p>
+
+    <h5>Example 3</h5>
+<pre><code>SELECT d.name
+FROM (
+    SELECT department_id, name
+    FROM departments
+) d
+WHERE d.department_id > 10
+</code></pre>
+    <p>
+        In this example, <code>d</code> is an alias for the subquery. <i>
+            SQLTools can extract the column
+            list directly from the subquery
+        </i> and understands that there is no need to retrieve the full
+        column list from the <code>departments</code> table.
+    </p>
+
+
+    <HR SIZE="3">
+
+    <a name="Settings"></a>
+    <h3>Autocomplete Settings</h3>
+
+    <p>Available from the top menu: <strong>Tools → Settings...</strong></p>
+
+    <img src="Images/autocomplete_settings.jpg" />
+
+</BODY>
+</HTML>

@@ -1,0 +1,364 @@
+<HTML>
+    <HEAD>
+        <TITLE>SQL Formatter &mdash; INSERT / UPDATE / DELETE / MERGE</TITLE>
+        <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+        <META http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+        <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+        <style type="text/css">
+            .setting-col {
+                width: 260px;
+                font-family: Courier New, monospace;
+                font-size: 1.0em;
+            }
+            .default-col {
+                width: 70px;
+                text-align: center;
+            }
+            .note {
+                background-color: #FFFADC;
+                border-left: 3px solid #C8A000;
+                padding: 4px 10px;
+                margin: 6px 0;
+            }
+            code {
+                font-family: Courier New, monospace;
+            }
+            pre {
+                background-color: #F4F4F4;
+                border-left: 3px solid #AAAAAA;
+                padding: 6px 10px;
+                margin: 4px 0 10px 0;
+                font-size: 0.95em;
+            }
+        </style>
+    </HEAD>
+    <BODY>
+        <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+                VIEWASTEXT>
+            <PARAM NAME="Keyword" VALUE="INSERT formatting">
+            <PARAM NAME="Keyword" VALUE="UPDATE formatting">
+            <PARAM NAME="Keyword" VALUE="DELETE formatting">
+            <PARAM NAME="Keyword" VALUE="MERGE formatting">
+            <PARAM NAME="Keyword" VALUE="brick list">
+            <PARAM NAME="Keyword" VALUE="RETURNING INTO formatting">
+        </OBJECT>
+
+        <H3>SQL Formatter &mdash; INSERT / UPDATE / DELETE / MERGE</H3>
+        <HR SIZE="3">
+
+        <P>
+            <A href="sql_formatter.htm">&larr; SQL Formatter overview</A>
+        </P>
+
+        <H4>Contents</H4>
+        <UL>
+            <LI><A href="#insert">INSERT</A></LI>
+            <LI><A href="#insert_brick">Brick list mode for INSERT</A></LI>
+            <LI><A href="#insert_linked">Linked brick &mdash; column list and VALUES list</A></LI>
+            <LI><A href="#returning">RETURNING INTO</A></LI>
+            <LI><A href="#update">UPDATE</A></LI>
+            <LI><A href="#delete">DELETE</A></LI>
+            <LI><A href="#merge">MERGE</A></LI>
+        </UL>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="insert">INSERT</A></H4>
+
+        <P>
+            Both <CODE>INSERT INTO &hellip; VALUES &hellip;</CODE> and
+            <CODE>INSERT INTO &hellip; SELECT &hellip;</CODE> forms are supported.
+        </P>
+
+        <P>
+            If the entire statement is short enough it is kept on one line
+            (governed by the <STRONG>Simple statement</STRONG> max-length setting).
+            Otherwise the formatter expands as follows:
+        </P>
+        <UL>
+            <LI>
+                <CODE>INSERT INTO <EM>table</EM>(<EM>col-list</EM>)</CODE> is placed
+                on the first line. The opening <CODE>(</CODE> follows the table name
+                immediately. If the column list is short enough to fit on that line,
+                it stays there with the closing <CODE>)</CODE>; otherwise each column
+                appears on its own line indented one extra level, and the closing
+                <CODE>)</CODE> is on its own line at the <CODE>INSERT INTO</CODE>
+                indent level.
+            </LI>
+            <LI>
+                <CODE>VALUES</CODE> starts on a new line, indented one level from the
+                base. The opening <CODE>(</CODE> follows <CODE>VALUES</CODE>
+                immediately. If the value list is short enough it stays on that line;
+                otherwise it is expanded the same way as the column list.
+            </LI>
+            <LI>
+                For the <CODE>SELECT</CODE> form, the subquery is formatted using the
+                normal SELECT rules starting on the line after <CODE>INSERT INTO</CODE>.
+            </LI>
+        </UL>
+
+        <P><STRONG>Example &mdash; both lists short enough to stay on one line each:</STRONG></P>
+        <PRE>INSERT INTO employees(employee_id, first_name, last_name, department_id, salary)
+  VALUES (101, 'John', 'Smith', 10, 5000);</PRE>
+
+        <P><STRONG>Example &mdash; standard expanded layout:</STRONG></P>
+        <PRE>INSERT INTO employees(
+    employee_id,
+    first_name,
+    last_name,
+    department_id,
+    salary
+  )
+  VALUES (
+    101,
+    'John',
+    'Smith',
+    10,
+    5000
+  );</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="insert_brick">Brick list mode for INSERT</A></H4>
+
+        <P>
+            When <STRONG>Brick list &mdash; Enabled</STRONG> is on and the column or
+            value list contains enough items (controlled by
+            <STRONG>Min items to activate</STRONG>), the formatter switches to brick
+            layout for both the column list and the <CODE>VALUES</CODE> list.
+        </P>
+
+        <P>
+            In brick layout the items are packed into rows, each row starting at the
+            column position of the first item and limited by
+            <STRONG>Max line length</STRONG> and <STRONG>Max items per line</STRONG>.
+        </P>
+
+        <P><STRONG>Example &mdash; brick layout, max 3 items per row:</STRONG></P>
+        <PRE>INSERT INTO employees (
+    employee_id, first_name, last_name,
+    department_id, job_id, hire_date,
+    salary
+  )
+  VALUES (
+    101, 'John', 'Smith', 10,  'DEV',
+    DATE '2020-01-15', 5000
+  );</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="insert_linked">Linked brick &mdash; column list and VALUES list</A></H4>
+
+        <P>
+            When <STRONG>Linked INSERT col / VALUES</STRONG> is on (default), the
+            <CODE>VALUES</CODE> list wraps at exactly the same item positions as the
+            column list. This means every value sits directly below its corresponding
+            column name, making the relationship between columns and values immediately
+            obvious at a glance.
+        </P>
+
+        <P><STRONG>Linked (default):</STRONG></P>
+        <PRE>INSERT INTO employees (
+    employee_id, first_name, last_name,
+    department_id, job_id, hire_date,
+    salary
+  )
+  VALUES (
+    101, 'John', 'Smith',
+    10, 'DEV', DATE '2020-01-15',
+    5000
+  );</PRE>
+
+        <P><STRONG>Unlinked (each list wraps independently):</STRONG></P>
+        <PRE>INSERT INTO employees (
+   employee_id, first_name, last_name,
+   department_id, job_id, hire_date,
+   salary
+  )
+  VALUES (
+    101, 'John', 'Smith', 10, 'DEV',
+    DATE '2020-01-15', 5000
+  );</PRE>
+
+        <P class="note">
+            <STRONG>Note:</STRONG> Linking requires that the column list and the
+            <CODE>VALUES</CODE> list have the same number of items. When the counts
+            differ (e.g. because <CODE>DEFAULT</CODE> or <CODE>NULL</CODE> padding
+            was omitted), each list is formatted independently.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="returning">RETURNING INTO</A></H4>
+
+        <P>
+            <CODE>RETURNING &hellip; INTO &hellip;</CODE> clauses appear after
+            <CODE>INSERT</CODE>, <CODE>UPDATE</CODE>, <CODE>DELETE</CODE>, and in
+            the body of a <CODE>MERGE</CODE> action.
+        </P>
+
+        <P>
+            Three layout paths are used depending on total width:
+        </P>
+        <UL>
+            <LI>
+                <STRONG>Single line</STRONG> &mdash; if the entire
+                <CODE>RETURNING &hellip; INTO &hellip;</CODE> clause fits within
+                the <STRONG>RETURNING max length</STRONG> setting it is kept on
+                one line.
+            </LI>
+            <LI>
+                <STRONG>Two-line</STRONG> &mdash; if the single-line limit is
+                exceeded but each of the two sub-lists individually fits, the
+                <CODE>RETURNING</CODE> list goes on one line and the
+                <CODE>INTO</CODE> list on the next, each starting at the same
+                indent level as the clause keyword.
+            </LI>
+            <LI>
+                <STRONG>Wrapped</STRONG> &mdash; if a sub-list is still too long,
+                items within that sub-list are wrapped at the
+                <STRONG>RETURNING max items</STRONG> limit.
+            </LI>
+        </UL>
+
+        <P><STRONG>Example &mdash; two-line layout:</STRONG></P>
+        <PRE>UPDATE employees
+  SET
+    salary = salary * 1.1
+  WHERE employee_id = 101
+  RETURNING employee_id, first_name, last_name
+  INTO :v_id, :v_fname, :v_lname;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="update">UPDATE</A></H4>
+
+        <P>
+            Each <CODE>SET</CODE> assignment is placed on its own line, indented one
+            level from <CODE>SET</CODE>. When <STRONG>Align SET assignments</STRONG>
+            is enabled, the right-hand side of every assignment
+            (<CODE>=&nbsp;<EM>value</EM></CODE>) is padded so that all values
+            align in a single column.
+        </P>
+
+        <P>
+            <CODE>WHERE</CODE> follows on its own line, with conditions expanded
+            by the same <CODE>AND</CODE>&nbsp;/&nbsp;<CODE>OR</CODE> rules as
+            in a <CODE>SELECT</CODE> statement.
+        </P>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>UPDATE employees
+  SET
+    last_name     = 'Johnson',
+    department_id = 20,
+    salary        = 6000
+  WHERE employee_id = 101;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="delete">DELETE</A></H4>
+
+        <P>
+            <CODE>DELETE FROM <EM>table</EM></CODE> starts on the first line.
+            <CODE>WHERE</CODE> starts on its own line, with conditions expanded
+            using the same <CODE>AND</CODE>&nbsp;/&nbsp;<CODE>OR</CODE> rules as
+            a <CODE>SELECT</CODE> statement.
+        </P>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>DELETE FROM employees
+WHERE department_id = 10
+  AND hire_date &lt; DATE '2000-01-01';</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="merge">MERGE</A></H4>
+
+        <P>
+            <CODE>MERGE</CODE> statements are formatted with each top-level clause
+            on its own line at the base indentation level.
+            The body of each <CODE>WHEN</CODE> block is indented two levels from
+            <CODE>MERGE</CODE>.
+        </P>
+
+        <P>Clause layout:</P>
+        <UL>
+            <LI>
+                <CODE>MERGE INTO <EM>target</EM> USING <EM>source</EM></CODE> &mdash;
+                <CODE>USING</CODE> starts on a new indented line when the full phrase
+                is too long, otherwise stays on the same line.
+            </LI>
+            <LI>
+                <CODE>ON (<EM>condition</EM>)</CODE> starts on its own line,
+                indented one level from <CODE>MERGE</CODE>.
+            </LI>
+            <LI>
+                <CODE>WHEN MATCHED THEN</CODE> and
+                <CODE>WHEN NOT MATCHED THEN</CODE> each start on a new line at
+                one level from <CODE>MERGE</CODE>.
+            </LI>
+            <LI>
+                <CODE>UPDATE SET</CODE>, <CODE>INSERT</CODE>, and
+                <CODE>DELETE</CODE> bodies inside a <CODE>WHEN</CODE> block are
+                indented a further level, with their sub-clauses following the same
+                rules as standalone <CODE>UPDATE</CODE> and <CODE>INSERT</CODE>
+                statements.
+            </LI>
+            <LI>
+                <CODE>WHERE</CODE> inside a <CODE>WHEN MATCHED</CODE> block is
+                indented at the same level as <CODE>UPDATE</CODE>.
+            </LI>
+        </UL>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>MERGE INTO employees t
+  USING(SELECT employee_id, salary FROM new_salaries) s
+  ON (t.employee_id = s.employee_id)
+  WHEN MATCHED THEN
+    UPDATE
+    SET
+      t.salary = s.salary
+    WHERE t.salary <> s.salary
+  WHEN NOT MATCHED THEN
+    INSERT (employee_id, salary)
+      VALUES (s.employee_id, s.salary);</PRE>
+
+<!--
+        <P>
+            <STRONG>Brick list in MERGE INSERT:</STRONG> When brick list mode is
+            enabled, the <CODE>INSERT</CODE> column list and <CODE>VALUES</CODE>
+            list inside a <CODE>WHEN NOT MATCHED THEN INSERT</CODE> block are also
+            formatted in brick layout, and the <STRONG>Linked INSERT col / VALUES</STRONG>
+            setting applies to them in the same way as a standalone
+            <CODE>INSERT</CODE> statement.
+        </P>
+
+        <P><STRONG>Example &mdash; MERGE INSERT with brick layout:</STRONG></P>
+        <PRE>WHEN NOT MATCHED THEN
+  INSERT (employee_id,   first_name,    last_name,
+          department_id, salary)
+  VALUES (s.employee_id, s.first_name,  s.last_name,
+          s.dept_id,     s.salary);</PRE>
+-->
+        <P>
+            <CODE>LOG ERRORS</CODE> / <CODE>REJECT LIMIT</CODE> clauses are
+            formatted on their own line at the base indentation level.
+        </P>
+
+        <HR SIZE="1">
+        <P>
+            <A href="sql_formatter_select.htm">&larr; SELECT formatting</A>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <A href="sql_format_settings.htm">Formatting settings &rarr;</A>
+        </P>
+
+    </BODY>
+</HTML>

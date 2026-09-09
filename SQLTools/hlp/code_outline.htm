@@ -1,0 +1,176 @@
+<HTML>
+<HEAD>
+    <TITLE></TITLE>
+    <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+    <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+</HEAD>
+<BODY>
+    <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+            VIEWASTEXT>
+        <PARAM NAME="Keyword" VALUE="Code Outline">
+        <PARAM NAME="Keyword" VALUE="Outline">
+        <PARAM NAME="Keyword" VALUE="Keyword Navigation">
+        <PARAM NAME="Keyword" VALUE="Navigation">
+    </OBJECT>
+
+    <h3>Code Outline</h3>
+    <HR SIZE="3">
+
+    <p>
+        The <strong>Code Outline</strong> pane displays the structure of the active PL/SQL editor
+        window as a tree. It updates automatically as you edit and lets you navigate directly to
+        any item in the tree.
+    </p>
+
+    <img src="Images/code_outline.jpg" />
+
+    <h4>What Is Shown</h4>
+    <p>
+        The outline shows the top-level program units in the file and, where applicable, their
+        internal SELECT statements:
+    </p>
+    <ul>
+        <li>Packages and package bodies</li>
+        <li>Procedures and functions (including those nested inside a package body)</li>
+        <li>Type bodies</li>
+        <li>
+            Top-level SELECT statements, including set operations (UNION, INTERSECT, MINUS)
+            and subqueries
+        </li>
+        <li>
+            SELECT clause, FROM clause, and WHERE clause nodes for each query leg
+            (can be suppressed — see Settings below)
+        </li>
+    </ul>
+
+    <p>
+        For SELECT, FROM, and WHERE items, a short snippet of the actual SQL text is shown next
+        to the keyword to help identify the query at a glance.
+    </p>
+
+    <h4>Navigation</h4>
+    <p>
+        Click any item in the outline tree to move the editor caret to that item.
+        Double-click or press <strong>Enter</strong> to navigate and bring the editor into focus.
+    </p>
+    <p>
+        The current cursor position is tracked automatically: the tree highlights the item that
+        contains the caret, so you always know where you are in the file structure.
+    </p>
+
+    <h4>Keyword Navigation</h4>
+    <p>
+        SQLTools includes a feature that lets you jump between SQL statement keywords such as
+        <strong>SELECT</strong>, <strong>FROM</strong>, <strong>WHERE</strong>, and PL/SQL constructs
+        like <strong>IF / ELSE / END IF</strong>. It works similarly to how other editors let you
+        navigate between matching braces <strong>{</strong> and <strong>}</strong> in C++.
+    </p>
+
+    <p>
+        Use <strong>Ctrl+]</strong> to jump to the next navigable keyword, and
+        <strong>Shift+Ctrl+]</strong> to jump and select the entire block.
+    </p>
+
+    <p>
+        The editor also displays a syntax gutter showing the start and end of each navigable
+        construct. This gutter is tied to the same navigation feature and is available whenever
+        <strong>Ctrl+]</strong> navigation is enabled.
+    </p>
+
+    <h4>Context Menu</h4>
+    <p>Right-clicking an item in the tree opens a context menu with the following commands:</p>
+    <ul>
+        <li><strong>Navigate</strong> &mdash; move the editor caret to this item.</li>
+        <li><strong>Select</strong> &mdash; select the full text range of this item in the editor.</li>
+        <li><strong>Copy label</strong> &mdash; copy the item label to the clipboard.</li>
+        <li><strong>Expand top level</strong> &mdash; expand all top-level nodes.</li>
+        <li><strong>Expand all</strong> &mdash; expand every node in the tree.</li>
+        <li><strong>Collapse all</strong> &mdash; collapse all nodes.</li>
+        <li><strong>Settings...</strong> — open the settings dialog.</li>
+    </ul>
+
+    <h4>Status Bar</h4>
+    <p>
+        A status strip at the bottom of the pane shows the current state of the outline:
+    </p>
+    <ul>
+        <li><em>(empty)</em> &mdash; outline is up to date and complete.</li>
+        <li><strong>Parsing&hellip;</strong> &mdash; background parse is in progress.</li>
+        <li>
+            <strong>Syntax error &mdash; showing partial outline</strong> &mdash; the file has
+            a syntax error; the outline shows whatever was successfully parsed.
+        </li>
+        <li>
+            <strong>File limit reached &mdash; outline may be incomplete</strong> &mdash; the
+            file exceeds the configured line or token limit; only the parsed portion is shown.
+        </li>
+        <li>
+            <strong>No outline available</strong> &mdash; the file has not been parsed yet or
+            contains no recognised program units.
+        </li>
+        <li>
+            <strong>Only PL/SQL is supported</strong> &mdash; the active file uses a different
+            language.
+        </li>
+        <li>
+            <strong>Outline disabled (check settings)</strong> &mdash; the outline has been
+            turned off in settings.
+        </li>
+        <li>
+            <strong>Outline requires PL/SQL keyword navigation (check settings)</strong> &mdash;
+            keyword navigation is disabled; the outline depends on it.
+        </li>
+    </ul>
+
+    <h4>Requirements</h4>
+    <p>
+        The outline requires <strong>PL/SQL keyword navigation</strong> to be enabled
+        (Editor &rarr; PL/SQL Outline settings). Without it both keyword navigation
+        (SELECT/FROM/WHERE, IF/ELSE/END IF) and the outline pane are unavailable.
+    </p>
+
+    <h4>Settings</h4>
+    <!--<p>
+        Outline settings are in <strong>Options &rarr; Editor &rarr; PL/SQL Outline</strong>.
+    </p>-->
+
+    <p>
+        <strong>Keyword navigation</strong><br>
+        Master switch for PL/SQL keyword navigation and the outline pane. Must be on for the
+        outline to function.
+    </p>
+
+    <p>
+        <strong>Outline enabled</strong><br>
+        Turns the outline pane on or off independently of keyword navigation.
+    </p>
+
+    <p>
+        <strong>Show SELECT statements</strong><br>
+        When checked, top-level SELECT statements appear in the outline tree.
+        Uncheck to show only program units (packages, procedures, functions).
+    </p>
+
+    <p>
+        <strong>SELECT only (no FROM/WHERE)</strong><br>
+        When checked, only the SELECT leg label is shown for each query;
+        FROM and WHERE clause nodes are hidden. Subqueries are still shown.
+        Useful for keeping the tree compact when working with complex queries.
+    </p>
+
+    <p>
+        <strong>Max top-level items</strong><br>
+        Limits the number of top-level items in the outline. Useful for very large scripts
+        with many statements. Set to 0 for no limit.
+    </p>
+
+    <p>
+        <strong>Max lines / Max tokens</strong><br>
+        The background parser stops after this many lines or tokens have been processed.
+        If a limit is reached the status bar will indicate the outline may be incomplete.
+        Increase these values for very large files, keeping in mind that higher limits
+        mean longer parse times.
+    </p>
+
+</BODY>
+</HTML>

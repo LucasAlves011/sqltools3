@@ -1,0 +1,107 @@
+<HTML>
+<HEAD>
+    <TITLE></TITLE>
+    <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+    <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+    <style type="text/css">
+        .setting-col {
+            width: 260px;
+            font-family: Courier New, monospace;
+            font-size: 1.0em;
+        }
+
+        .default-col {
+            width: 70px;
+            text-align: center;
+        }
+
+        .syn {
+            font-family: Courier New, monospace;
+            font-size: 1.05em;
+            background-color: #D4E4F7;
+            border-left: 3px solid #0050B2;
+            padding: 4px 10px;
+            margin: 6px 0 8px 0;
+            display: block;
+        }
+
+        .note {
+            background-color: #FFFADC;
+            border-left: 3px solid #C8A000;
+            padding: 4px 10px;
+            margin: 6px 0;
+        }
+
+        .firstver {
+            background-color: #EAF4EA;
+            border-left: 3px solid #3A7A3A;
+            padding: 6px 12px;
+            margin: 8px 0 14px 0;
+        }
+
+        code {
+            font-family: Courier New, monospace;
+        }
+
+        pre {
+            background-color: #F4F4F4;
+            border-left: 3px solid #AAAAAA;
+            padding: 6px 10px;
+            margin: 4px 0 10px 0;
+            font-size: 0.95em;
+        }
+    </style>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+    <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject" VIEWASTEXT>
+        <PARAM NAME="Keyword" VALUE="Connect Settings">
+        <PARAM NAME="Keyword" VALUE="On-Login PL/SQL block">
+    </OBJECT>
+
+    <H3>Connect&nbsp;Settings</H3>
+    <HR SIZE="3">
+    <P>The&nbsp;dialog allows you to change settings for the Connect Dialog.</P>
+    <H4>Master Password</H4>
+    <P>
+        User Connection information is stored in connections.xml. Some connection
+        attributes are always encrypted. If user does not supply Master password then
+        NONE is used as default for encryption. If Master password is&nbsp;not
+        default&nbsp;then user will be asked to enter the password when SQLTools is
+        starting.
+    </P>
+    <H4>Save passwords</H4>
+    <P>Enable to keep passwords in connections.xml.</P>
+
+    <H4>Enable On-Login PL/SQL block</H4>
+    <p>
+        If checked, and the next field is populated, the PL/SQL block is executed on connect
+        for connections initiated from the Connect dialog, command line, or script.
+    </p>
+
+    <p>
+        Only a single PL/SQL block is supported. It must be written as a normal
+        <code>begin ... end;</code> block without a trailing '/'.
+    </p>
+
+    <p>
+        The on-login block is stored encrypted, so you will be asked for the master password
+        (if it is different from the default) when retrieving the text.
+        You can use two predefined substitution variables:
+        <code>_USER</code> and <code>_CONNECT_IDENTIFIER</code> (see example below).
+    </p>
+
+<pre><code>begin
+  if '&_USER' = 'scott' and '&_CONNECT_IDENTIFIER' = 'soadb' then
+    execute immediate 'alter session set current_schema = system';
+    dbms_output.put_line('done');
+  end if;
+end;
+</code></pre>
+
+    <p>
+        You won't see <code>dbms_output</code> from the on-login block, but you can use it
+        for debugging in the main window.
+    </p>
+
+</BODY>
+</HTML>

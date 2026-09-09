@@ -1,0 +1,5 @@
+﻿  StdAfx.cpp
+  SqlToolsProxy.cpp
+  SqlToolsProxy.vcxproj -> D:\_cpp\sqlt.20\SQLTools\Release\SqlToolsProxy.exe
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppCommon.targets(2458,5): warning MSB3073: The command ""D:\_cpp\sqlt.20\SQLTools\Release\SqlToolsProxy.exe" /RegServer" exited with code 1.
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppCommon.targets(2464,5): error MSB8011: Failed to register output. Please try enabling Per-user Redirection or register the component from a command prompt with elevated permissions.

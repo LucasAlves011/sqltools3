@@ -1,0 +1,555 @@
+<HTML>
+    <HEAD>
+        <TITLE>SQL*Plus Script Commands</TITLE>
+        <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+        <META http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+        <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+        <style type="text/css">
+            .cmd-col {
+                width: 220px;
+                font-family: Courier New, monospace;
+                font-size: 1.05em;
+            }
+            .cmd-col-wide {
+                width: 300px;
+                font-family: Courier New, monospace;
+                font-size: 1.05em;
+            }
+            .syn {
+                font-family: Courier New, monospace;
+                font-size: 1.05em;
+                background-color: #D4E4F7;
+                border-left: 3px solid #0050B2;
+                padding: 4px 10px;
+                margin: 6px 0 8px 0;
+                display: block;
+            }
+            .note {
+                background-color: #FFFADC;
+                border-left: 3px solid #C8A000;
+                padding: 4px 10px;
+                margin: 6px 0;
+            }
+            .notimpl {
+                color: #AA0000;
+                font-style: italic;
+            }
+            code {
+                font-family: Courier New, monospace;
+            }
+        </style>
+    </HEAD>
+    <BODY>
+        <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+                VIEWASTEXT>
+            <PARAM NAME="Keyword" VALUE="Script commands">
+            <PARAM NAME="Keyword" VALUE="SQL*Plus commands">
+            <PARAM NAME="Keyword" VALUE="VARIABLE">
+            <PARAM NAME="Keyword" VALUE="DEFINE">
+            <PARAM NAME="Keyword" VALUE="EXECUTE">
+            <PARAM NAME="Keyword" VALUE="CONNECT">
+            <PARAM NAME="Keyword" VALUE="PRINT">
+            <PARAM NAME="Keyword" VALUE="Bind variables">
+            <PARAM NAME="Keyword" VALUE="Substitution variables">
+        </OBJECT>
+
+        <H3>SQL*Plus Script Commands</H3>
+        <HR SIZE="3">
+
+        <P>
+            SQLTools recognises a subset of SQL*Plus script commands. These commands
+            control script flow, manage substitution variables, declare bind variables, and
+            handle database connections. They are processed line-by-line when a script is
+            executed with <STRONG>F5</STRONG> (Run Script).
+        </P>
+
+        <P>
+            Command keywords are <STRONG>case-insensitive</STRONG>. Most keywords may
+            be abbreviated to their shortest unambiguous prefix (e.g.&nbsp;<CODE>VAR</CODE>
+            for <CODE>VARIABLE</CODE>, <CODE>EXEC</CODE> for <CODE>EXECUTE</CODE>,
+            <CODE>CONN</CODE> for <CODE>CONNECT</CODE>).
+        </P>
+
+        <H4>Quick reference</H4>
+        <table>
+            <tr>
+                <th class="cmd-col">Command</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#remark">REM / REMARK</a></td>
+                <td>Comment &mdash; the rest of the line is ignored.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#prompt">PROMPT</a></td>
+                <td>Display a message in the Output window.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#define">DEFINE</a></td>
+                <td>Create or display a text substitution variable.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#undefine">UNDEFINE</a></td>
+                <td>Remove a substitution variable.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#execute">EXECUTE / EXEC</a></td>
+                <td>Execute a single PL/SQL statement.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#describe">DESCRIBE / DESC</a></td>
+                <td>Describe a database object. <span class="notimpl">(not implemented, use "Find Object" F12)</span></td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#connect">CONNECT</a></td>
+                <td>Connect to a database.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#disconnect">DISCONNECT</a></td>
+                <td>Disconnect from the current database session.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#variable">VARIABLE / VAR</a></td>
+                <td>Declare a bind variable.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><a href="#print">PRINT</a></td>
+                <td>Display the current value of a bind variable.</td>
+            </tr>
+        </table>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="remark">REM / REMARK</A></H4>
+
+        <SPAN class="syn">REM [text]<BR>REMARK [text]</SPAN>
+
+        <P>
+            Marks the rest of the line as a comment. The entire line is ignored during
+            execution and produces no output. Use <CODE>REM</CODE> or the full keyword
+            <CODE>REMARK</CODE> interchangeably.
+        </P>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>REM Retrieve all active employees
+SELECT * FROM employees WHERE active = 1;
+
+REMARK End of report script</PRE>
+
+        <P class="note">
+            <STRONG>Note:</STRONG> SQL and PL/SQL comments
+            (<CODE>--&nbsp;single&nbsp;line</CODE> and <CODE>/*&nbsp;block&nbsp;*/</CODE>)
+            are also supported inside SQL statements and are distinct from the
+            <CODE>REM</CODE> command, which applies only to a script command line.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="prompt">PROMPT</A></H4>
+
+        <SPAN class="syn">PROMPT [text]</SPAN>
+
+        <P>
+            Writes <EM>text</EM> to the Output window. Everything on the line after the
+            <CODE>PROMPT</CODE> keyword is displayed verbatim, including leading spaces. If
+            no text is given an empty line is written.
+        </P>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>PROMPT Starting data load...
+PROMPT
+PROMPT Done.</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="define">DEFINE</A></H4>
+
+        <SPAN class="syn">
+            DEFINE <EM>variable</EM> = <EM>value</EM><BR>
+            DEFINE <EM>variable</EM><BR>
+            DEFINE
+        </SPAN>
+
+        <P>
+            <CODE>DEFINE</CODE> creates a <STRONG>substitution variable</STRONG> whose
+            value is substituted for every occurrence of <CODE>&amp;<EM>variable</EM></CODE>
+            or <CODE>&amp;&amp;<EM>variable</EM></CODE> found in subsequent SQL or
+            script lines.
+        </P>
+
+        <table>
+            <tr>
+                <th class="cmd-col">Form</th>
+                <th>Behaviour</th>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>DEFINE var = value</CODE></td>
+                <td>
+                    Assigns <EM>value</EM> to <EM>var</EM>. The value may be an
+                    unquoted word or a quoted string (<CODE>'text'</CODE> or
+                    <CODE>"text"</CODE>).
+                </td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>DEFINE var</CODE></td>
+                <td>
+                    Displays the current value of <EM>var</EM>, or reports it as
+                    undefined.
+                </td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>DEFINE</CODE></td>
+                <td>
+                    Lists all defined substitution variables.
+                    <SPAN class="notimpl">(not implemented)</SPAN>
+                </td>
+            </tr>
+        </table>
+
+        <P><STRONG>Substitution in SQL</STRONG></P>
+        <P>
+            Place <CODE>&amp;<EM>variable</EM></CODE> anywhere in a SQL or PL/SQL
+            statement. Before execution SQLTools replaces each occurrence with the stored
+            value. If the variable has not been defined, a prompt dialog asks you to supply
+            a value for that execution.
+        </P>
+
+        <table>
+            <tr>
+                <th class="cmd-col">Notation</th>
+                <th>Behaviour</th>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>&amp;<EM>variable</EM></CODE></td>
+                <td>
+                    Substituted each time it is encountered. If undefined, prompts for
+                    a value which is used only for that single occurrence.
+                </td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>&amp;&amp;<EM>variable</EM></CODE></td>
+                <td>
+                    Substituted and the entered value is saved as a DEFINE for the
+                    remainder of the session.
+                </td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>&amp;<EM>variable</EM>.</CODE> (trailing dot)</td>
+                <td>
+                    The dot terminates the variable name when the name is immediately
+                    followed by alphanumeric text, e.g.&nbsp;<CODE>&amp;tbl.s</CODE> expands to
+                    <CODE>emps</CODE> when <CODE>tbl</CODE> is defined as
+                    <CODE>emp</CODE>.
+                </td>
+            </tr>
+        </table>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>DEFINE dept = 10
+
+SELECT ename, sal
+  FROM emp
+ WHERE deptno = &amp;dept;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="undefine">UNDEFINE</A></H4>
+
+        <SPAN class="syn">UNDEFINE <EM>variable</EM></SPAN>
+
+        <P>
+            Removes the substitution variable <EM>variable</EM>. After this command,
+            any reference to <CODE>&amp;<EM>variable</EM></CODE> in subsequent statements
+            will prompt for input. Has no effect if the variable was not defined.
+        </P>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>DEFINE schema = HR
+SELECT * FROM &amp;schema..employees;
+UNDEFINE schema</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="execute">EXECUTE / EXEC</A></H4>
+
+        <SPAN class="syn">
+            EXECUTE <EM>pl/sql_statement</EM>[;]<BR>
+            EXEC <EM>pl/sql_statement</EM>[;]
+        </SPAN>
+
+        <P>
+            Executes a single PL/SQL statement. SQLTools automatically wraps the
+            statement in an anonymous block:
+        </P>
+        <PRE>BEGIN
+        <EM>pl/sql_statement</EM>;
+END;</PRE>
+
+        <P>
+            The trailing semicolon after the statement is optional. Bind variables
+            declared with <CODE>VARIABLE</CODE> can be referenced using the
+            <CODE>:<EM>name</EM></CODE> notation.
+        </P>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>VARIABLE result NUMBER
+
+EXECUTE :result := 2 + 2;
+
+PRINT result</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="describe">DESCRIBE / DESC</A></H4>
+
+        <SPAN class="syn">
+            DESCRIBE <EM>object_name</EM><BR>
+            DESC <EM>object_name</EM>
+        </SPAN>
+
+        <P class="notimpl">
+            This command is recognised but implemented. Place the cursor over an object name and use "Find Object" F12.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="connect">CONNECT</A></H4>
+
+        <SPAN class="syn">
+            CONNECT [<EM>username</EM>/<EM>password</EM>@<EM>database</EM>]<BR>
+            CONN [<EM>username</EM>/<EM>password</EM>@<EM>database</EM>]
+        </SPAN>
+
+        <table>
+            <tr>
+                <th class="cmd-col">Form</th>
+                <th>Behaviour</th>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>CONNECT</CODE></td>
+                <td>Opens the Connect dialog box.</td>
+            </tr>
+            <tr>
+                <td class="cmd-col"><CODE>CONNECT user/pwd@db</CODE></td>
+                <td>
+                    Connects immediately using the supplied credentials without
+                    showing the dialog.
+                </td>
+            </tr>
+            <tr>
+                <td class="cmd-col-wide"><CODE>CONNECT user/pwd@host:port:sid</CODE></td>
+                <td>
+                    Same as above but bypass tnsnames.ora and make connection string
+                    using provided host, port and sid.
+                </td>
+            </tr>
+            <tr>
+                <td class="cmd-col-wide"><CODE>CONNECT user/pwd@host:port/service</CODE></td>
+                <td>
+                    Same as above but bypass tnsnames.ora and make connection string
+                    using provided host, port and service.
+                </td>
+            </tr>
+        </table>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>CONNECT hr/hr@orcl
+CONNECT scott/tiger@192.168.56.107:1521/pdb2</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="disconnect">DISCONNECT</A></H4>
+
+        <SPAN class="syn">DISCONNECT</SPAN>
+
+        <P>
+            Disconnects from the current Oracle session. Any uncommitted transactions
+            are rolled back. Subsequent SQL execution will fail until a new
+        <CODE>CONNECT</CODE> is issued.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="variable">VARIABLE / VAR</A></H4>
+
+        <SPAN class="syn">
+            VARIABLE <EM>name</EM> <EM>datatype</EM>[(<EM>size</EM>)]<BR>
+            VAR <EM>name</EM> <EM>datatype</EM>[(<EM>size</EM>)]
+        </SPAN>
+
+        <P>
+            Declares a <STRONG>bind variable</STRONG> that persists for the duration of
+            the session. Once declared, the variable is visible in the
+        <STRONG>Bind Variables</STRONG> panel and can be referenced in any SQL or
+            PL/SQL statement using the <CODE>:<EM>name</EM></CODE> notation.
+        </P>
+
+        <P><STRONG>Supported data types</STRONG></P>
+        <table>
+        <tr>
+        <th class="cmd-col">Data type</th>
+        <th>Description</th>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>VARCHAR2(<EM>n</EM>)</CODE></td>
+        <td>
+                    Variable-length character string. <EM>n</EM> is the maximum
+                    number of characters (1&nbsp;&ndash;&nbsp;4000). Size is
+                    required.
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>CHAR(<EM>n</EM>)</CODE></td>
+        <td>
+                    Fixed-length character string, always padded to <EM>n</EM>
+                    characters with spaces, emulating Oracle&rsquo;s
+        <CODE>CHAR</CODE> datatype. <EM>n</EM> is required
+                    (1&nbsp;&ndash;&nbsp;2000).
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>NUMBER</CODE></td>
+        <td>
+                    Oracle&rsquo;s native arbitrary-precision number. Bound
+                    using the <CODE>SQLT_VNU</CODE> OCI type, so overloaded
+                    PL/SQL procedures can disambiguate <CODE>NUMBER</CODE> from
+                    string types.
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>BINARY_FLOAT</CODE></td>
+        <td>
+                    IEEE&nbsp;754 single-precision (32-bit) floating-point.
+                    Maps to Oracle&rsquo;s <CODE>BINARY_FLOAT</CODE> column
+                    type. Supports special values <CODE>NaN</CODE>,
+        <CODE>Inf</CODE>, <CODE>-Inf</CODE>.
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>BINARY_DOUBLE</CODE></td>
+        <td>
+                    IEEE&nbsp;754 double-precision (64-bit) floating-point.
+                    Maps to Oracle&rsquo;s <CODE>BINARY_DOUBLE</CODE> column
+                    type. Supports special values <CODE>NaN</CODE>,
+        <CODE>Inf</CODE>, <CODE>-Inf</CODE>.
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>DATE</CODE></td>
+        <td>
+                    Oracle date and time (year, month, day, hour, minute,
+                    second). Displayed and entered using the NLS date format
+                    configured in the Grid settings.
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>CLOB</CODE></td>
+        <td>
+                    Character Large Object. Can store large text values. The
+                    display length in the Bind Variables panel is limited by the
+                    Grid Max LOB Length setting.
+                </td>
+            </tr>
+        <tr>
+        <td class="cmd-col"><CODE>REFCURSOR</CODE></td>
+        <td>
+                    Reference cursor. Typically used as an OUT parameter in
+                    a PL/SQL procedure call. The cursor contents are not
+                    displayed in the Bind Variables panel after execution.
+                </td>
+            </tr>
+        </table>
+
+        <P class="note">
+        <STRONG>Note:</STRONG> Redeclaring a variable that already
+            exists replaces it and resets its value to NULL.
+        </P>
+
+        <P><STRONG>Examples</STRONG></P>
+        <PRE>VARIABLE emp_name  VARCHAR2(100)
+VARIABLE dept_id   NUMBER
+VARIABLE hire_date DATE
+VARIABLE results   REFCURSOR
+
+-- Assign values and call a procedure
+EXEC :emp_name := 'KING';
+EXEC :dept_id  := 10;
+
+-- Use bind variables in a query
+SELECT * FROM emp
+ WHERE ename = :emp_name
+   AND deptno = :dept_id;
+
+-- Open a ref cursor from a stored procedure
+EXEC my_pkg.get_emp(:dept_id, :results);</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="print">PRINT</A></H4>
+
+        <SPAN class="syn">PRINT <EM>variable_name</EM></SPAN>
+
+        <P>
+            Writes the current value of the named bind variable to the Output window.
+            The variable must have been previously declared with
+        <CODE>VARIABLE</CODE>. Particularly useful for inspecting OUT parameters
+            after calling a stored procedure with <CODE>EXECUTE</CODE>.
+        </P>
+
+        <P class="note">
+        <STRONG>Note:</STRONG> <CODE>PRINT</CODE> without an argument
+            (to print all bind variables) is not implemented.
+        </P>
+
+        <P><STRONG>Example</STRONG></P>
+        <PRE>VARIABLE v_count NUMBER
+
+EXEC SELECT COUNT(*) INTO :v_count FROM employees;
+
+PRINT v_count</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4>Scripting example</H4>
+
+        <P>
+            The following complete script demonstrates several commands working
+            together:
+        </P>
+
+        <PRE>REM -------------------------------------------------------
+REM  Department headcount report
+REM -------------------------------------------------------
+
+DEFINE dept_no = 20
+
+VARIABLE v_name   VARCHAR2(50)
+VARIABLE v_count  NUMBER
+
+PROMPT Fetching data for department &amp;dept_no...
+
+EXEC SELECT dname INTO :v_name FROM dept WHERE deptno = &amp;dept_no;
+EXEC SELECT COUNT(*) INTO :v_count FROM emp  WHERE deptno = &amp;dept_no;
+
+PRINT v_name
+PRINT v_count
+
+SELECT ename, job, sal
+  FROM emp
+ WHERE deptno = :v_count;
+
+UNDEFINE dept_no</PRE>
+
+    </BODY>
+</HTML>

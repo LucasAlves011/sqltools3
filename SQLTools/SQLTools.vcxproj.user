@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LocalDebuggerCommandArguments>/connect=scott/tiger@192.168.56.109:1521/orclpdb1 E:\_CPP\sqlt.20\TestFiles\current.sql</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerDebuggerType>NativeOnly</LocalDebuggerDebuggerType>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommandArgumentsHistory>E:\_CPP\sqlt.20\TestFiles\current.sql|</LocalDebuggerCommandArgumentsHistory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommandArguments>/nolog D:\oracle-db-examples-main\plsql\code-analysis\plscope-helper-package.sql D:\oracle-db-examples-main\plsql\table-functions\string-tokenizer-as-table-function.sql</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerDebuggerType>NativeOnly</LocalDebuggerDebuggerType>
+    <LocalDebuggerCommandArgumentsHistory>/nolog D:\_cpp\sqlt.20.2026\TestFiles\SQL_FORMATTER_UPDATE.sql|/nolog D:\_cpp\sqlt.20.2026\TestFiles\SQL_FORMATTER_INSERT.sql|/nolog D:\_cpp\sqlt.20.2026\TestFiles\SQL_FORMATTER_MERGE.sql|/nolog D:\oracle-db-examples-main\plsql\code-analysis\plscope-helper-package.sql|/nolog D:\oracle-db-examples-main\plsql\code-analysis\plscope-helper-package.sql D:\oracle-db-examples-main\plsql\table-functions\string-tokenizer-as-table-function.sql|</LocalDebuggerCommandArgumentsHistory>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RESOURCE_FILE>\_cpp\sqlt.20\Common\ManagedListCtrlFilterDlg.rc</RESOURCE_FILE>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,101 @@
+﻿<HTML>
+<HEAD>
+    <TITLE></TITLE>
+    <meta charset="utf-8">
+    <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+    <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+    <style type="text/css">
+        .auto-style2 {
+            margin-left: 40px;
+        }
+
+        code {
+            font-family: Courier New, monospace;
+        }
+
+        pre {
+            background-color: #F4F4F4;
+            border-left: 3px solid #AAAAAA;
+            padding: 6px 10px;
+            margin: 4px 0 10px 0;
+            font-size: 0.95em;
+        }
+    </style>
+</HEAD>
+
+<BODY>
+    <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject" VIEWASTEXT>
+        <PARAM NAME="Keyword" VALUE="Quick Query">
+        <PARAM NAME="Keyword" VALUE="Quick Count">
+        <PARAM NAME="Keyword" VALUE="Find Object">
+        <PARAM NAME="Keyword" VALUE="Object Viewer">
+        <PARAM NAME="Keyword" VALUE="SQL*Plus DESC">
+        <PARAM NAME="Keyword" VALUE="Load DDL script">
+    </OBJECT>
+
+    <h3>Quick Query / Quick Count / Find Object / Load DDL Script</h3>
+    <HR SIZE="3">
+
+    <p>
+        These commands help you quickly obtain information about the object under the cursor.
+        If the current statement is a DML operation, you can invoke a command on a table alias
+        and get a result if the alias resolves to a table or (in some cases) a subquery.
+        <br>You can also check <a href="autocomplete.htm#Alias-Resolving">Alias-Resolving Logic</a>.
+        <br>See examples at the bottom of this page.
+    </p>
+
+    <a name="qq"></a>
+    <h4>Quick Query (F11)</h4>
+    <p>
+        Creates a simple query: <code>SELECT * FROM (source)</code>, where <i>source</i> is either
+        the table under the cursor or a table/subquery resolved from the alias under the cursor.
+    </p>
+
+    <a name="qq"></a>
+    <h4>Quick Count (Ctrl+F11)</h4>
+    <p>
+        Creates a simple count query: <code>SELECT COUNT(*) FROM (source)</code>, using the same
+        alias-resolution rules as Quick Query.
+    </p>
+
+    <a name="find"></a>
+    <h4>Find Object (F12)</h4>
+    <p>
+        Treats the word under the cursor as an alias; otherwise assumes it is a table name and
+        passes it to <a href="object_viewer.htm">Object Viewer</a>. 
+        This command was introduced as an alternative to the SQL*Plus <code>DESC</code> command.
+</p>
+
+    <a name="find"></a>
+    <h4>Load DDL Script (Ctrl+F12)</h4>
+    <p>
+        Treats the word under the cursor as an alias; otherwise assumes it is a table name and
+        passes it to the DDL Loader.
+    </p>
+
+    <h5>Example 1</h5>
+    <p>
+        The simplest case: no alias, cursor on the table. All commands in this group work.
+        Additionally, you can select the whole statement and press F11 to count all records
+        without modifying the SQL.
+        <br><i>^ shows the cursor position</i>
+    </p>
+    <pre><code>SELECT * FROM emp^ WHERE rownum < 3;</code></pre>
+
+    <h5>Example 2</h5>
+    <p>
+        A query with a table alias. Quick Query and Quick Count work with aliases, but
+        Find Object and Load DDL fail unless the cursor is placed on the actual table name.
+    </p>
+    <pre><code>SELECT e2.^ FROM (SELECT empno, ename FROM emp WHERE rownum < 3) e2;</code></pre>
+
+    <h5>Example 3</h5>
+    <p>
+        Generally, nothing works with CTEs (<code>WITH ... AS ...</code>) except <a href="autocomplete.htm#Autocomplete">Autocomplete</a>. 
+    </p>
+    <pre><code>WITH e AS (SELECT empno, ename FROM emp WHERE rownum < 3)
+SELECT e2.^ FROM e e2;</code></pre>
+
+
+</BODY>
+</HTML>

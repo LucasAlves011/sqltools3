@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<!-- Sitemap 1.0 -->
+</HEAD><BODY>
+<UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="About SQLTools">
+		<param name="Local" value="about.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="What's new in 2.0">
+		<param name="Local" value="whatsnew.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Initial setup for 32-bit build">
+		<param name="Local" value="init_setup.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Initial setup for 64-bit build">
+		<param name="Local" value="init_setup_x64.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Oracle Instant Client">
+		<param name="Local" value="oracle_instant_client.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Command line options">
+		<param name="Local" value="command_line.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Connect Dialog">
+		<param name="Local" value="connect_dialog.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Connect Dialog Settings">
+		<param name="Local" value="connect_dialog_settings.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Autosave">
+		<param name="Local" value="autosave.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Snapshots and Workspaces">
+		<param name="Local" value="snapshots_and_workspaces.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SQL Editor">
+		<param name="Local" value="sqleditor.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SQL Formatter">
+		<param name="Local" value="sql_formatter.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Data Grid">
+		<param name="Local" value="datagrid.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Autocomplete">
+		<param name="Local" value="autocomplete.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Code Outline">
+		<param name="Local" value="code_outline.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Object Viewer">
+		<param name="Local" value="object_viewer.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Object List">
+		<param name="Local" value="objects_list.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Find in Files">
+		<param name="Local" value="file_find.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SQL*Plus Script Commands">
+		<param name="Local" value="script_commands.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Working with GIT and SVN">
+		<param name="Local" value="working_with_svn.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Application launcher">
+		<param name="Local" value="launcher.htm">
+		</OBJECT>
+</UL>
+</BODY></HTML>

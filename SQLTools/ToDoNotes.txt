@@ -1,0 +1,81 @@
+add MoveToAndScroll... similar to MoveToAndCenter
+we have TypeBodyNode but does it handle types specs?
+
+call GetOutlineItems only if Outline View is active.
+change ownership of m_lastGoodOutline to Outline View.
+
+update help: move cursor over sql, text operations
+
+use SessionCache::StoreCachedDescriptor in BackgroundTask_FindObjectsForViewer as well
+
+
+Alt+Click calls describe
+add linked brick formatting for MERGE INSERT
+﻿add format setting dialog when shift pressed
+add extra indentation for every row of select but first
+add preview in tooltip for templates
+//TODO: convert alias to lowercase right here and drop params.useLowercaseForAliases
+
+show my context menu on right click for all whole panels with exception of title, at least for panels with setting
+write help for "Object list" add to writing sql
+use dba views if they are available
+
+show the full record from the underlying data dictionary view — for example, for a table, 
+    everything from ALL_TABLES — in the Properties panel (Alt+2). 
+    The idea is to populate it on double-clicking a table name, 
+    similar to how “Explain Plan” works now.
+
+Bug DDL reverse engineering and type in object viewer for 
+    CREATE TABLE companies (id NUMBER, company_name VARCHAR2(50), offices address_table)
+        NESTED TABLE offices STORE AS offices_tab;
+    see NESTED_TABLE_TEST workspace
+
+Show sub partitions in Object Viewer
+
+BIG TASKS:
+tree view for packages
+add collapse and expand content in editor and link that to syntax tree
+add diff
+add edge viewer for html values
+
+add nuclear "cancel" - abandom the current connection
+exlore posibilty to use double acceplerators like Ctrl+K,Ctrl+F
+
+  ? add storage clause (particularly CACHE) for CLOBs
+
+  2 copy content command - copy all files in clipboard, xml header and content of all non- saved files
+  3 implement save session in the same way 
+  6 Show drag&drop result in tooltip!
+  1 do not forget cyclical clipboard buffer
+
+// config for session stats
+// grid search, sort and multi cell selection
+
+tripleclick https://blogs.msdn.microsoft.com/oldnewthing/20041018-00/?p=37543
+
+sqltools fails to create incomplete declaration for type with authid:
+type dr$opttf_impl_t authid current_user as object(
+
+// comments in JAVA
+// grants for JAVA?
+// Clipboard ring
+    queue
+    if the last operation was from CR
+        then undo the last operation, pop_front and push_back that item, paste from front
+    else
+        paste from front
+              
+// add name of task to DoSqlForSel
+// remove selection after dropping objects
+// restore background connection if the main one is still fine (ping main)
+// close background connection if the main one is down (test)
+// not too complex
+// recyclebin list: aggregate partition size to table/index level 
+// add support for external tables
+// Suppress partition list for local indexes
+
+-------------------------------------------------------------------------------
+synonym for object with db link does not have dependencies
+cannot copy from combo box of ObjectViewer
+cannot copy headers when grid has 0 records
+Exception on right click in OpenFiles on file deleted outside

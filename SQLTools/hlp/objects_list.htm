@@ -1,0 +1,110 @@
+<HTML>
+<HEAD>
+    <TITLE></TITLE>
+    <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+    <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+</HEAD>
+<BODY>
+    <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+            VIEWASTEXT>
+        <PARAM NAME="Keyword" VALUE="Objects List">
+    </OBJECT>
+
+
+    <h3>Object List</h3>
+    <HR SIZE="3">
+
+    <p>
+        The <strong>Object List</strong> is a navigator for browsing and managing database objects.
+        You can select a schema and an object type, and SQLTools will display all objects of that
+        type within the chosen schema.
+    </p>
+
+    <img src="Images\object_list.jpg" />
+
+    <h4>Display Modes</h4>
+    <p>The list supports two display modes:</p>
+    <ul>
+        <li><strong>Short mode</strong> - shows object names only.</li>
+        <li>
+            <strong>Detailed mode</strong> - shows multiple columns relevant to the object type.
+            For example, tables may include columns such as tablespace, compression, and other attributes.
+        </li>
+    </ul>
+
+    <p>
+        In detailed mode, every column header includes a filter, allowing you to quickly narrow
+        down the list to the objects you are interested in.
+    </p>
+
+    <h4>Navigation</h4>
+    <p>
+        After selecting an object, you can open it in the <strong>Object Viewer</strong> using:
+    </p>
+    <ul>
+        <li>the <strong>F12</strong> keyboard shortcut, or</li>
+        <li>the context menu.</li>
+    </ul>
+
+    <p>
+        For users who primarily want to explore the database structure, this is usually all you need.
+    </p>
+
+    <h4>Maintenance Operations</h4>
+    <p>
+        Object List was originally designed to support basic maintenance tasks with multi-selection.
+        For example:
+    </p>
+    <ul>
+        <li>Select multiple packages and run <strong>Compile</strong>.</li>
+        <li>Select multiple table constraints and <strong>Disable</strong> them in one action.</li>
+    </ul>
+
+    <p>Check the context menu to see all available operations.</p>
+
+    <h4>Docking vs Floating</h4>
+    <p>
+        For database exploration, you may prefer to <strong>dock</strong> the Object List to the left or
+        right side of the main window. You can quickly switch between docking and floating by
+        double-clicking the title bar.
+    </p>
+
+    <p>
+        For object manipulation and maintenance tasks, it is recommended to keep the Object List
+        <strong>floating</strong> and resize it so all columns are visible.
+        You can quickly show or hide the floating window using the <strong>Alt+3</strong> shortcut.
+    </p>
+
+    <h4>Settings</h4>
+
+    <p>You can open the Object List Settings dialog from the context menu.</p>
+
+    <p>
+        <strong>Show only schemas with objects (slower)</strong><br>
+        Checked by default. You may want to uncheck this option if expanding the schema dropdown
+        takes too long.
+    </p>
+
+    <p>
+        <strong>Object types in a dropdown instead of tabs</strong><br>
+        Tabs were recently replaced with a dropdown selector, but you can switch back to tabs
+        if you prefer them, especially in floating mode.
+    </p>
+
+    <p>
+        <strong>Show icons in object‑type tabs</strong><br>
+        Displays only icons in the tabs, making them more compact.
+    </p>
+
+    <p>
+        <strong>Show synonyms without associated objects as invalid</strong><br>
+        Uncheck this option if switching to synonyms is too slow.
+    </p>
+
+    <p>
+        <strong>Run query in the active window</strong><br>
+        When pressing F11 or using the context menu to query a selected table, SQLTools will reuse
+        the active window and show the result in its data grid. Otherwise, a new window is opened.
+    </p>
+</BODY>
+</HTML>

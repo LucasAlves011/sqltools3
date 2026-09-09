@@ -1,0 +1,423 @@
+<HTML>
+    <HEAD>
+        <TITLE>SQL Formatting Settings</TITLE>
+        <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+        <META http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+        <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+        <style type="text/css">
+            table.kbd {
+                width: auto;
+                border-collapse: collapse;
+                margin: 8px 0 14px 0;
+            }
+            table.kbd th {
+                background: #DEE7EF;
+                padding: 4px 14px 4px 8px;
+                border: 1px solid #B0C4D8;
+                text-align: left;
+                white-space: nowrap;
+            }
+            table.kbd td {
+                padding: 3px 14px 3px 8px;
+                border: 1px solid #C8D8E8;
+                vertical-align: top;
+            }
+            table.kbd tr:nth-child(even) td {
+                background-color: #F0F6FF;
+            }
+            .key {
+                display: inline-block;
+                font-family: Arial, sans-serif;
+                font-size: 0.88em;
+                font-weight: bold;
+                background: #F4F4F4;
+                border: 1px solid #999;
+                border-bottom: 2px solid #777;
+                border-radius: 3px;
+                padding: 1px 6px;
+                white-space: nowrap;
+            }
+            .note {
+                background-color: #FFFADC;
+                border-left: 3px solid #C8A000;
+                padding: 4px 10px;
+                margin: 6px 0;
+            }
+            .section-head {
+                background: #DEE7EF;
+                border-left: 4px solid #5080B0;
+                padding: 2px 8px;
+                margin: 16px 0 4px 0;
+                font-weight: bold;
+            }
+            pre.tree {
+                background-color: #F4F4F4;
+                border-left: 3px solid #AAAAAA;
+                padding: 6px 10px;
+                margin: 4px 0 10px 0;
+                font-size: 0.95em;
+                font-family: Courier New, monospace;
+                line-height: 1.5;
+            }
+        </style>
+    </HEAD>
+    <BODY>
+        <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+                VIEWASTEXT>
+            <PARAM NAME="Keyword" VALUE="SQL Format settings">
+            <PARAM NAME="Keyword" VALUE="SQL formatting options">
+            <PARAM NAME="Keyword" VALUE="format settings keyboard">
+            <PARAM NAME="Keyword" VALUE="brick list settings">
+        </OBJECT>
+
+        <H3>SQL Formatting Settings</H3>
+        <HR SIZE="3">
+
+        <P>
+            <A href="sql_formatter.htm">&larr; SQL Formatter overview</A>
+        </P>
+
+        <P>
+            The <STRONG>Editor&#160;&#8250;&#160;SQL&#160;Format&nbsp;(tree)</STRONG> settings page
+            controls how the SQL Formatter lays out query clauses.
+            Settings are arranged in a two-level property tree.
+            Every row can be edited entirely from the keyboard.
+        </P>
+
+        <img src="Images/sql_format_settings.jpg" />
+
+        <P>
+            Each row has up to two editable parts:
+        </P>
+        <UL>
+            <LI>
+                A <STRONG>checkbox</STRONG> on the left side of the splitter &mdash;
+                present when the feature can be individually enabled or disabled.
+            </LI>
+            <LI>
+                A <STRONG>numeric value</STRONG> on the right side of the splitter &mdash;
+                the maximum line length that triggers the behaviour.
+                Rows that carry only a checkbox (such as <EM>Align column aliases</EM>)
+                have no numeric field.
+            </LI>
+        </UL>
+
+        <P>
+            The horizontal splitter bar between the two sides can be dragged
+            with the mouse to resize the columns.
+        </P>
+
+        <P>
+            Category headers (<EM>Short-line heuristics</EM>, <EM>Miscellaneous</EM>)
+            can be collapsed or expanded by clicking the <STRONG>[&minus;]&nbsp;/&nbsp;[+]</STRONG>
+            button or by pressing <SPAN class="key">Left</SPAN>&nbsp;/&nbsp;<SPAN class="key">Right</SPAN>
+            when the header row is selected.
+        </P>
+
+        <!-- ═══════════════════════════════════════════════════ Keyboard -->
+        <P class="section-head">Keyboard navigation</P>
+
+        <table class="kbd">
+            <TR>
+                <TH>Key</TH>
+                <TH>Action</TH>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">&#8593;</SPAN> &nbsp; <SPAN class="key">&#8595;</SPAN></TD>
+                <TD>Move the selection up or down one row.</TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Home</SPAN> &nbsp; <SPAN class="key">End</SPAN></TD>
+                <TD>Jump to the first or last visible row.</TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Left</SPAN></TD>
+                <TD>
+                    If the focused row is an <EM>expanded</EM> category header,
+                    collapse it. Otherwise moves selection up (same as
+                    <SPAN class="key">&#8593;</SPAN>).
+                </TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Right</SPAN></TD>
+                <TD>
+                    If the focused row is a <EM>collapsed</EM> category header,
+                    expand it. Otherwise moves selection down (same as
+                    <SPAN class="key">&#8595;</SPAN>).
+                </TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Space</SPAN></TD>
+                <TD>
+                    Toggle the checkbox of the focused row on or off.
+                    Has no effect on rows that have no checkbox
+                    (<EM>Block max length</EM>, <EM>CASE WHEN max length</EM>,
+                    <EM>Log errors max length</EM>).
+                </TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Enter</SPAN></TD>
+                <TD>
+                    Open the numeric edit field of the focused row for
+                    in-place editing.
+                    Press <SPAN class="key">Enter</SPAN> again (or
+                    <SPAN class="key">Tab</SPAN>) to confirm and close the field.
+                    Has no effect on rows that have no numeric field.
+                </TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Escape</SPAN></TD>
+                <TD>
+                    If a numeric field is currently open for editing,
+                    discard the change and close the field.
+                    If no field is open, close the settings dialog
+                    (equivalent to clicking <STRONG>Cancel</STRONG>).
+                </TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Tab</SPAN></TD>
+                <TD>
+                    Move keyboard focus out of the property tree to the
+                    next control in the dialog (the <STRONG>OK</STRONG> or
+                    <STRONG>Cancel</STRONG> button).
+                    If a numeric field is open it is committed first, then
+                    focus leaves the tree.
+                </TD>
+            </TR>
+            <TR>
+                <TD><SPAN class="key">Shift</SPAN>+<SPAN class="key">Tab</SPAN></TD>
+                <TD>Move keyboard focus to the previous control in the dialog.</TD>
+            </TR>
+        </table>
+        <DIV class="note">
+            <STRONG>Tip:</STRONG> Changes only take effect after you click
+            <STRONG>OK</STRONG>. Clicking <STRONG>Cancel</STRONG> or pressing
+            <SPAN class="key">Escape</SPAN> (when no field is being edited)
+            discards all unsaved changes.
+        </DIV>
+
+        <!-- ═══════════════════════════════════════════════════ Settings -->
+        <P class="section-head">Settings reference</P>
+
+        <P><STRONG>Short-line heuristics</STRONG></P>
+        <P>
+            These settings control when the formatter keeps a SQL clause on a
+            single line instead of expanding it vertically.
+            For each clause, the checkbox enables the feature and the number
+            sets the maximum total line length that still qualifies as
+            &#8220;short&#8221;.
+        </P>
+
+        <table class="kbd">
+            <TR>
+                <TH style="width:200px;">Setting</TH>
+                <TH style="width:60px; text-align:center;">Default</TH>
+                <TH>Description</TH>
+            </TR>
+            <TR>
+                <TD>Simple statement</TD>
+                <TD style="text-align:center;">&#10003; 60</TD>
+                <TD>
+                    Keep a complete, self-contained short statement
+                    (e.g. a brief <CODE>SELECT 1 FROM DUAL</CODE>) on one line.
+                </TD>
+            </TR>
+            <TR>
+                <TD>SELECT column list</TD>
+                <TD style="text-align:center;">&#10003; 40</TD>
+                <TD>Keep a short <CODE>SELECT</CODE> column list on one line.</TD>
+            </TR>
+            <TR>
+                <TD>FROM table list</TD>
+                <TD style="text-align:center;">&#10003; 40</TD>
+                <TD>Keep a short <CODE>FROM</CODE> clause on one line.</TD>
+            </TR>
+            <TR>
+                <TD>GROUP BY list</TD>
+                <TD style="text-align:center;">&#10003; 60</TD>
+                <TD>Keep a short <CODE>GROUP BY</CODE> list on one line.</TD>
+            </TR>
+            <TR>
+                <TD>ORDER BY list</TD>
+                <TD style="text-align:center;">&#10003; 60</TD>
+                <TD>Keep a short <CODE>ORDER BY</CODE> list on one line.</TD>
+            </TR>
+            <TR>
+                <TD>SELECT subquery</TD>
+                <TD style="text-align:center;">&#10003; 60</TD>
+                <TD>Keep a short inline <CODE>SELECT</CODE> subquery on one line.</TD>
+            </TR>
+            <TR>
+                <TD>Block max length</TD>
+                <TD style="text-align:center;">60</TD>
+                <TD>
+                    Maximum line length for other parenthesised blocks.
+                    This row has no checkbox; the limit is always active.
+                </TD>
+            </TR>
+            <TR>
+                <TD>CASE WHEN max length</TD>
+                <TD style="text-align:center;">40</TD>
+                <TD>
+                    Keep a short <CODE>WHEN</CODE> clause on one line.
+                    Set to <CODE>0</CODE> to always expand <CODE>CASE</CODE>
+                    expressions vertically.
+                </TD>
+            </TR>
+            <TR>
+                <TD>RETURNING max length</TD>
+                <TD style="text-align:center;">60</TD>
+                <TD>
+                    If the entire <CODE>RETURNING &hellip; INTO &hellip;</CODE>
+                    clause fits within this length it is kept on one line.
+                    Set to <CODE>0</CODE> to always expand.
+                </TD>
+            </TR>
+            <TR>
+                <TD>RETURNING max items</TD>
+                <TD style="text-align:center;">5</TD>
+                <TD>
+                    Maximum number of items per line when a
+                    <CODE>RETURNING</CODE> or <CODE>INTO</CODE> sub-list is
+                    wrapped. Set to <CODE>0</CODE> for no item-count limit.
+                </TD>
+            </TR>
+        </table>
+
+        <P><STRONG>Miscellaneous</STRONG></P>
+
+        <table class="kbd">
+            <TR>
+                <TH style="width:200px;">Setting</TH>
+                <TH style="width:60px; text-align:center;">Default</TH>
+                <TH>Description</TH>
+            </TR>
+            <TR>
+                <TD>Align column aliases</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    Vertically align the <CODE>AS</CODE> aliases of
+                    <CODE>SELECT</CODE> list columns so they form a neat column.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Blank line before set ops</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    Insert a blank line before
+                    <CODE>UNION</CODE>, <CODE>INTERSECT</CODE>, and
+                    <CODE>MINUS</CODE> operators to visually separate
+                    the query blocks.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Align SET assignments</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    Vertically align the right-hand sides of
+                    <CODE>SET</CODE> clause assignments in
+                    <CODE>UPDATE</CODE> statements.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Align CASE in SET</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    When <STRONG>Align SET assignments</STRONG> is on, also
+                    align <CODE>CASE</CODE> expressions that appear as the
+                    right-hand side of a <CODE>SET</CODE> assignment so their
+                    bodies line up with the other values.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Log errors max length</TD>
+                <TD style="text-align:center;">40</TD>
+                <TD>
+                    Maximum line length used when formatting log error output.
+                </TD>
+            </TR>
+        </table>
+
+        <P><STRONG>Brick list</STRONG></P>
+        <P>
+            Brick list mode packs <CODE>SELECT</CODE> column lists and
+            <CODE>INSERT</CODE> column&nbsp;/ <CODE>VALUES</CODE> lists
+            into a compact rectangular block instead of placing each item
+            on its own line. See also
+            <A href="sql_formatter_select.htm#brick">Brick list mode (SELECT)</A> and
+            <A href="sql_formatter_dml.htm#insert_brick">Brick list mode (INSERT)</A>.
+        </P>
+
+        <table class="kbd">
+            <TR>
+                <TH style="width:200px;">Setting</TH>
+                <TH style="width:60px; text-align:center;">Default</TH>
+                <TH>Description</TH>
+            </TR>
+            <TR>
+                <TD>Enabled</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    Master switch. When off, all brick-list settings are ignored
+                    and the formatter uses normal one-item-per-line layout for every
+                    column list.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Max line length</TD>
+                <TD style="text-align:center;">80</TD>
+                <TD>
+                    Maximum total line length for a brick row. When adding the next
+                    item would push the line past this limit, a new brick row is
+                    started.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Max items per line</TD>
+                <TD style="text-align:center;">10</TD>
+                <TD>
+                    Upper bound on the number of items placed on a single brick row,
+                    regardless of line length. Set to a large value (e.g.
+                    <CODE>99</CODE>) to let the line-length limit alone decide.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Min items to activate</TD>
+                <TD style="text-align:center;">5</TD>
+                <TD>
+                    Minimum number of items in the list before brick layout is used.
+                    Lists with fewer items fall back to normal one-item-per-line
+                    layout even when brick mode is enabled.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Linked INSERT col / VALUES</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    When on, the <CODE>VALUES</CODE> list wraps at the same item
+                    positions as the <CODE>INSERT</CODE> column list so that each
+                    value appears directly beneath its column name. Applies to both
+                    standalone <CODE>INSERT</CODE> statements and the
+                    <CODE>INSERT</CODE> action inside a <CODE>MERGE</CODE>.
+                    See <A href="sql_formatter_dml.htm#insert_linked">Linked brick &mdash; column list and VALUES list</A>.
+                </TD>
+            </TR>
+            <TR>
+                <TD>Linked UNION / INTERSECT / MINUS</TD>
+                <TD style="text-align:center;">&#10003;</TD>
+                <TD>
+                    When on, every <CODE>SELECT</CODE> branch in a compound query
+                    wraps its column list at the same positions as the first branch,
+                    so corresponding columns align vertically across all branches.
+                    See <A href="sql_formatter_select.htm#setops_brick">Linked brick layout across set-operation branches</A>.
+                </TD>
+            </TR>
+        </table>
+
+            <HR SIZE="1">
+            <P>
+                <A href="sql_formatter.htm">&larr; SQL Formatter overview</A>
+            </P>
+
+        </BODY>
+    </HTML>

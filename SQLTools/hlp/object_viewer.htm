@@ -1,0 +1,168 @@
+﻿<HTML>
+<HEAD>
+    <TITLE></TITLE>
+    <meta charset="utf-8">
+    <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+    <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+    <style type="text/css">
+        .auto-style2 {
+            margin-left: 40px;
+        }
+        code {
+            font-family: Courier New, monospace;
+        }
+        pre {
+            background-color: #F4F4F4;
+            border-left: 3px solid #AAAAAA;
+            padding: 6px 10px;
+            margin: 4px 0 10px 0;
+            font-size: 0.95em;
+        }
+    </style>
+</HEAD>
+<BODY>
+    <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject" VIEWASTEXT>
+        <PARAM NAME="Keyword" VALUE="Object Viewer">
+        <PARAM NAME="Keyword" VALUE="SQL*Plus DESC">
+    </OBJECT>
+    <h3>Object Viewer</h3>
+    <h4 class="auto-style2">
+        <a href="#insert">Insert at Cursor</a>
+        <br /><a href="#dad">Drag and Drop</a>
+        <br><a href="#query">Query and Count query</a>
+    </h4>
+    <HR SIZE="3">
+    <p>
+        Object Viewer is a better alternative to the SQL*Plus DESC command. It is designed to work with the editor.
+        <br>Press F12 to pass the current word (under the cursor) or selection into Object Viewer. If the cursor is on a
+        <br>table alias in a SQL statement, SqlTools resolves the alias to its actual table name and opens the viewer for
+        <br>that table, remembering the alias. You can also enter an object name directly into the top field of Object Viewer.
+    </p>
+
+    <img src="Images\object_viewer.jpg" />
+
+    <a name="insert"></a>
+
+        <h4>Insert at Cursor</h4>
+    <p>
+        &ldquo;Insert at Cursor&rdquo; is the simplest way to use the Object Viewer. Place the cursor where you
+        want to insert text, then double-click an item in the tree, press Space, or use the right-click
+        &ldquo;Insert at Cursor&rdquo; menu command. The exact text inserted depends on what is selected.
+    </p>
+    <p><i>Note: if double-clicking does not insert anything, check the Settings &mdash; this feature may be disabled.</i></p>
+
+    <h5>Inserting columns</h5>
+    <p>
+        When one or more <b>Column</b> nodes are selected, SqlTools uses an autocomplete-style insertion path.
+        If the selection is a mix of columns and other item types, the non-column items are automatically
+        deselected and only the columns are inserted.
+    </p>
+    <p>
+        Each column name is optionally prefixed with the table alias. The alias comes from the root table node
+        in the tree. When Object Viewer is opened via F12 on an alias in the SQL text, the actual alias used in
+        the query is remembered and applied automatically &mdash; no guessing is required.
+    </p>
+    <p>
+        If the cursor is already positioned immediately after a dot (e.g. <code>t.</code>), the alias prefix is
+        omitted from the first column to avoid duplication.
+    </p>
+    <p>The formatting of the inserted column list is controlled by three <a href="autocomplete.htm#Settings"><strong>Autocomplete</strong> Settings</a>:</p>
+    <ul>
+        <li>
+            <b>Insert columns on separate lines</b> &mdash; when enabled, each column is placed on its own line.
+            When disabled, all selected columns are inserted on a single line, comma-separated.
+        </li>
+        <li>
+            <b>Use leading comma</b> &mdash; when inserting on separate lines, chooses between leading-comma style:
+            <pre><code>col1
+, alias.col2
+, alias.col3
+, </code></pre>
+            (cursor left after the trailing <code>, </code> on a new line), and trailing-comma style:
+            <pre><code>col1,
+alias.col2,
+alias.col3,
+</code></pre>
+            (cursor left after the last comma, ready for the next column).
+        </li>
+        <li>
+            <b>Lowercase aliases</b> &mdash; when enabled, the alias prefix is lowercased before insertion.
+        </li>
+    </ul>
+
+    <h5>Inserting non-column items</h5>
+    <p>
+        For all other item types (tables, procedures, package procedures/functions, sequences, etc.) the classic
+        insertion path is used:
+    </p>
+    <ul>
+        <li>
+            <b>Single item</b> &mdash; inserted in default format. For procedures and package procedures/functions
+            this includes the parameter list on a single line, e.g. <code>proc(param1 =&gt;, param2 =&gt;);</code>.
+        </li>
+        <li>
+            <b>Multiple items</b> &mdash; each item is inserted as a short name, joined with a single space.
+        </li>
+    </ul>
+    <p>
+        A space is automatically added before the inserted text if the character immediately before the cursor
+        is alphanumeric, and after it if the character immediately after is alphanumeric, preventing the name
+        from merging with surrounding text. The leading space is suppressed when the inserted text starts with
+        a dot (e.g. when only the missing dot before a procedure name is being inserted).
+    </p>
+
+    <h5>Package procedure / function smart insertion</h5>
+    <p>
+        When a single package procedure or package function is inserted, SqlTools checks what already precedes
+        the cursor and inserts only what is missing:
+    </p>
+    <ul>
+        <li>If <code>packagename.</code> is already before the cursor &mdash; only the procedure name is inserted.</li>
+        <li>If <code>packagename</code> is before the cursor but the dot is missing &mdash; <code>.procname(params);</code> is inserted.</li>
+        <li>Otherwise &mdash; <code>packagename.procname(params);</code> is inserted in full.</li>
+    </ul>
+<HR SIZE="3">
+    <a name="dad"></a>
+    <h4>Drag and Drop</h4>
+
+    <p>“Drag and Drop” used to be more powerful than “Insert at Cursor” before the latest update, but that’s no longer the case. 
+        However, it’s still quite useful because it lets you select multiple items and drop them into the editor with different modifications, 
+        depending on the Shift and Control keys pressed.<p/>
+    <p>Depends on &lt;Shift&gt; and &lt;Ctrl&gt;, the result of drag and drop of a <i>single</i> object is summarized in the table:
+    <p />
+
+    <table style="width:600" cellSpacing="0" cellPadding="2" border="1">
+        <tr><th style="width:150">Object</th><th style="width:150">Default</th><th style="width:150">&lt;Shift&gt;pressed</th><th style="width:150">&lt;Ctrl&gt;pressed</th></tr>
+        <tr><td>column             </td><td>name</td><td>name and datatype</td><td style="color: #808080">same as default</td></tr>
+        <tr><td>constraint         </td><td>name</td><td>columns in line</td><td>columns in column</td></tr>
+        <tr><td>container / folder*</td><td>name</td><td>objects in line</td><td>objects in column</td></tr>
+        <tr><td>granted privilege  </td><td>label</td><td style="color: #808080">same</td><td style="color: #808080">same</td></tr>
+        <tr><td>index              </td><td>name</td><td>columns in line</td><td>columns in column</td></tr>
+        <tr><td>package spec / body</td><td>name</td><td style="color: #808080">same</td><td style="color: #808080">same</td></tr>
+        <tr><td>package procedure / function</td><td>call with parameters formatted in line</td><td style="color: #808080">same</td><td>call with parameters formatted in column</td></tr>
+        <tr><td>partition / subpartition</td><td>name</td><td>partition clause</td><td style="color: #808080">same</td></tr>
+        <tr><td>procedure          </td><td>call with parameters formatted in line</td><td style="color: #808080">same</td><td>call with parameters formatted in column</td></tr>
+        <tr><td>sequence           </td><td>name</td><td style="color: #808080">same</td><td style="color: #808080">same</td></tr>
+        <tr><td>synonym            </td><td>name</td><td style="color: #808080">same</td><td style="color: #808080">same</td></tr>
+        <tr><td>table / view       </td><td>name</td><td>columns in line</td><td>columns in column</td></tr>
+        <tr><td>trigger            </td><td>name</td><td style="color :#808080">same</td><td style="color: #808080">same</td></tr>
+    </table>
+
+    <p>
+        If multiple objects are selected for a drag and drop operation then the default (short name) format is applied to every item.
+        <br>&lt;Shift&gt; and &lt;Ctrl&gt; are both ignored in the case of multiple selection.
+    </p>
+
+    <HR SIZE="3">
+    <a name="query"></a>
+    <h4>Query and Count query</h4>
+
+    <p>
+        Object Viewer lets you make a quick (count) query from selected table (or partition/subpartition).
+        <br>You also can select multiple columns belong that table (or partition/subpartition). If no columns are selected, * is used.
+        <br>However only a single object can be chosen for "FROM" clause so it is either none, table, partition or subpartition.
+    </p>
+
+    <img src="Images\object_viewer_quick_count.jpg" />
+</BODY>
+</HTML>

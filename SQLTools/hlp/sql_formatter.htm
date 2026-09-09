@@ -1,0 +1,194 @@
+<HTML>
+    <HEAD>
+        <TITLE>SQL Formatter</TITLE>
+        <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+        <META http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+        <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+        <style type="text/css">
+            .setting-col {
+                width: 260px;
+                font-family: Courier New, monospace;
+                font-size: 1.0em;
+            }
+            .default-col {
+                width: 70px;
+                text-align: center;
+            }
+            .syn {
+                font-family: Courier New, monospace;
+                font-size: 1.05em;
+                background-color: #D4E4F7;
+                border-left: 3px solid #0050B2;
+                padding: 4px 10px;
+                margin: 6px 0 8px 0;
+                display: block;
+            }
+            .note {
+                background-color: #FFFADC;
+                border-left: 3px solid #C8A000;
+                padding: 4px 10px;
+                margin: 6px 0;
+            }
+            .firstver {
+                background-color: #EAF4EA;
+                border-left: 3px solid #3A7A3A;
+                padding: 6px 12px;
+                margin: 8px 0 14px 0;
+            }
+            code {
+                font-family: Courier New, monospace;
+            }
+            pre {
+                background-color: #F4F4F4;
+                border-left: 3px solid #AAAAAA;
+                padding: 6px 10px;
+                margin: 4px 0 10px 0;
+                font-size: 0.95em;
+            }
+        </style>
+    </HEAD>
+    <BODY>
+        <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+                VIEWASTEXT>
+            <PARAM NAME="Keyword" VALUE="SQL Formatter">
+            <PARAM NAME="Keyword" VALUE="Format SQL">
+            <PARAM NAME="Keyword" VALUE="SQL formatting">
+            <PARAM NAME="Keyword" VALUE="SQL indentation">
+            <PARAM NAME="Keyword" VALUE="SELECT formatting">
+            <PARAM NAME="Keyword" VALUE="INSERT formatting">
+            <PARAM NAME="Keyword" VALUE="UPDATE formatting">
+            <PARAM NAME="Keyword" VALUE="DELETE formatting">
+            <PARAM NAME="Keyword" VALUE="MERGE formatting">
+            <PARAM NAME="Keyword" VALUE="brick list">
+        </OBJECT>
+
+        <H3>SQL Formatter</H3>
+
+        <HR SIZE="3">
+
+        <!-- ============================================================ -->
+        <H4>Topic pages</H4>
+
+        <UL>
+            <LI><A href="sql_formatter_select.htm">SELECT &mdash; queries, brick list, set operators</A></LI>
+            <LI><A href="sql_formatter_dml.htm">INSERT / UPDATE / DELETE / MERGE</A></LI>
+            <LI><A href="sql_format_settings.htm">Formatting settings reference</A></LI>
+        </UL>
+
+        <HR SIZE="1">
+
+        <p>
+            The SQL Formatter reformats selected Oracle SQL text into a consistent, readable layout.
+            Select the text you want to format (one or more complete statements), then choose
+            <strong>Tools > Text/Format > Format SQL</strong> or use the Editor context menu:
+            <strong>Format SQL</strong>, or press the assigned shortcut keys
+            <strong>(Ctrl+K,E and Shift+Ctrl+K,E by default)</strong>.
+            <i>Holding <strong>Shift</strong> lets you adjust SQL Format settings before the action.</i>
+        </p>
+
+        <P>
+            The central design goal is to produce output that is <STRONG>more compact
+            and more natural to read</STRONG> than most SQL formatters.
+            Many tools expand every clause onto its own line regardless of length,
+            resulting in statements that scroll endlessly for what is essentially
+            a simple query.
+            This formatter takes the opposite approach: short clauses, short column
+            lists, short subqueries, and short complete statements are kept on a
+            single line whenever they fit within a configurable width limit.
+            Only the parts of a query that genuinely benefit from vertical expansion
+            are broken across lines, so the overall output stays as concise as the
+            SQL itself allows.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="how">How formatting works</A></H4>
+
+        <P>
+            The formatter tokenises the selected text using the same lexer as the
+            syntax highlighter, then applies indentation and line-break rules to
+            reassemble the token stream into formatted output. The original text is
+            replaced by the formatted result in a single undo step.
+        </P>
+
+        <P>
+            Each statement (terminated by <CODE>;</CODE> or the SQL*Plus
+            <CODE>/</CODE> separator) is processed independently. Blank lines between
+            statements are preserved as a single blank separator.
+        </P>
+
+        <P>
+            Indentation depth per level is taken from the document&rsquo;s
+            <STRONG>Indent Spacing</STRONG> setting
+            (<EM>Settings &rarr; Editor &rarr; Editing</EM>).
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="statements">Statement layout</A></H4>
+
+        <P>
+            If a complete statement is short enough to fit on a single line it is kept
+            on one line (controlled by <STRONG>Simple statement</STRONG> and its
+            <STRONG>max length</STRONG> setting). Otherwise each major clause starts
+            on its own line at the base indentation level.
+        </P>
+
+        <P><STRONG>Short statement kept on one line:</STRONG></P>
+        <PRE>SELECT sysdate FROM dual;</PRE>
+
+        <P><STRONG>Longer statement expanded:</STRONG></P>
+        <PRE>SELECT employee_id, last_name, salary
+FROM   employees
+WHERE  department_id = 10;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="comments">Comments</A></H4>
+
+        <P>
+            The formatter handles two comment styles:
+        </P>
+
+        <table>
+            <tr>
+                <th class="setting-col">Style</th>
+                <th>Behaviour</th>
+            </tr>
+            <tr>
+                <td class="setting-col"><code>-- end-line comment</code></td>
+                <td>
+                    Kept on the same line as the preceding token. After all formatting
+                    is complete, every end-line comment in the statement is aligned to
+                    the same column &mdash; one space after the widest line of code
+                    in the statement.
+                </td>
+            </tr>
+            <tr>
+                <td class="setting-col"><code>/* block comment */</code></td>
+                <td>
+                    Single-line block comments are treated like ordinary tokens.
+                    Multi-line block comments are re-indented to the current indent
+                    level; continuation lines are adjusted by the same delta so
+                    the internal structure of the comment is preserved.
+                </td>
+            </tr>
+        </table>
+
+        <P>
+            <STRONG>Query hints</STRONG> such as <CODE>SELECT --+PARALLEL(e,4)</CODE>
+            or <CODE>SELECT /*+ FULL(e) */</CODE> are kept on the same line as
+            <CODE>SELECT</CODE> and are excluded from end-line comment alignment.
+        </P>
+
+        <P class="note">
+            <STRONG>Note:</STRONG> A statement that contains an end-line comment
+            is never collapsed to a single line, even if it would otherwise be
+            short enough.
+        </P>
+
+    </BODY>
+</HTML>

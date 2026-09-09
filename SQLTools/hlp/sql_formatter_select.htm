@@ -1,0 +1,427 @@
+<HTML>
+    <HEAD>
+        <TITLE>SQL Formatter &mdash; SELECT</TITLE>
+        <META content="Microsoft Visual Studio 7.0" name="GENERATOR">
+        <META http-equiv="Content-Type" content="text/html; charset=Windows-1252">
+        <LINK href="_sqltools.css" type="text/css" rel="stylesheet">
+        <style type="text/css">
+            .setting-col {
+                width: 260px;
+                font-family: Courier New, monospace;
+                font-size: 1.0em;
+            }
+            .default-col {
+                width: 70px;
+                text-align: center;
+            }
+            .syn {
+                font-family: Courier New, monospace;
+                font-size: 1.05em;
+                background-color: #D4E4F7;
+                border-left: 3px solid #0050B2;
+                padding: 4px 10px;
+                margin: 6px 0 8px 0;
+                display: block;
+            }
+            .note {
+                background-color: #FFFADC;
+                border-left: 3px solid #C8A000;
+                padding: 4px 10px;
+                margin: 6px 0;
+            }
+            code {
+                font-family: Courier New, monospace;
+            }
+            pre {
+                background-color: #F4F4F4;
+                border-left: 3px solid #AAAAAA;
+                padding: 6px 10px;
+                margin: 4px 0 10px 0;
+                font-size: 0.95em;
+            }
+        </style>
+    </HEAD>
+    <BODY>
+        <OBJECT id="Object1" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e" type="application/x-oleobject"
+                VIEWASTEXT>
+            <PARAM NAME="Keyword" VALUE="SELECT formatting">
+            <PARAM NAME="Keyword" VALUE="alias alignment">
+            <PARAM NAME="Keyword" VALUE="brick list">
+            <PARAM NAME="Keyword" VALUE="UNION formatting">
+            <PARAM NAME="Keyword" VALUE="CASE formatting">
+            <PARAM NAME="Keyword" VALUE="subquery formatting">
+        </OBJECT>
+
+        <H3>SQL Formatter &mdash; SELECT</H3>
+        <HR SIZE="3">
+
+        <P>
+            <A href="sql_formatter.htm">&larr; SQL Formatter overview</A>
+        </P>
+
+        <H4>Contents</H4>
+        <UL>
+            <LI><A href="#select">SELECT column list</A></LI>
+            <LI><A href="#aliases">Column alias alignment</A></LI>
+            <LI><A href="#brick">Brick list mode</A></LI>
+            <LI><A href="#from">FROM clause</A></LI>
+            <LI><A href="#where">WHERE / AND / OR</A></LI>
+            <LI><A href="#case">CASE expressions</A></LI>
+            <LI><A href="#grouporder">GROUP BY and ORDER BY</A></LI>
+            <LI><A href="#setops">Set operators (UNION / INTERSECT / MINUS)</A></LI>
+            <LI><A href="#setops_brick">Linked brick layout across set-operation branches</A></LI>
+            <LI><A href="#subqueries">Subqueries and parenthesised blocks</A></LI>
+        </UL>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="select">SELECT column list</A></H4>
+
+        <P>
+            Each column expression is placed on its own line, indented one level
+            from <CODE>SELECT</CODE>. If the entire column list is short enough
+            (controlled by <STRONG>SELECT column list</STRONG> and its
+            <STRONG>max length</STRONG>), all columns are kept on the same line as
+            <CODE>SELECT</CODE>.
+        </P>
+
+        <P><STRONG>Short list on one line:</STRONG></P>
+        <PRE>SELECT id, name, salary FROM employees;</PRE>
+
+        <P><STRONG>Expanded &mdash; one column per line:</STRONG></P>
+        <PRE>SELECT
+  employee_id,
+  last_name,
+  salary
+FROM employees
+WHERE department_id = 10;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="aliases">Column alias alignment</A></H4>
+
+        <P>
+            When <STRONG>Align column aliases</STRONG> is enabled, the formatter
+            right-pads each column expression with spaces so that all
+            <CODE>AS</CODE> aliases line up in a single column. Lines inside
+            subqueries embedded in the column list do not affect alias alignment
+            of the outer query.
+        </P>
+
+        <P><STRONG>Example &mdash; expanded with alias alignment:</STRONG></P>
+        <PRE>SELECT --+hint
+  (SELECT 1 FROM dual) AS "1",     -- dummy subquery
+  employee_id          AS emp_id,  -- employee
+  first_name           AS name,    -- name
+  department_id        AS dept     -- dept
+FROM employees                     -- emp table</PRE>
+
+        <P>In this example:</P>
+        <UL>
+            <LI>
+                The <STRONG>query hint</STRONG> (<CODE>SELECT --+hint</CODE> or
+                <CODE>SELECT /*+ hint */</CODE>) is kept on the same line as
+                <CODE>SELECT</CODE> and excluded from end-line comment alignment.
+            </LI>
+            <LI>
+                The subquery <CODE>(SELECT 1 FROM dual)</CODE> fits on one line;
+                its <CODE>AS&nbsp;&ldquo;1&rdquo;,</CODE> is the outer alias and
+                participates in alignment normally.
+            </LI>
+            <LI>
+                <CODE>employee_id</CODE>, <CODE>first_name</CODE>, and
+                <CODE>department_id</CODE> are padded so their
+                <CODE>AS&nbsp;&hellip;</CODE> aliases align with
+                <CODE>AS&nbsp;&ldquo;1&rdquo;</CODE>.
+            </LI>
+            <LI>
+                All four end-line comments are aligned to the same column &mdash;
+                one space after the widest code line in the statement.
+            </LI>
+        </UL>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="brick">Brick list mode</A></H4>
+
+        <P>
+            Normal expanded layout places each column on its own line.
+            <STRONG>Brick list mode</STRONG> is a compact alternative: instead of
+            one column per line, items are packed into rows with a configurable
+            maximum line length and a maximum number of items per row, producing a
+            tight rectangular block.
+        </P>
+
+        <P>
+            Brick list mode applies to <CODE>SELECT</CODE> column lists
+            when all of the following are true:
+        </P>
+        <UL>
+            <LI><STRONG>Brick list &mdash; Enabled</STRONG> is on.</LI>
+            <LI>The column list is too long to stay on one line (short-list rule does not trigger).</LI>
+            <LI>The number of columns meets the <STRONG>Min items to activate</STRONG> threshold.</LI>
+        </UL>
+
+        <P><STRONG>Example &mdash; 8 columns with max&nbsp;60&nbsp;chars and max&nbsp;3&nbsp;items per row:</STRONG></P>
+        <PRE>SELECT
+  col1, col2, col3,
+  col4, col5, col6,
+  col7, col8
+FROM t;</PRE>
+
+        <P>
+            Each row starts at the column position of the first item on the first
+            row (aligned under the character after <CODE>SELECT&nbsp;</CODE>).
+            Items within a row are separated by a single comma and padded with
+            spaces so they line up in neat columns &mdash; hence the name
+            &ldquo;brick&rdquo;.
+        </P>
+
+        <P class="note">
+            <STRONG>Note:</STRONG> Brick list mode and alias alignment are mutually
+            exclusive for the same column list. When brick layout is active, alias
+            alignment is not applied to that list.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="from">FROM clause</A></H4>
+
+        <P>
+            Each table or join expression is placed on its own line. If the table
+            list is short (controlled by <STRONG>FROM table list</STRONG> and its
+            <STRONG>max length</STRONG>), it is kept on the same line as
+            <CODE>FROM</CODE>.
+        </P>
+
+        <P>
+            <CODE>JOIN</CODE> keywords (<CODE>INNER JOIN</CODE>, <CODE>LEFT JOIN</CODE>,
+            etc.) always start on a new line at the clause indentation level.
+            The <CODE>ON</CODE> and <CODE>USING</CODE> keywords start on a new
+            indented line below the join.
+        </P>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>SELECT *
+FROM employees e
+JOIN departments d
+  ON e.department_id = d.department_id
+LEFT JOIN locations l
+  ON d.location_id = l.location_id</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="where">WHERE / AND / OR</A></H4>
+
+        <P>
+            <CODE>WHERE</CODE> starts on its own line. Each <CODE>AND</CODE> and
+            <CODE>OR</CODE> condition starts on a new indented line.
+        </P>
+
+        <P>
+            <CODE>AND</CODE> inside a
+            <CODE>BETWEEN&nbsp;&hellip;&nbsp;AND&nbsp;&hellip;</CODE> expression
+            is <STRONG>never</STRONG> treated as a new-line trigger.
+            The formatter tracks nesting depth so the correct <CODE>AND</CODE>
+            is identified.
+        </P>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>WHERE salary BETWEEN 1000 AND 5000
+  AND department_id = 10
+  OR job_id = 'MGR'</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="case">CASE expressions</A></H4>
+
+        <P>
+            Multi-line <CODE>CASE</CODE> expressions are indented as follows:
+        </P>
+        <UL>
+            <LI>
+                <CODE>CASE</CODE> stays on the current line (or starts a new line
+                when following <CODE>THEN</CODE> or <CODE>ELSE</CODE>).
+            </LI>
+            <LI>
+                Each <CODE>WHEN</CODE> starts on a new line, indented one level
+                inside <CODE>CASE</CODE>.
+            </LI>
+            <LI>
+                <CODE>THEN</CODE> starts on a new line, indented one level inside
+                <CODE>WHEN</CODE>. The result value follows on the same line.
+            </LI>
+            <LI>
+                <CODE>ELSE</CODE> starts on a new line at the same level as
+                <CODE>WHEN</CODE>. The alternative value follows on the same line.
+            </LI>
+            <LI>
+                <CODE>END</CODE> starts on a new line at the same level as
+                <CODE>CASE</CODE>.
+            </LI>
+        </UL>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>CASE
+  WHEN salary &gt; 10000
+    THEN 'High'
+  WHEN salary &gt; 5000
+    THEN 'Medium'
+  ELSE 'Low'
+END</PRE>
+
+        <P>
+            The <STRONG>CASE WHEN max length</STRONG> setting controls whether a
+            short <CODE>WHEN&nbsp;&hellip;&nbsp;THEN&nbsp;&hellip;</CODE> pair is
+            kept on one line. Set to <CODE>0</CODE> (the default) to always expand
+            <CODE>CASE</CODE> vertically.
+        </P>
+
+        <P>
+            If a <CODE>CASE</CODE> is wrapped in parentheses and the entire block
+            fits, it is kept on a single line:
+        </P>
+        <PRE>SELECT
+  (CASE WHEN active = 1 THEN 'Yes' ELSE 'No' END) status
+FROM employees;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="grouporder">GROUP BY and ORDER BY</A></H4>
+
+        <P>
+            <CODE>GROUP BY</CODE> and <CODE>ORDER BY</CODE> each start on their own
+            line. If the list is short (controlled by <STRONG>GROUP BY list</STRONG>
+            / <STRONG>ORDER BY list</STRONG> and their <STRONG>max length</STRONG>
+            settings), it is kept on the same line as the keyword.
+        </P>
+
+        <P><STRONG>Short list on one line:</STRONG></P>
+        <PRE>GROUP BY department_id, job_id
+ORDER BY salary DESC</PRE>
+
+        <P><STRONG>Expanded:</STRONG></P>
+        <PRE>GROUP BY department_id,
+  job_id,
+  hire_date
+ORDER BY salary DESC,
+  last_name
+</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="setops">Set operators (UNION / INTERSECT / MINUS)</A></H4>
+
+        <P>
+            <CODE>UNION</CODE>, <CODE>UNION ALL</CODE>, <CODE>INTERSECT</CODE>,
+            and <CODE>MINUS</CODE> each start on their own line at the root
+            indentation level. The following <CODE>SELECT</CODE> keyword appears
+            on the same line as the operator.
+        </P>
+
+        <P>
+            When <STRONG>Blank line before set ops</STRONG> is enabled, an extra
+            blank line is inserted before each operator to visually separate the
+            query branches in long compound queries.
+        </P>
+
+        <P><STRONG>Example:</STRONG></P>
+        <PRE>SELECT employee_id, last_name, department_id
+FROM employees
+WHERE department_id = 10
+
+UNION ALL SELECT employee_id, last_name, department_id
+FROM contractors
+WHEREdepartment_id = 10;</PRE>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="setops_brick">Linked brick layout across set-operation branches</A></H4>
+
+        <P>
+            When brick list mode is active and a <CODE>SELECT</CODE> column list
+            in a compound query wraps across multiple rows, the <STRONG>Linked
+            UNION / INTERSECT / MINUS</STRONG> setting (default: on) causes every
+            subsequent branch to wrap its column list at exactly the same item
+            positions as the first branch.
+        </P>
+
+        <P>
+            This means the columns of all branches line up vertically across
+            the entire compound query, making it much easier to compare
+            corresponding values row by row.
+        </P>
+
+        <P><STRONG>Example &mdash; linked brick, 3 items per row:</STRONG></P>
+        <PRE>SELECT employee_id, last_name, department_id,
+  job_id, hire_date, salary
+
+UNION ALL SELECT employee_id, last_name, department_id,
+  job_id, hire_date, salary
+FROM contractors;</PRE>
+
+        <P>
+            Without linking, each branch would calculate its own wrap positions
+            independently, and the columns would not necessarily align.
+        </P>
+
+        <P class="note">
+            <STRONG>Note:</STRONG> Linking only applies when the number of columns
+            in all branches is identical. If a branch has a different column count,
+            it falls back to independent brick layout.
+        </P>
+
+        <HR SIZE="1">
+
+        <!-- ============================================================ -->
+        <H4><A name="subqueries">Subqueries and parenthesised blocks</A></H4>
+
+        <P>
+            When an opening parenthesis <CODE>(</CODE> is encountered, the
+            formatter measures the entire block up to the matching
+            <CODE>)</CODE>:
+        </P>
+        <UL>
+            <LI>
+                If the block begins with <CODE>SELECT</CODE>, it is treated as a
+                <STRONG>subquery</STRONG> and the <STRONG>SELECT subquery</STRONG>
+                / <STRONG>max length</STRONG> settings apply.
+            </LI>
+            <LI>
+                For other parenthesised expressions (<CODE>DECODE</CODE>,
+                <CODE>NVL</CODE>, function calls, etc.), the
+                <STRONG>Block max length</STRONG> setting applies.
+            </LI>
+            <LI>
+                If the block is too long, the content is expanded with an additional
+                indent level inside the parentheses.
+            </LI>
+        </UL>
+
+        <P class="note">
+            <STRONG>Alias alignment note:</STRONG> Lines <EM>inside</EM> a subquery
+            in the SELECT list are excluded from the outer query&rsquo;s alias
+            alignment pass, so they do not push aliases unnecessarily far to the
+            right. Lines containing multi-line expressions such as
+            <CODE>DECODE(&hellip;)</CODE> or <CODE>NVL(&hellip;)</CODE> are
+            included in alignment as normal.
+        </P>
+
+        <HR SIZE="1">
+        <P>
+            <A href="sql_formatter.htm">&larr; SQL Formatter overview</A>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <A href="sql_formatter_dml.htm">INSERT / UPDATE / DELETE / MERGE &rarr;</A>
+        </P>
+
+    </BODY>
+</HTML>
