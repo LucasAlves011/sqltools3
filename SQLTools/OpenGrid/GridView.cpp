@@ -63,7 +63,8 @@ static char THIS_FILE[] = __FILE__;
 namespace OG2 /* OG = OpenGrid V2 */
 {
 
-    UINT GridView::m_uWheelScrollLines; // cached value for MS Weel support
+    UINT GridView::m_uWheelScrollLines; // cached value for MS Wheel support
+    UINT GridView::m_uWheelScrollChars = 0; // cached value for horizontal wheel support
     static LPCWSTR g_szClassName = L"Kochware.OpenGrid.V2";
 
     IMPLEMENT_DYNCREATE(GridView, CView)
@@ -90,7 +91,9 @@ GridView::GridView()
   m_ShouldDeleteManager(FALSE),
   m_toolbarNavigationDir(edVert),
   m_uPopupMenuId(IDR_GRID_POPUP),
-  m_uExpFileCounter(0)
+  m_uExpFileCounter(0),
+  m_zDeltaAccumulator(0),
+  m_zHDeltaAccumulator(0)
 {
     GetSQLToolsSettings().AddSubscriber(this);
 }
@@ -249,6 +252,7 @@ BEGIN_MESSAGE_MAP(GridView, CView)
 
     ON_WM_RBUTTONDOWN()
     ON_WM_MOUSEWHEEL()
+    ON_WM_MOUSEHWHEEL()
     //}}AFX_MSG_MAP
     ON_MESSAGE(WM_GETFONT, OnGetFont)
     ON_WM_CONTEXTMENU()
@@ -921,31 +925,102 @@ void GridView::DoFileSave (const SQLToolsSettings& settings, int _format, bool s
 
 BOOL GridView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
+    // 1. Shift + Wheel: Horizontal scroll
+    if ((nFlags & MK_SHIFT) || (::GetKeyState(VK_SHIFT) & 0x8000))
+    {
+        if (!m_uWheelScrollChars)
+        {
+            if (!::SystemParametersInfo(SPI_GETWHEELSCROLLCHARS, 0, &m_uWheelScrollChars, 0) || !m_uWheelScrollChars)
+                m_uWheelScrollChars = 3;
+        }
+
+        m_zHDeltaAccumulator += zDelta;
+        int nToScroll = ::MulDiv(m_zHDeltaAccumulator, m_uWheelScrollChars, WHEEL_DELTA);
+
+        if (nToScroll != 0)
+        {
+            m_zHDeltaAccumulator -= ::MulDiv(nToScroll, WHEEL_DELTA, m_uWheelScrollChars);
+
+            if (nToScroll > 0)
+            {
+                while (nToScroll--)
+                    OnHScroll(SB_LINELEFT, 0, 0);
+            }
+            else
+            {
+                while (nToScroll++)
+                    OnHScroll(SB_LINERIGHT, 0, 0);
+            }
+        }
+
+        return TRUE;
+    }
+
+    // 2. Vertical Wheel / Trackpad 2-finger vertical gesture
     if (!m_uWheelScrollLines)
         ::SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &m_uWheelScrollLines, 0);
 
     if (m_uWheelScrollLines == WHEEL_PAGESCROLL)
     {
-        OnVScroll(zDelta > 0 ? SB_PAGEDOWN : SB_PAGEUP , 0, 0);
+        OnVScroll(zDelta > 0 ? SB_PAGEUP : SB_PAGEDOWN, 0, 0);
     }
     else
     {
-        int nToScroll = ::MulDiv(zDelta, m_uWheelScrollLines, WHEEL_DELTA);
+        m_zDeltaAccumulator += zDelta;
+        int nToScroll = ::MulDiv(m_zDeltaAccumulator, m_uWheelScrollLines, WHEEL_DELTA);
 
-        if (zDelta > 0)
-            while (nToScroll--)
-                OnVScroll(SB_LINELEFT, 0, 0);
-        else
-            while (nToScroll++)
-                OnVScroll(SB_LINERIGHT, 0, 0);
+        if (nToScroll != 0)
+        {
+            m_zDeltaAccumulator -= ::MulDiv(nToScroll, WHEEL_DELTA, m_uWheelScrollLines);
+
+            if (nToScroll > 0)
+            {
+                while (nToScroll--)
+                    OnVScroll(SB_LINEUP, 0, 0);
+            }
+            else
+            {
+                while (nToScroll++)
+                    OnVScroll(SB_LINEDOWN, 0, 0);
+            }
+        }
     }
 
-    return CView::OnMouseWheel(nFlags, zDelta, pt);
+    return TRUE;
+}
+
+void GridView::OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+    if (!m_uWheelScrollChars)
+    {
+        if (!::SystemParametersInfo(SPI_GETWHEELSCROLLCHARS, 0, &m_uWheelScrollChars, 0) || !m_uWheelScrollChars)
+            m_uWheelScrollChars = 3;
+    }
+
+    m_zHDeltaAccumulator += zDelta;
+    int nToScroll = ::MulDiv(m_zHDeltaAccumulator, m_uWheelScrollChars, WHEEL_DELTA);
+
+    if (nToScroll != 0)
+    {
+        m_zHDeltaAccumulator -= ::MulDiv(nToScroll, WHEEL_DELTA, m_uWheelScrollChars);
+
+        if (nToScroll > 0)
+        {
+            while (nToScroll--)
+                OnHScroll(SB_LINERIGHT, 0, 0);
+        }
+        else
+        {
+            while (nToScroll++)
+                OnHScroll(SB_LINELEFT, 0, 0);
+        }
+    }
 }
 
 void GridView::OnSettingChange (UINT, LPCTSTR)
 {
     m_uWheelScrollLines = 0;
+    m_uWheelScrollChars = 0;
 }
 
 void GridView::OnGridOutputOptions ()

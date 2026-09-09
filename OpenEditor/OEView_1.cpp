@@ -870,7 +870,7 @@ void COEditorView::OnChar (UINT nChar, UINT nRepCnt, UINT /*nFlags*/)
     RETURN_IF_LOCKED
 
     NormalizeOnCharCxt cxt;
-    PreNormalizeOnChar(cxt, static_cast<char>(nChar));
+    PreNormalizeOnChar(cxt, static_cast<wchar_t>(nChar));
 
     switch (nChar)
     {
@@ -882,7 +882,7 @@ void COEditorView::OnChar (UINT nChar, UINT nRepCnt, UINT /*nFlags*/)
                 if (GetBlockMode() == ebtColumn
                 && GetColBlockEditMode())
                 {
-                    ColumnarInsert(static_cast<char>(nChar));
+                    ColumnarInsert(static_cast<wchar_t>(nChar));
                     break;
                 }
                 else

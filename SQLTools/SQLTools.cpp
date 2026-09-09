@@ -155,7 +155,7 @@ END_MESSAGE_MAP()
 // CSQLToolsApp construction
 
     CWinThread* CSQLToolsApp::m_pServerBackgroundThread = NULL;
-    CString CSQLToolsApp::m_displayNotConnected = "Não Conectado (Lucas Dev)";
+    CString CSQLToolsApp::m_displayNotConnected = _T("Não Conectado (Lucas Dev)");
 
 SQLToolsSettings& CSQLToolsApp::getSettings ()
 {

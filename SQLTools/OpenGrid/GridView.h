@@ -114,6 +114,7 @@ protected:
     afx_msg void OnUpdate_CopyHeaders(CCmdUI* pCmdUI);
     afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
     afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+    afx_msg void OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
     //}}AFX_MSG
     afx_msg void OnFileExport();
     afx_msg LRESULT OnGetFont (WPARAM, LPARAM);
@@ -123,7 +124,10 @@ protected:
     DECLARE_MESSAGE_MAP()
 
 protected:
-    static UINT m_uWheelScrollLines;   // cached value for MS Weel support
+    static UINT m_uWheelScrollLines;   // cached value for MS Wheel support
+    static UINT m_uWheelScrollChars;   // cached value for horizontal wheel support
+    int m_zDeltaAccumulator;           // accumulator for high-precision vertical wheel / trackpad
+    int m_zHDeltaAccumulator;          // accumulator for high-precision horizontal wheel / trackpad
 
     CGridViewPaintAccessoriesPtr m_paintAccessories;
     GridManager* m_pManager;
