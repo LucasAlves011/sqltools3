@@ -64,13 +64,20 @@ protected:
     afx_msg void OnKillFocus(CWnd* pNewWnd);
     afx_msg void OnClose();
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
 
     DECLARE_MESSAGE_MAP()
 
 private:
+    enum HoverButton { BTN_NONE = 0, BTN_GO, BTN_BACK, BTN_COPY, BTN_SYNC, BTN_PIN, BTN_CLOSE };
+
     void LayoutControls(int cx, int cy);
     void UpdateTitle();
     void ApplySyntaxHighlighting();
+    void DrawHeaderButton(CDC* pDC, const CRect& rc, int btnId);
+    void DrawDbIcon(CDC* pDC, int x, int y);
+    static CSize CalculateIdealSize(const std::wstring& text, const CRect& rcWork);
 
     static void RegisterDialog(COECursorPeekDlg* pDlg);
     static void UnregisterDialog(COECursorPeekDlg* pDlg);
@@ -82,20 +89,25 @@ private:
     CPeekEditCtrl    m_editCtrl;
     CFont            m_font;
     CFont            m_uiFont;
+    CToolTipCtrl     m_toolTip;
 
     bool             m_bPinned;
     bool             m_bModified;
     bool             m_bSyncing;
+    int              m_hoverBtn;
+
+    bool             m_hasPrevPos;
+    Position         m_prevEditorPos;
 
     CRect            m_rcPinBtn;
     CRect            m_rcGoBtn;
+    CRect            m_rcBackBtn;
     CRect            m_rcSyncBtn;
     CRect            m_rcCopyBtn;
     CRect            m_rcCloseBtn;
 
-    static const int HEADER_HEIGHT = 28;
-    static const int BTN_WIDTH = 50;
-    static const int BTN_HEIGHT = 22;
+    static const int HEADER_HEIGHT = 30;
+    static const int BTN_SIZE = 24;
 };
 
 } // namespace OpenEditor
