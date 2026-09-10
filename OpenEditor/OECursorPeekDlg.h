@@ -10,6 +10,22 @@ class COEditorView;
 namespace OpenEditor
 {
 
+class COECursorPeekDlg;
+
+class CPeekEditCtrl : public CRichEditCtrl
+{
+public:
+    CPeekEditCtrl();
+    virtual ~CPeekEditCtrl();
+
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
+
+protected:
+    DECLARE_MESSAGE_MAP()
+    afx_msg void OnContextMenu(CWnd* pWnd, CPoint pos);
+    afx_msg UINT OnGetDlgCode();
+};
+
 class COECursorPeekDlg : public CWnd
 {
 public:
@@ -32,6 +48,8 @@ public:
     const std::wstring& GetObjectName () const { return m_objectInfo.name; }
 
     void SyncToEditor ();
+    void CopyContent ();
+    void CopyAllToClipboard ();
 
 protected:
     virtual BOOL PreTranslateMessage(MSG* pMsg);
@@ -61,7 +79,7 @@ private:
 
     COEditorView*    m_pEditor;
     PlSqlObjectInfo  m_objectInfo;
-    CRichEditCtrl    m_editCtrl;
+    CPeekEditCtrl    m_editCtrl;
     CFont            m_font;
     CFont            m_uiFont;
 
@@ -72,6 +90,7 @@ private:
     CRect            m_rcPinBtn;
     CRect            m_rcGoBtn;
     CRect            m_rcSyncBtn;
+    CRect            m_rcCopyBtn;
     CRect            m_rcCloseBtn;
 
     static const int HEADER_HEIGHT = 28;

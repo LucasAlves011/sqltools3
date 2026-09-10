@@ -12,6 +12,127 @@ namespace OpenEditor
 static const UINT IDC_PEEK_EDIT = 10101;
 std::vector<COECursorPeekDlg*> COECursorPeekDlg::s_activeDialogs;
 
+CPeekEditCtrl::CPeekEditCtrl()
+{
+}
+
+CPeekEditCtrl::~CPeekEditCtrl()
+{
+}
+
+BEGIN_MESSAGE_MAP(CPeekEditCtrl, CRichEditCtrl)
+    ON_WM_CONTEXTMENU()
+    ON_WM_GETDLGCODE()
+END_MESSAGE_MAP()
+
+UINT CPeekEditCtrl::OnGetDlgCode()
+{
+    return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;
+}
+
+BOOL CPeekEditCtrl::PreTranslateMessage(MSG* pMsg)
+{
+    if (pMsg->message == WM_KEYDOWN)
+    {
+        bool bCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        if (bCtrl)
+        {
+            if (pMsg->wParam == 'C' || pMsg->wParam == VK_INSERT)
+            {
+                COECursorPeekDlg* pParent = (COECursorPeekDlg*)GetParent();
+                if (pParent)
+                    pParent->CopyContent();
+                return TRUE;
+            }
+            else if (pMsg->wParam == 'A')
+            {
+                SetSel(0, -1);
+                return TRUE;
+            }
+            else if (pMsg->wParam == 'X')
+            {
+                Cut();
+                return TRUE;
+            }
+            else if (pMsg->wParam == 'V')
+            {
+                Paste();
+                return TRUE;
+            }
+            else if (pMsg->wParam == 'Z')
+            {
+                Undo();
+                return TRUE;
+            }
+        }
+    }
+    return CRichEditCtrl::PreTranslateMessage(pMsg);
+}
+
+void CPeekEditCtrl::OnContextMenu(CWnd* pWnd, CPoint pos)
+{
+    if (pos.x == -1 && pos.y == -1)
+    {
+        CRect rc;
+        GetClientRect(&rc);
+        pos = rc.CenterPoint();
+        ClientToScreen(&pos);
+    }
+
+    CMenu menu;
+    menu.CreatePopupMenu();
+
+    long selStart = 0, selEnd = 0;
+    GetSel(selStart, selEnd);
+    bool bHasSelection = (selStart != selEnd);
+
+    enum MenuCommands {
+        CMD_UNDO = 101,
+        CMD_CUT,
+        CMD_COPY,
+        CMD_COPY_ALL,
+        CMD_PASTE,
+        CMD_SELECT_ALL
+    };
+
+    menu.AppendMenu(MF_STRING | (CanUndo() ? MF_ENABLED : MF_GRAYED), CMD_UNDO, _T("Desfazer\tCtrl+Z"));
+    menu.AppendMenu(MF_SEPARATOR);
+    menu.AppendMenu(MF_STRING | (bHasSelection ? MF_ENABLED : MF_GRAYED), CMD_CUT, _T("Recortar\tCtrl+X"));
+    menu.AppendMenu(MF_STRING | (bHasSelection ? MF_ENABLED : MF_GRAYED), CMD_COPY, _T("Copiar\tCtrl+C"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, CMD_COPY_ALL, _T("Copiar Tudo"));
+    menu.AppendMenu(MF_STRING | (CanPaste() ? MF_ENABLED : MF_GRAYED), CMD_PASTE, _T("Colar\tCtrl+V"));
+    menu.AppendMenu(MF_SEPARATOR);
+    menu.AppendMenu(MF_STRING | MF_ENABLED, CMD_SELECT_ALL, _T("Selecionar Tudo\tCtrl+A"));
+
+    int cmd = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pos.x, pos.y, this);
+    COECursorPeekDlg* pParent = (COECursorPeekDlg*)GetParent();
+    switch (cmd)
+    {
+    case CMD_UNDO:
+        Undo();
+        break;
+    case CMD_CUT:
+        Cut();
+        break;
+    case CMD_COPY:
+        if (pParent)
+            pParent->CopyContent();
+        else
+            Copy();
+        break;
+    case CMD_COPY_ALL:
+        if (pParent)
+            pParent->CopyAllToClipboard();
+        break;
+    case CMD_PASTE:
+        Paste();
+        break;
+    case CMD_SELECT_ALL:
+        SetSel(0, -1);
+        break;
+    }
+}
+
 COECursorPeekDlg::COECursorPeekDlg()
     : m_pEditor(nullptr)
     , m_bPinned(false)
@@ -216,6 +337,9 @@ void COECursorPeekDlg::LayoutControls(int cx, int cy)
     m_rcSyncBtn = CRect(r - 54, 3, r, 3 + BTN_HEIGHT);
     r -= (54 + 4);
 
+    m_rcCopyBtn = CRect(r - 54, 3, r, 3 + BTN_HEIGHT);
+    r -= (54 + 4);
+
     m_rcGoBtn = CRect(r - 34, 3, r, 3 + BTN_HEIGHT);
 }
 
@@ -265,6 +389,7 @@ void COECursorPeekDlg::OnPaint()
     };
 
     drawButton(m_rcGoBtn, _T("Ir"), false);
+    drawButton(m_rcCopyBtn, _T("Copiar"), false);
     drawButton(m_rcSyncBtn, m_bModified ? _T("Salvar*") : _T("Salvar"), m_bModified);
     drawButton(m_rcPinBtn, m_bPinned ? _T("Fixado") : _T("Fixar"), m_bPinned);
     drawButton(m_rcCloseBtn, _T("X"), false);
@@ -282,6 +407,7 @@ LRESULT COECursorPeekDlg::OnNcHitTest(CPoint point)
         if (!m_rcCloseBtn.PtInRect(ptClient) &&
             !m_rcPinBtn.PtInRect(ptClient) &&
             !m_rcSyncBtn.PtInRect(ptClient) &&
+            !m_rcCopyBtn.PtInRect(ptClient) &&
             !m_rcGoBtn.PtInRect(ptClient))
         {
             return HTCAPTION;
@@ -326,6 +452,11 @@ void COECursorPeekDlg::OnLButtonDown(UINT nFlags, CPoint point)
             {
             }
         }
+        return;
+    }
+    else if (m_rcCopyBtn.PtInRect(point))
+    {
+        CopyContent();
         return;
     }
     else if (m_rcSyncBtn.PtInRect(point))
@@ -413,6 +544,7 @@ BOOL COECursorPeekDlg::PreTranslateMessage(MSG* pMsg)
 {
     if (pMsg->message == WM_KEYDOWN)
     {
+        bool bCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
         if (pMsg->wParam == VK_ESCAPE)
         {
             if (!m_bPinned)
@@ -423,15 +555,18 @@ BOOL COECursorPeekDlg::PreTranslateMessage(MSG* pMsg)
                 return TRUE;
             }
         }
-        else if (pMsg->wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000))
+        else if (pMsg->wParam == 'A' && bCtrl)
         {
-            if (::GetFocus() == m_editCtrl.m_hWnd)
-            {
-                m_editCtrl.SetSel(0, -1);
-                return TRUE;
-            }
+            m_editCtrl.SetFocus();
+            m_editCtrl.SetSel(0, -1);
+            return TRUE;
         }
-        else if (pMsg->wParam == 'S' && (GetKeyState(VK_CONTROL) & 0x8000))
+        else if ((pMsg->wParam == 'C' || pMsg->wParam == VK_INSERT) && bCtrl)
+        {
+            CopyContent();
+            return TRUE;
+        }
+        else if (pMsg->wParam == 'S' && bCtrl)
         {
             SyncToEditor();
             InvalidateRect(CRect(0, 0, 10000, HEADER_HEIGHT), FALSE);
@@ -440,6 +575,60 @@ BOOL COECursorPeekDlg::PreTranslateMessage(MSG* pMsg)
     }
 
     return CWnd::PreTranslateMessage(pMsg);
+}
+
+void COECursorPeekDlg::CopyContent()
+{
+    long selStart = 0, selEnd = 0;
+    m_editCtrl.GetSel(selStart, selEnd);
+    if (selStart != selEnd)
+    {
+        CString selText = m_editCtrl.GetSelText();
+        if (!selText.IsEmpty())
+        {
+            if (OpenClipboard())
+            {
+                EmptyClipboard();
+                size_t size = (selText.GetLength() + 1) * sizeof(wchar_t);
+                HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, size);
+                if (hGlob)
+                {
+                    memcpy(GlobalLock(hGlob), selText.GetString(), size);
+                    GlobalUnlock(hGlob);
+                    SetClipboardData(CF_UNICODETEXT, hGlob);
+                }
+                CloseClipboard();
+            }
+            return;
+        }
+        m_editCtrl.Copy();
+    }
+    else
+    {
+        CopyAllToClipboard();
+    }
+}
+
+void COECursorPeekDlg::CopyAllToClipboard()
+{
+    CString allText;
+    m_editCtrl.GetWindowText(allText);
+    if (allText.IsEmpty())
+        return;
+
+    if (OpenClipboard())
+    {
+        EmptyClipboard();
+        size_t size = (allText.GetLength() + 1) * sizeof(wchar_t);
+        HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, size);
+        if (hGlob)
+        {
+            memcpy(GlobalLock(hGlob), allText.GetString(), size);
+            GlobalUnlock(hGlob);
+            SetClipboardData(CF_UNICODETEXT, hGlob);
+        }
+        CloseClipboard();
+    }
 }
 
 void COECursorPeekDlg::ApplySyntaxHighlighting()
