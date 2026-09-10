@@ -35,6 +35,248 @@ static const TCHAR* s_szGutterClass   = _T("SQLTools_ValueGutter");
 static const TCHAR* s_szPanelClass    = _T("SQLTools_ValuePanel");
 
 /////////////////////////////////////////////////////////////////////////////
+// CModernButton
+/////////////////////////////////////////////////////////////////////////////
+
+CModernButton::CModernButton()
+    : m_iconType(ICON_NONE)
+    , m_bDropdown(false)
+    , m_bHover(false)
+    , m_bTrackingMouse(false)
+{
+}
+
+CModernButton::~CModernButton()
+{
+}
+
+BEGIN_MESSAGE_MAP(CModernButton, CButton)
+    ON_WM_MOUSEMOVE()
+    ON_WM_MOUSELEAVE()
+    ON_WM_ERASEBKGND()
+END_MESSAGE_MAP()
+
+BOOL CModernButton::OnEraseBkgnd(CDC*)
+{
+    return TRUE;
+}
+
+void CModernButton::OnMouseMove(UINT nFlags, CPoint point)
+{
+    if (!m_bTrackingMouse)
+    {
+        TRACKMOUSEEVENT tme;
+        tme.cbSize = sizeof(tme);
+        tme.dwFlags = TME_LEAVE;
+        tme.hwndTrack = m_hWnd;
+        _TrackMouseEvent(&tme);
+        m_bTrackingMouse = true;
+    }
+
+    if (!m_bHover)
+    {
+        m_bHover = true;
+        Invalidate();
+    }
+
+    CButton::OnMouseMove(nFlags, point);
+}
+
+void CModernButton::OnMouseLeave()
+{
+    m_bTrackingMouse = false;
+    if (m_bHover)
+    {
+        m_bHover = false;
+        Invalidate();
+    }
+    CButton::OnMouseLeave();
+}
+
+void CModernButton::DrawItem(LPDRAWITEMSTRUCT lpDIS)
+{
+    CDC dc;
+    dc.Attach(lpDIS->hDC);
+    CRect rc = lpDIS->rcItem;
+
+    bool isPressed = (lpDIS->itemState & ODS_SELECTED) != 0;
+    bool isDisabled = (lpDIS->itemState & ODS_DISABLED) != 0;
+    bool isHover = m_bHover && !isDisabled;
+
+    CDC memDC;
+    memDC.CreateCompatibleDC(&dc);
+    CBitmap memBmp;
+    memBmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
+    CBitmap* pOldBmp = memDC.SelectObject(&memBmp);
+
+    // Fundo da toolbar atrás do botão
+    memDC.FillSolidRect(rc, RGB(245, 246, 248));
+
+    // Cores modernas estilo Fluent / VS Code
+    COLORREF bgCol = RGB(255, 255, 255);
+    COLORREF borderCol = RGB(218, 222, 228);
+
+    if (isPressed)
+    {
+        bgCol = RGB(212, 228, 250);
+        borderCol = RGB(0, 120, 215);
+    }
+    else if (isHover)
+    {
+        bgCol = RGB(232, 242, 254);
+        borderCol = RGB(160, 198, 245);
+    }
+
+    CBrush bgBrush(bgCol);
+    CPen borderPen(PS_SOLID, 1, borderCol);
+    CBrush* pOldBrush = memDC.SelectObject(&bgBrush);
+    CPen* pOldPen = memDC.SelectObject(&borderPen);
+
+    memDC.RoundRect(rc, CPoint(4, 4));
+
+    memDC.SelectObject(pOldBrush);
+    memDC.SelectObject(pOldPen);
+
+    int textLeft = rc.left + 8;
+    int centerY = rc.CenterPoint().y;
+
+    if (m_iconType != ICON_NONE)
+    {
+        int iconX = rc.left + 9;
+        COLORREF iconCol = isHover ? RGB(0, 90, 180) : RGB(70, 75, 85);
+
+        switch (m_iconType)
+        {
+        case ICON_FORMAT:
+            {
+                // Ícone de código < / >
+                CPen tagPen(PS_SOLID, 1, RGB(0, 102, 204));
+                CPen* pOld = memDC.SelectObject(&tagPen);
+
+                // '<'
+                memDC.MoveTo(iconX + 3, centerY - 4);
+                memDC.LineTo(iconX, centerY);
+                memDC.LineTo(iconX + 3, centerY + 4);
+
+                // '/'
+                memDC.MoveTo(iconX + 4, centerY + 4);
+                memDC.LineTo(iconX + 7, centerY - 4);
+
+                // '>'
+                memDC.MoveTo(iconX + 8, centerY - 4);
+                memDC.LineTo(iconX + 11, centerY);
+                memDC.LineTo(iconX + 8, centerY + 4);
+
+                memDC.SelectObject(pOld);
+                textLeft = iconX + 16;
+            }
+            break;
+
+        case ICON_COPY:
+            {
+                // Ícone de copiar (duas páginas sobrepostas)
+                CPen copyPen(PS_SOLID, 1, iconCol);
+                CPen* pOld = memDC.SelectObject(&copyPen);
+
+                // Folha de trás
+                memDC.MoveTo(iconX + 2, centerY - 5);
+                memDC.LineTo(iconX + 8, centerY - 5);
+                memDC.LineTo(iconX + 8, centerY + 2);
+                memDC.MoveTo(iconX + 2, centerY - 5);
+                memDC.LineTo(iconX - 1, centerY - 5);
+                memDC.LineTo(iconX - 1, centerY + 2);
+
+                // Folha da frente
+                CRect rcFront(iconX + 1, centerY - 2, iconX + 8, centerY + 6);
+                memDC.FillSolidRect(&rcFront, bgCol);
+                memDC.Draw3dRect(&rcFront, iconCol, iconCol);
+
+                memDC.SelectObject(pOld);
+                textLeft = iconX + 13;
+            }
+            break;
+
+        case ICON_SAVE:
+            {
+                // Ícone de salvar (disquete)
+                CPen savePen(PS_SOLID, 1, iconCol);
+                CPen* pOld = memDC.SelectObject(&savePen);
+
+                memDC.MoveTo(iconX - 1, centerY - 5);
+                memDC.LineTo(iconX + 6, centerY - 5);
+                memDC.LineTo(iconX + 8, centerY - 3);
+                memDC.LineTo(iconX + 8, centerY + 5);
+                memDC.LineTo(iconX - 1, centerY + 5);
+                memDC.LineTo(iconX - 1, centerY - 5);
+
+                // Obturador
+                memDC.MoveTo(iconX + 1, centerY - 5);
+                memDC.LineTo(iconX + 1, centerY - 2);
+                memDC.LineTo(iconX + 4, centerY - 2);
+                memDC.LineTo(iconX + 4, centerY - 5);
+
+                // Etiqueta
+                memDC.MoveTo(iconX + 1, centerY + 1);
+                memDC.LineTo(iconX + 6, centerY + 1);
+                memDC.LineTo(iconX + 6, centerY + 5);
+                memDC.LineTo(iconX + 1, centerY + 5);
+                memDC.LineTo(iconX + 1, centerY + 1);
+
+                memDC.SelectObject(pOld);
+                textLeft = iconX + 14;
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    // Texto do botão
+    CString text;
+    GetWindowText(text);
+
+    int arrowIdx = text.Find(_T('\x25BC'));
+    if (arrowIdx != -1)
+    {
+        text = text.Left(arrowIdx);
+        text.TrimRight();
+    }
+
+    CFont* pFont = GetFont();
+    CFont* pOldF = memDC.SelectObject(pFont ? pFont : CFont::FromHandle((HFONT)::GetStockObject(DEFAULT_GUI_FONT)));
+    memDC.SetBkMode(TRANSPARENT);
+    memDC.SetTextColor(isDisabled ? RGB(160, 160, 165) : RGB(35, 38, 44));
+
+    int textRight = m_bDropdown ? rc.right - 14 : rc.right - 4;
+    CRect rcText(textLeft, rc.top, textRight, rc.bottom);
+    memDC.DrawText(text, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+    // Seta Dropdown discreta à direita
+    if (m_bDropdown)
+    {
+        int arrowX = rc.right - 10;
+        CPen arrowPen(PS_SOLID, 1, isHover ? RGB(0, 102, 204) : RGB(100, 105, 115));
+        CPen* pOld = memDC.SelectObject(&arrowPen);
+
+        memDC.MoveTo(arrowX - 3, centerY - 1);
+        memDC.LineTo(arrowX + 2, centerY - 1);
+        memDC.MoveTo(arrowX - 2, centerY);
+        memDC.LineTo(arrowX + 1, centerY);
+        memDC.MoveTo(arrowX - 1, centerY + 1);
+        memDC.LineTo(arrowX, centerY + 1);
+
+        memDC.SelectObject(pOld);
+    }
+
+    memDC.SelectObject(pOldF);
+
+    dc.BitBlt(0, 0, rc.Width(), rc.Height(), &memDC, 0, 0, SRCCOPY);
+    memDC.SelectObject(pOldBmp);
+    dc.Detach();
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // CValueSplitterBar
 /////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +288,7 @@ BEGIN_MESSAGE_MAP(CValueSplitterBar, CWnd)
     ON_WM_LBUTTONUP()
     ON_WM_CAPTURECHANGED()
     ON_WM_SETCURSOR()
-    ON_MESSAGE(WM_MOUSELEAVE, (LRESULT(CWnd::*)(WPARAM, LPARAM))&CValueSplitterBar::OnMouseLeave)
+    ON_WM_MOUSELEAVE()
 END_MESSAGE_MAP()
 
 CValueSplitterBar::CValueSplitterBar(OciGridView* pGrid)
@@ -98,7 +340,7 @@ CRect CValueSplitterBar::GetPillRect() const
     CRect rc;
     GetClientRect(rc);
     int pillWidth = (std::max)(6, rc.Width() - 2);
-    int pillHeight = 44;
+    int pillHeight = 46;
     int y = (rc.Height() - pillHeight) / 2;
     return CRect(rc.left + 1, y, rc.left + 1 + pillWidth, y + pillHeight);
 }
@@ -120,20 +362,20 @@ void CValueSplitterBar::OnPaint()
     memBmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
     CBitmap* pOldBmp = memDC.SelectObject(&memBmp);
 
-    // Fundo da barra
-    COLORREF bgCol = RGB(240, 240, 242);
+    // Fundo da barra divisória
+    COLORREF bgCol = RGB(245, 246, 248);
     memDC.FillSolidRect(rc, bgCol);
 
     // Linha divisória lateral esquerda
-    CPen linePen(PS_SOLID, 1, RGB(210, 210, 215));
+    CPen linePen(PS_SOLID, 1, RGB(222, 225, 230));
     CPen* pOldPen = memDC.SelectObject(&linePen);
     memDC.MoveTo(rc.left, rc.top);
     memDC.LineTo(rc.left, rc.bottom);
 
-    // Desenha o botão em formato de pílula central
+    // Desenha o botão em formato de pílula central moderno
     CRect rcPill = GetPillRect();
-    COLORREF pillBg = m_bHoverPill ? RGB(210, 230, 255) : RGB(230, 232, 236);
-    COLORREF pillBorder = m_bHoverPill ? RGB(0, 120, 215) : RGB(180, 182, 188);
+    COLORREF pillBg = m_bHoverPill ? RGB(225, 238, 255) : RGB(240, 242, 246);
+    COLORREF pillBorder = m_bHoverPill ? RGB(0, 120, 215) : RGB(210, 214, 220);
 
     CBrush pillBrush(pillBg);
     CPen borderPen(PS_SOLID, 1, pillBorder);
@@ -141,32 +383,42 @@ void CValueSplitterBar::OnPaint()
     memDC.SelectObject(&borderPen);
     memDC.RoundRect(rcPill, CPoint(6, 6));
 
-    // Desenha a seta (< ou >)
-    COLORREF arrowCol = m_bHoverPill ? RGB(0, 102, 204) : RGB(90, 90, 95);
-    CPen arrowPen(PS_SOLID, 1, arrowCol);
-    CBrush arrowBrush(arrowCol);
+    // Desenha chevron moderno e nítido
+    COLORREF arrowCol = m_bHoverPill ? RGB(0, 102, 204) : RGB(90, 95, 105);
+    CPen arrowPen(PS_SOLID, 2, arrowCol);
     memDC.SelectObject(&arrowPen);
-    memDC.SelectObject(&arrowBrush);
 
     int midX = rcPill.CenterPoint().x;
     int midY = rcPill.CenterPoint().y;
 
-    POINT pts[3];
     if (m_bCollapsed)
     {
-        // Painel colapsado: seta aponta para a esquerda (<)
-        pts[0].x = midX + 2; pts[0].y = midY - 5;
-        pts[1].x = midX - 3; pts[1].y = midY;
-        pts[2].x = midX + 2; pts[2].y = midY + 5;
+        // Painel colapsado: chevron aponta para a esquerda (<)
+        memDC.MoveTo(midX + 2, midY - 5);
+        memDC.LineTo(midX - 2, midY);
+        memDC.LineTo(midX + 2, midY + 5);
     }
     else
     {
-        // Painel expandido: seta aponta para a direita (>)
-        pts[0].x = midX - 2; pts[0].y = midY - 5;
-        pts[1].x = midX + 3; pts[1].y = midY;
-        pts[2].x = midX - 2; pts[2].y = midY + 5;
+        // Painel expandido: chevron aponta para a direita (>)
+        memDC.MoveTo(midX - 2, midY - 5);
+        memDC.LineTo(midX + 2, midY);
+        memDC.LineTo(midX - 2, midY + 5);
     }
-    memDC.Polygon(pts, 3);
+
+    // Risquinhos táteis de gripper acima e abaixo da seta
+    CPen gripPen(PS_SOLID, 1, m_bHoverPill ? RGB(140, 185, 240) : RGB(190, 195, 205));
+    memDC.SelectObject(&gripPen);
+
+    memDC.MoveTo(midX - 2, midY - 12);
+    memDC.LineTo(midX + 3, midY - 12);
+    memDC.MoveTo(midX - 2, midY - 15);
+    memDC.LineTo(midX + 3, midY - 15);
+
+    memDC.MoveTo(midX - 2, midY + 12);
+    memDC.LineTo(midX + 3, midY + 12);
+    memDC.MoveTo(midX - 2, midY + 15);
+    memDC.LineTo(midX + 3, midY + 15);
 
     memDC.SelectObject(pOldPen);
     dc.BitBlt(0, 0, rc.Width(), rc.Height(), &memDC, 0, 0, SRCCOPY);
@@ -531,6 +783,8 @@ BEGIN_MESSAGE_MAP(CValuePanelWnd, CWnd)
     ON_WM_PAINT()
     ON_WM_ERASEBKGND()
     ON_WM_LBUTTONDOWN()
+    ON_WM_MOUSEMOVE()
+    ON_WM_MOUSELEAVE()
     ON_BN_CLICKED(IDC_VP_BTN_FORMAT, OnFormatDropdown)
     ON_BN_CLICKED(IDC_VP_BTN_COPY,   OnBtnCopy)
     ON_BN_CLICKED(IDC_VP_BTN_SAVE,   OnBtnSave)
@@ -546,6 +800,7 @@ CValuePanelWnd::CValuePanelWnd(OciGridView* pGrid)
     , m_bCompact(false)
     , m_encoding(VE_UTF8)
     , m_lastMenuCloseTime(0)
+    , m_bHoverClose(false)
 {
 }
 
@@ -588,21 +843,25 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
         CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
 
-    // Toolbar Botões
-    m_btnFormat.Create(_T("XML \x25BC"),
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+    // Toolbar Botões Modernos com OwnerDraw e Ícones Vetoriais
+    m_btnFormat.Create(_T("XML"),
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         CRect(0, 0, 0, 0), this, IDC_VP_BTN_FORMAT);
     m_btnFormat.SetFont(&m_fontUi);
+    m_btnFormat.SetIconType(CModernButton::ICON_FORMAT);
+    m_btnFormat.SetDropdown(true);
 
     m_btnCopy.Create(_T("Copiar"),
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         CRect(0, 0, 0, 0), this, IDC_VP_BTN_COPY);
     m_btnCopy.SetFont(&m_fontUi);
+    m_btnCopy.SetIconType(CModernButton::ICON_COPY);
 
     m_btnSave.Create(_T("Salvar..."),
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         CRect(0, 0, 0, 0), this, IDC_VP_BTN_SAVE);
     m_btnSave.SetFont(&m_fontUi);
+    m_btnSave.SetIconType(CModernButton::ICON_SAVE);
 
     // Edit Control (RichEdit 2.0 / MSFTEDIT)
     DWORD editStyle = WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL
@@ -621,14 +880,14 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 CRect CValuePanelWnd::GetTabRect() const
 {
-    return CRect(0, 0, 80, 24);
+    return CRect(0, 0, 80, 25);
 }
 
 CRect CValuePanelWnd::GetCloseButtonRect() const
 {
     CRect rc;
     GetClientRect(rc);
-    return CRect(rc.right - 22, 3, rc.right - 4, 21);
+    return CRect(rc.right - 24, 2, rc.right - 2, 23);
 }
 
 void CValuePanelWnd::LayoutChildren(int cx, int cy)
@@ -636,15 +895,15 @@ void CValuePanelWnd::LayoutChildren(int cx, int cy)
     if (cx <= 0 || cy <= 0) return;
 
     int headerH = 25;
-    int toolbarH = 28;
+    int toolbarH = 30;
     int topOffset = headerH + toolbarH;
 
-    // Posiciona botões da toolbar
-    int btnY = headerH + 2;
-    int btnH = 23;
-    m_btnFormat.MoveWindow(4, btnY, 80, btnH);
-    m_btnCopy.MoveWindow(88, btnY, 65, btnH);
-    m_btnSave.MoveWindow(157, btnY, 68, btnH);
+    // Posiciona botões da toolbar (altura 24px, moderno)
+    int btnY = headerH + 3;
+    int btnH = 24;
+    m_btnFormat.MoveWindow(6, btnY, 84, btnH);
+    m_btnCopy.MoveWindow(94, btnY, 78, btnH);
+    m_btnSave.MoveWindow(176, btnY, 84, btnH);
 
     // Área do editor e gutter
     int gutterW = 38;
@@ -673,7 +932,7 @@ void CValuePanelWnd::OnPaint()
     GetClientRect(rc);
 
     int headerH = 25;
-    int toolbarH = 28;
+    int toolbarH = 30;
 
     // Header Background
     CRect rcHeader(rc.left, rc.top, rc.right, rc.top + headerH);
@@ -697,7 +956,15 @@ void CValuePanelWnd::OnPaint()
 
     // Botão Fechar [X] no header
     CRect rcClose = GetCloseButtonRect();
-    dc.SetTextColor(RGB(100, 100, 105));
+    if (m_bHoverClose)
+    {
+        dc.FillSolidRect(rcClose, RGB(232, 17, 35));
+        dc.SetTextColor(RGB(255, 255, 255));
+    }
+    else
+    {
+        dc.SetTextColor(RGB(110, 115, 125));
+    }
     dc.SelectObject(&m_fontUi);
     dc.DrawText(_T("\x2715"), rcClose, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
@@ -715,6 +982,35 @@ void CValuePanelWnd::OnPaint()
 
     dc.SelectObject(pOldPen);
     dc.SelectObject(pOldFont);
+}
+
+void CValuePanelWnd::OnMouseMove(UINT nFlags, CPoint point)
+{
+    TRACKMOUSEEVENT tme;
+    tme.cbSize = sizeof(tme);
+    tme.dwFlags = TME_LEAVE;
+    tme.hwndTrack = m_hWnd;
+    _TrackMouseEvent(&tme);
+
+    CRect rcClose = GetCloseButtonRect();
+    bool bHover = (rcClose.PtInRect(point) != FALSE);
+    if (bHover != m_bHoverClose)
+    {
+        m_bHoverClose = bHover;
+        InvalidateRect(rcClose, FALSE);
+    }
+
+    CWnd::OnMouseMove(nFlags, point);
+}
+
+void CValuePanelWnd::OnMouseLeave()
+{
+    if (m_bHoverClose)
+    {
+        m_bHoverClose = false;
+        CRect rcClose = GetCloseButtonRect();
+        InvalidateRect(rcClose, FALSE);
+    }
 }
 
 void CValuePanelWnd::OnLButtonDown(UINT nFlags, CPoint point)
@@ -862,11 +1158,11 @@ void CValuePanelWnd::RefreshDisplay()
     CString btnLabel;
     switch (m_currentFormat)
     {
-    case VF_XML:    btnLabel = _T("XML \x25BC");    break;
-    case VF_JSON:   btnLabel = _T("JSON \x25BC");   break;
-    case VF_BINARY: btnLabel = _T("Binary \x25BC"); break;
+    case VF_XML:    btnLabel = _T("XML");    break;
+    case VF_JSON:   btnLabel = _T("JSON");   break;
+    case VF_BINARY: btnLabel = _T("Binary"); break;
     case VF_TEXT:
-    default:        btnLabel = _T("Text \x25BC");   break;
+    default:        btnLabel = _T("Text");   break;
     }
     m_btnFormat.SetWindowText(btnLabel);
 

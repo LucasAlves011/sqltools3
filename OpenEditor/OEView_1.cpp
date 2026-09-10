@@ -86,6 +86,7 @@ static HCURSOR g_hCurIBeam = ::LoadCursor(NULL, IDC_IBEAM);
 static HCURSOR g_hCurArrow = ::LoadCursor(NULL, IDC_ARROW);
 BOOL COEditorView::m_isOverWriteMode = FALSE;
 UINT COEditorView::m_uWheelScrollLines = 0;
+UINT COEditorView::m_uWheelScrollChars = 0;
 COEAutocompleteCtrl COEditorView::m_autocompleteList;
 UINT COEditorView::m_AltColumnarTextFormat = 0;
 
@@ -224,6 +225,7 @@ BEGIN_MESSAGE_MAP(COEditorView, CView)
     ON_COMMAND(ID_EDIT_SELECT_LINE, OnEditSelectLine)
     ON_COMMAND(ID_EDIT_DELETE, OnEditDelete)
     ON_WM_MOUSEWHEEL()
+    ON_WM_MOUSEHWHEEL()
     ON_WM_SETTINGCHANGE()
     ON_COMMAND(ID_EDIT_NORMALIZE_TEXT, OnEditNormalizeText)
     ON_COMMAND(ID_EDIT_DATETIME_STAMP, OnEditDatetimeStamp)
@@ -310,6 +312,8 @@ COEditorView::COEditorView ()
     m_nDelayedScrollLine = -1;
     m_syntaxGutter = true;
     m_unsupportedAsianChars = false;
+    m_zDeltaAccumulator = 0;
+    m_zHDeltaAccumulator = 0;
 
     if (!m_AltColumnarTextFormat)
         m_AltColumnarTextFormat = RegisterClipboardFormat(L"OpenEditor.ColumnarText");
@@ -2933,49 +2937,102 @@ BOOL COEditorView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
         }
     }
 
-    // Shift + Wheel: Rolamento lateral (horizontal)
-    if (nFlags & MK_SHIFT)
+    // 1. Shift + Wheel: Rolamento lateral (horizontal)
+    if ((nFlags & MK_SHIFT) || (::GetKeyState(VK_SHIFT) & 0x8000))
     {
-        for (int step = 0; step < 3; ++step)
-            DoHScroll(zDelta > 0 ? SB_LINELEFT : SB_LINERIGHT, TRUE);
+        if (!m_uWheelScrollChars)
+        {
+            if (!::SystemParametersInfo(SPI_GETWHEELSCROLLCHARS, 0, &m_uWheelScrollChars, 0) || !m_uWheelScrollChars)
+                m_uWheelScrollChars = 3;
+        }
+
+        m_zHDeltaAccumulator += zDelta;
+        int nToScroll = ::MulDiv(m_zHDeltaAccumulator, m_uWheelScrollChars, WHEEL_DELTA);
+
+        if (nToScroll != 0)
+        {
+            m_zHDeltaAccumulator -= ::MulDiv(nToScroll, WHEEL_DELTA, m_uWheelScrollChars);
+
+            if (nToScroll > 0)
+            {
+                while (nToScroll--)
+                    DoHScroll(SB_LINELEFT, FALSE);
+            }
+            else
+            {
+                while (nToScroll++)
+                    DoHScroll(SB_LINERIGHT, FALSE);
+            }
+        }
+
         return TRUE;
     }
 
-    SCROLLINFO scrollInfo;
-    scrollInfo.cbSize = sizeof(scrollInfo);
-    scrollInfo.fMask = SIF_TRACKPOS;
+    // 2. Vertical Wheel / Trackpad 2-finger vertical gesture
+    if (!m_uWheelScrollLines)
+        ::SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &m_uWheelScrollLines, 0);
 
-    GetScrollInfo(SB_VERT, &scrollInfo);
-
-    if (scrollInfo.nMax >= (int)scrollInfo.nPage)
+    if (m_uWheelScrollLines == WHEEL_PAGESCROLL)
     {
-        if (!m_uWheelScrollLines)
-            ::SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &m_uWheelScrollLines, 0);
+        DoVScroll(zDelta > 0 ? SB_PAGEUP : SB_PAGEDOWN, FALSE);
+    }
+    else
+    {
+        m_zDeltaAccumulator += zDelta;
+        int nToScroll = ::MulDiv(m_zDeltaAccumulator, m_uWheelScrollLines, WHEEL_DELTA);
 
-        if (m_uWheelScrollLines == WHEEL_PAGESCROLL)
+        if (nToScroll != 0)
         {
-            DoVScroll(zDelta > 0 ? SB_PAGEDOWN : SB_PAGEUP, TRUE);
-        }
-        else
-        {
-            int nToScroll = ::MulDiv(zDelta, m_uWheelScrollLines, WHEEL_DELTA);
+            m_zDeltaAccumulator -= ::MulDiv(nToScroll, WHEEL_DELTA, m_uWheelScrollLines);
 
-            if (zDelta > 0)
+            if (nToScroll > 0)
+            {
                 while (nToScroll--)
-                    DoVScroll(SB_LINELEFT, TRUE);
+                    DoVScroll(SB_LINEUP, FALSE);
+            }
             else
+            {
                 while (nToScroll++)
-                    DoVScroll(SB_LINERIGHT, TRUE);
+                    DoVScroll(SB_LINEDOWN, FALSE);
+            }
         }
     }
 
-    return FALSE;
-    //return CView::OnMouseWheel(nFlags, zDelta, pt);
+    return TRUE;
+}
+
+void COEditorView::OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+    if (!m_uWheelScrollChars)
+    {
+        if (!::SystemParametersInfo(SPI_GETWHEELSCROLLCHARS, 0, &m_uWheelScrollChars, 0) || !m_uWheelScrollChars)
+            m_uWheelScrollChars = 3;
+    }
+
+    m_zHDeltaAccumulator += zDelta;
+    int nToScroll = ::MulDiv(m_zHDeltaAccumulator, m_uWheelScrollChars, WHEEL_DELTA);
+
+    if (nToScroll != 0)
+    {
+        m_zHDeltaAccumulator -= ::MulDiv(nToScroll, WHEEL_DELTA, m_uWheelScrollChars);
+
+        if (nToScroll > 0)
+        {
+            while (nToScroll--)
+                DoHScroll(SB_LINERIGHT, FALSE);
+        }
+        else
+        {
+            while (nToScroll++)
+                DoHScroll(SB_LINELEFT, FALSE);
+        }
+    }
 }
 
 void COEditorView::OnSettingChange (UINT, LPCTSTR)
 {
     m_uWheelScrollLines = 0;
+    m_uWheelScrollChars = 0;
 }
 
 void COEditorView::OnActivateView(BOOL bActivate, CView* pActivateView, CView* pDeactiveView)

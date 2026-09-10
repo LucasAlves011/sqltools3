@@ -16,6 +16,35 @@ namespace OG2
 class CValuePanelWnd;
 
 /////////////////////////////////////////////////////////////////////////////
+// CModernButton - Botão moderno com suporte a ícones vetoriais e hover suave
+/////////////////////////////////////////////////////////////////////////////
+class CModernButton : public CButton
+{
+public:
+    enum ButtonIcon { ICON_NONE = 0, ICON_FORMAT, ICON_COPY, ICON_SAVE };
+
+    CModernButton();
+    virtual ~CModernButton();
+
+    void SetIconType(ButtonIcon icon) { m_iconType = icon; if (GetSafeHwnd()) Invalidate(); }
+    void SetDropdown(bool bDropdown) { m_bDropdown = bDropdown; if (GetSafeHwnd()) Invalidate(); }
+
+    virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
+
+protected:
+    DECLARE_MESSAGE_MAP()
+    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
+    afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+
+private:
+    ButtonIcon m_iconType;
+    bool       m_bDropdown;
+    bool       m_bHover;
+    bool       m_bTrackingMouse;
+};
+
+/////////////////////////////////////////////////////////////////////////////
 // CValueSplitterBar - Separador vertical arrastável com botão colapsar/expandir
 /////////////////////////////////////////////////////////////////////////////
 class CValueSplitterBar : public CWnd
@@ -142,6 +171,8 @@ protected:
     afx_msg void OnBtnCopy();
     afx_msg void OnBtnSave();
     afx_msg void OnEditVScroll();
+    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 private:
@@ -155,13 +186,14 @@ private:
     CFont             m_fontUiBold;
 
     // Controles filhos
-    CButton           m_btnFormat;
-    CButton           m_btnCopy;
-    CButton           m_btnSave;
+    CModernButton     m_btnFormat;
+    CModernButton     m_btnCopy;
+    CModernButton     m_btnSave;
     CValueLineGutter  m_wndGutter;
     CValueEditCtrl    m_wndEdit;
 
     DWORD             m_lastMenuCloseTime;
+    bool              m_bHoverClose;
 
     // Estado do conteúdo
     std::string          m_rawInput;

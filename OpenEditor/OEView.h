@@ -68,7 +68,10 @@ class COEditorView : public CView, protected OpenEditor::EditContext
     static COEAutocompleteCtrl m_autocompleteList; // an embedded control
 
     static BOOL m_isOverWriteMode;     // overwrite mode for text input
-    static UINT m_uWheelScrollLines;   // cached value for MS Weel support
+    static UINT m_uWheelScrollLines;   // cached value for MS Wheel support
+    static UINT m_uWheelScrollChars;   // cached value for horizontal wheel support
+    int  m_zDeltaAccumulator;          // accumulator for high-precision vertical wheel / trackpad
+    int  m_zHDeltaAccumulator;         // accumulator for high-precision horizontal wheel / trackpad
     BOOL m_bAttached;                  // it's FALSE till context initialization
     int  m_nMaxLineLength;		       // max line length (for horisontal scroller)
     BOOL m_bSyntaxHighlight;           
@@ -453,6 +456,7 @@ public:
     afx_msg void OnEditSelectWord();
     afx_msg void OnEditSelectLine();
     afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+    afx_msg void OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
     afx_msg void OnSettingChange(UINT uFlags, LPCTSTR lpszSection);
     afx_msg void OnEditCapitalize();
     afx_msg void OnEditInvertCase();

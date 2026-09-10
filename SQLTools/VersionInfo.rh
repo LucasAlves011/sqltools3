@@ -1,4 +1,4 @@
-﻿/*
+/*
     SQLTools is a tool for Oracle database developers and DBAs.
     Copyright (C) 1997-2026 Aleksey Kochetov
 
@@ -39,10 +39,10 @@
                                 "many improvements taken from SQLTools++ by Randolf Geist\r\n"\
                                 "Increased by Lucas Matheus"
 
-#define SQLTOOLS_BUILD          1
-#define SQLTOOLS_BUILD_S        "1"
-#define SQLTOOLS_RELEASE_STR    "SQLTools 3.0.1 by Lucas Matheus"
+#define SQLTOOLS_BUILD          2
+#define SQLTOOLS_BUILD_S        "2"
+#define SQLTOOLS_RELEASE_STR    "SQLTools 3.0.2 by Lucas Matheus"
 #define SQLTOOLS_BUILD_STR      ""
 #define SQLTOOLS_VERSION        SQLTOOLS_RELEASE_STR SQLTOOLS_PLATFORM SQLTOOLS_BUILD_TYPE
-#define SQLTOOLS_VERSION_ID     3, 0, 1, 1
-#define SQLTOOLS_VERSION_STR    "3, 0, 1, 1"
+#define SQLTOOLS_VERSION_ID     3, 0, 2, 1
+#define SQLTOOLS_VERSION_STR    "3, 0, 2, 1"
