@@ -36,12 +36,11 @@
 #define SQLTOOLS_COPYRIGHT      "Copyright (C) 1997-2026 Aleksey Kochetov\r\n"\
                                 "Contributors: Tomasz Drzewiecki, Ken Clubok,\r\n"\
                                 "converted to 64 bit by Wilson Yeung,\r\n"\
-                                "many improvements taken from SQLTools++ by Randolf Geist\r\n"\
-                                "Increased by Lucas Matheus"
+                                "many improvements taken from SQLTools++ by Randolf Geist"
 
 #define SQLTOOLS_BUILD          2
 #define SQLTOOLS_BUILD_S        "2"
-#define SQLTOOLS_RELEASE_STR    "SQLTools 3.0.2 by Lucas Matheus"
+#define SQLTOOLS_RELEASE_STR    "SQLTools 3.0.2"
 #define SQLTOOLS_BUILD_STR      ""
 #define SQLTOOLS_VERSION        SQLTOOLS_RELEASE_STR SQLTOOLS_PLATFORM SQLTOOLS_BUILD_TYPE
 #define SQLTOOLS_VERSION_ID     3, 0, 2, 1

@@ -1,10 +1,10 @@
-﻿# SQLTools 3.0.1 — by Lucas Matheus
+# SQLTools 3.0.2
 
 A modernized, tuned-up build of **SQLTools**, the lightweight, high-performance client for Oracle databases. This version is focused on making day-to-day PL/SQL work faster: writing Packages, Procedures, Functions, and digging through binary or complex data without fighting the tool.
 
 ---
 
-## What's new in 3.0.1
+## What's new in 3.0.2
 
 ### 1. The "Value" side panel (DBeaver-style)
 A dedicated viewer for whatever cell you've got selected in the results grid — no more squinting at truncated text or freezing the UI to see the full content.

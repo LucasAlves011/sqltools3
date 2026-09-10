@@ -33,7 +33,6 @@ CAboutDlg::CAboutDlg(CWnd* pParent /*=NULL*/)
     m_license = SQLTOOLS_VERSION
         "\r\nDevelopment tools for Oracle database"
         "\r\n"
-        "\r\nThis is an enhanced version modified by Lucas Matheus."
         "\r\nSource code and releases are publicly available at:"
         "\r\nhttps://github.com/LucasAlves011/sqltools3"
         "\r\n\r\n" SQLTOOLS_COPYRIGHT
