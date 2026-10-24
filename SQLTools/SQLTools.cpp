@@ -33,6 +33,7 @@ using namespace Gdiplus;
 #include "SQLWorksheet/SQLWorksheetDoc.h"
 #include "Dlg/AboutDlg.h"
 #include "OCI8/EmbeddedOci.h"
+#include "Update/UpdateManager.h"
 #include "OpenEditor/OEGeneralPage.h"
 #include "CommandLineparser.h"
 #include "VersionInfo.rh"
@@ -78,6 +79,8 @@ IMPLEMENT_DYNCREATE(CSQLToolsApp, CWinAppEx)
 
 BEGIN_MESSAGE_MAP(CSQLToolsApp, CWinAppEx)
     ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
+    ON_COMMAND(ID_APP_CHECK_UPDATES, OnCheckForUpdates)
+    ON_COMMAND(ID_APP_CHANGELOG, OnShowChangelog)
     ON_COMMAND(ID_EDIT_PERMANENT_SETTINGS, OnEditPermanetSettings)
     ON_COMMAND(ID_APP_SETTINGS, OnAppSettings)
     ON_COMMAND(ID_SQL_CONNECT, OnSqlConnect)
@@ -363,6 +366,8 @@ BOOL CSQLToolsApp::InitInstance()
         m_pMainWnd->ShowWindow(m_nCmdShow); // The main window has been
         m_pMainWnd->UpdateWindow();         // initialized, so show and update it.
 
+        UpdateManager::ScheduleStartup(m_pMainWnd); // changelog pos-atualizacao e checagem automatica (24h)
+
         m_pServerBackgroundThread =
             AfxBeginThread(ServerBackgroundThread::ThreadProc, 0, THREAD_PRIORITY_ABOVE_NORMAL);
 
@@ -476,6 +481,16 @@ void CSQLToolsApp::OnAppAbout()
 {
     CAboutDlg aboutDlg;
     aboutDlg.DoModal();
+}
+
+void CSQLToolsApp::OnCheckForUpdates()
+{
+    UpdateManager::CheckNow();
+}
+
+void CSQLToolsApp::OnShowChangelog()
+{
+    UpdateManager::ShowChangelog(AfxGetMainWnd());
 }
 
 void CSQLToolsApp::OnEditPermanetSettings()

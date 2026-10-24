@@ -1268,6 +1268,8 @@ BEGIN
         MENUITEM "&SQL Short Reference",        ID_SQL_HELP
         MENUITEM SEPARATOR
         MENUITEM "SQLTools on the &Web",        ID_SQLTOOLS_ON_THE_WEB
+        MENUITEM "Check for &Updates...",       ID_APP_CHECK_UPDATES
+        MENUITEM "&What's New...",             ID_APP_CHANGELOG
         MENUITEM SEPARATOR
         MENUITEM "&About...",                   ID_APP_ABOUT
     END
@@ -1608,6 +1610,8 @@ BEGIN
         MENUITEM "&SQL Short Reference",        ID_SQL_HELP
         MENUITEM SEPARATOR
         MENUITEM "SQLTools on the &Web",        ID_SQLTOOLS_ON_THE_WEB
+        MENUITEM "Check for &Updates...",       ID_APP_CHECK_UPDATES
+        MENUITEM "&What's New...",             ID_APP_CHANGELOG
         MENUITEM SEPARATOR
         MENUITEM "&About...",                   ID_APP_ABOUT
     END

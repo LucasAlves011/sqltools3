@@ -4,6 +4,17 @@
 //
 #define IDR_MANIFEST                    1
 #define IDR_OCI_BUNDLE                  9100
+#define IDR_CHANGELOG                   9101
+#define IDD_UPDATE_AVAILABLE            10010
+#define IDD_CHANGELOG                   10011
+#define IDC_UPD_HEADER                  1440
+#define IDC_UPD_NOTES                   1441
+#define IDC_UPD_SKIP                    1442
+#define IDC_CHL_TEXT                    1443
+#define IDC_CHL_CHECK                   1444
+#define IDC_CHL_AUTOCHECK               1445
+#define ID_APP_CHECK_UPDATES            38270
+#define ID_APP_CHANGELOG                38271
 #define IDD_PROP_GRID1                  101
 #define IDD_PROP_GRID2                  102
 #define IDR_MAINFRAME                   128

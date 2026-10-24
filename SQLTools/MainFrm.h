@@ -142,6 +142,8 @@ public:
     afx_msg LRESULT OnSetMessageString (WPARAM, LPARAM);
     afx_msg LRESULT RequestQueueNotEmpty (WPARAM, LPARAM);
     afx_msg LRESULT RequestQueueEmpty (WPARAM, LPARAM);
+    afx_msg LRESULT OnUpdateCheckDone (WPARAM, LPARAM);
+    afx_msg LRESULT OnUpdateStartup (WPARAM, LPARAM);
     afx_msg void OnEndSession(BOOL bEnding);
     afx_msg BOOL OnQueryEndSession();
     void SetupMDITabbedGroups ();

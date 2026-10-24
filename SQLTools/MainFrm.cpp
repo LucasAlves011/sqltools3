@@ -22,6 +22,7 @@
 #include "COMMON/ExceptionHelper.h"
 #include "COMMON/GUICommandDictionary.h"
 #include "SQLTools.h"
+#include "Update/UpdateManager.h"
 #include "MainFrm.h"
 #include "Tools/Grep/GrepDlg.h"
 #include "ConnectionTasks.h"
@@ -100,6 +101,8 @@ BEGIN_MESSAGE_MAP(CMDIMainFrame, CWorkbookMDIFrame)
     ON_MESSAGE(WM_SETMESSAGESTRING, &CMDIMainFrame::OnSetMessageString)
     ON_MESSAGE(CSQLToolsApp::UM_REQUEST_QUEUE_NOT_EMPTY, RequestQueueNotEmpty)
     ON_MESSAGE(CSQLToolsApp::UM_REQUEST_QUEUE_EMPTY,     RequestQueueEmpty)
+    ON_MESSAGE(UpdateManager::UM_UPDATE_CHECK_DONE,      OnUpdateCheckDone)
+    ON_MESSAGE(UpdateManager::UM_UPDATE_STARTUP,         OnUpdateStartup)
 
     ON_WM_ENDSESSION()
     ON_WM_QUERYENDSESSION()
@@ -709,6 +712,16 @@ LRESULT CMDIMainFrame::RequestQueueNotEmpty (WPARAM, LPARAM)
     _DEFAULT_HANDLER_
 
     return 0L;
+}
+
+LRESULT CMDIMainFrame::OnUpdateCheckDone (WPARAM wParam, LPARAM lParam)
+{
+    return UpdateManager::OnCheckDone(wParam, lParam);
+}
+
+LRESULT CMDIMainFrame::OnUpdateStartup (WPARAM, LPARAM)
+{
+    return UpdateManager::OnStartup();
 }
 
 LRESULT CMDIMainFrame::RequestQueueEmpty (WPARAM, LPARAM)

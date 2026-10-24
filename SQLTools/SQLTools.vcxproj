@@ -747,6 +747,8 @@ echo.
     <ClInclude Include="Oci8\Connect.h" />
     <ClInclude Include="Oci8\Conversions.h" />
     <ClInclude Include="OCI8\EmbeddedOci.h" />
+    <ClInclude Include="Update\UpdateChecker.h" />
+    <ClInclude Include="Update\UpdateManager.h" />
     <ClInclude Include="OCI8\Datatypes.h" />
     <ClInclude Include="Oci8\SQLFunctionCodes.h" />
     <ClInclude Include="OCI8\Statement.h" />
@@ -1337,6 +1339,8 @@ makehm /h ID_,HID_,0x10000 IDM_,HIDM_,0x10000 "..\OpenEditor\OpenEditorInc.rh" &
     <ClCompile Include="OCI8\Datatypes.cpp" />
     <ClCompile Include="Oci8\default_oci_handler.cpp" />
     <ClCompile Include="OCI8\EmbeddedOci.cpp" />
+    <ClCompile Include="Update\UpdateChecker.cpp" />
+    <ClCompile Include="Update\UpdateManager.cpp" />
     <ClCompile Include="Oci8\SQLFunctionCodes.cpp" />
     <ClCompile Include="OCI8\Statement.cpp" />
     <ClCompile Include="DbBrowser\DBBrowserClusterList.cpp" />

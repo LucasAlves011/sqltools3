@@ -145,6 +145,8 @@ public:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnAppAbout();
+	afx_msg void OnCheckForUpdates();
+	afx_msg void OnShowChangelog();
 	afx_msg void OnEditPermanetSettings();
 	afx_msg void OnAppSettings();
 	afx_msg void OnSqlConnect();

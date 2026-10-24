@@ -275,7 +275,7 @@ namespace OraMetaDict
     CMN_IMPL_PROPERTY(WriteSettings, Comments              , true);               
     CMN_IMPL_PROPERTY(WriteSettings, Grants                , true);                 
     CMN_IMPL_PROPERTY(WriteSettings, LowerNames            , true);             
-    CMN_IMPL_PROPERTY(WriteSettings, ShemaName             , false);              
+    CMN_IMPL_PROPERTY(WriteSettings, ShemaName             , true);              
     CMN_IMPL_PROPERTY(WriteSettings, SQLPlusCompatibility  , true); 
     CMN_IMPL_PROPERTY(WriteSettings, GeneratePrompts       , true); 
     // Table Specific

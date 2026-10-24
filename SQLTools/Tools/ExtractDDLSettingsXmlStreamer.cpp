@@ -52,6 +52,7 @@ void ExtractDDLSettingsXmlStreamer::read  (const TiXmlDocument& doc, void* ctx)
             validateMajorVersion(settingsElem, MAJOR_VERSION);
             readAwareness(settingsElem, *(OraMetaDict::WriteSettings*)settings);
             readAwareness(settingsElem, *settings);
+            settings->m_ShemaName = true; // sempre inicia marcada
         }
         else 
             THROW_APP_EXCEPTION("\"" + Common::str(getFilename()) + "\" does not contain settings.");

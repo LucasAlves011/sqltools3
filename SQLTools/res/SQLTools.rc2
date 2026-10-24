@@ -15,6 +15,34 @@
 #include "RES\VersionInfo.rc"
 #include "PropTree.rc"
 
+// Atualizacoes: dialogos "Update Available" e "What's New" (Update/UpdateManager.cpp)
+IDD_UPDATE_AVAILABLE DIALOGEX 0, 0, 330, 218
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Update Available"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "",IDC_UPD_HEADER,10,10,310,24
+    LTEXT           "What's new:",-1,10,38,100,8
+    EDITTEXT        IDC_UPD_NOTES,10,50,310,114,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Nothing is installed automatically. ""Download"" opens the release page in your browser, where you can get the new SQLTools.exe.",-1,10,170,310,18
+    DEFPUSHBUTTON   "&Download",IDOK,100,196,70,14
+    PUSHBUTTON      "&Skip This Version",IDC_UPD_SKIP,175,196,75,14
+    PUSHBUTTON      "Remind Me &Later",IDCANCEL,255,196,65,14
+END
+
+IDD_CHANGELOG DIALOGEX 0, 0, 360, 254
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "What's New"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_CHL_TEXT,10,10,340,214,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Check for updates when SQLTools starts",IDC_CHL_AUTOCHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,234,170,10
+    PUSHBUTTON      "Check for &Updates",IDC_CHL_CHECK,205,231,75,14
+    DEFPUSHBUTTON   "&Close",IDOK,285,231,65,14
+END
+
+IDR_CHANGELOG           RCDATA                  "..\\CHANGELOG.md"
+
 #ifdef OCI_EMBED
 // Oracle Instant Client comprimido (gerado por tools/PackOci), extraido em runtime por OCI8/EmbeddedOci.cpp
 IDR_OCI_BUNDLE          RCDATA                  "..\\3dParty\\oracle\\instantclient19\\oci19.bin"

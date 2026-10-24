@@ -59,7 +59,10 @@ void SQLToolsSettingsXmlStreamer::read  (const TiXmlDocument& doc, void* ctx)
             readAwareness(settingsElem, *settings);
 
             if (const TiXmlElement* ddlElem = settingsElem->FirstChildElement(DDL_SETTINGS))
+            {
                 readAwareness(ddlElem, *static_cast<OraMetaDict::WriteSettings*>(settings));
+                settings->m_ShemaName = true; // "Prefix with Schema Name" sempre inicia marcada (o usuario pode desmarcar na sessao)
+            }
 
             if (const TiXmlElement* guiElem = settingsElem->FirstChildElement(GUI_SETTINGS))
             {
