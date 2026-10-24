@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -30,40 +32,17 @@ jobs:
       - name: Prepare Release Package
         shell: pwsh
         run: |
-          $distDir = "dist"
-          New-Item -ItemType Directory -Path $distDir -Force
-
-          Copy-Item "_output_\Release.x64\SQLTools.exe" -Destination "$distDir\"
-          if (Test-Path "_output_\Release.x64\sqltools.chm") {
-            Copy-Item "_output_\Release.x64\sqltools.chm" -Destination "$distDir\"
-          }
-          if (Test-Path "_output_\SqlToolsProxy\Release.x64\SqlToolsProxy.exe") {
-            Copy-Item "_output_\SqlToolsProxy\Release.x64\SqlToolsProxy.exe" -Destination "$distDir\"
-          }
-
-          $ver = "${{ github.event.release.tag_name || github.ref_name }}"
-          if (-not $ver -or $ver -eq "" -or $ver -eq "main") {
-            $ver = "v3.0.1"
-          }
-          $zipName = "SQLTools-$ver-x64.zip"
-          Compress-Archive -Path "$distDir\*" -DestinationPath $zipName -Force
-
-          # Copy standalone SQLTools.exe for direct single-file download
           Copy-Item "_output_\Release.x64\SQLTools.exe" -Destination "SQLTools.exe"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SQLTools-Release-x64
-          path: |
-            SQLTools-*-x64.zip
-            SQLTools.exe
+          path: SQLTools.exe
 
       - name: Attach Binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         with:
           tag_name: ${{ github.event.release.tag_name || github.ref_name }}
-          files: |
-            SQLTools-*-x64.zip
-            SQLTools.exe
+          files: SQLTools.exe

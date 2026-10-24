@@ -3,6 +3,7 @@
 // Used by SQLTools.rc
 //
 #define IDR_MANIFEST                    1
+#define IDR_OCI_BUNDLE                  9100
 #define IDD_PROP_GRID1                  101
 #define IDD_PROP_GRID2                  102
 #define IDR_MAINFRAME                   128

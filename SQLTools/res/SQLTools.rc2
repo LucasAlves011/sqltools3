@@ -15,6 +15,11 @@
 #include "RES\VersionInfo.rc"
 #include "PropTree.rc"
 
+#ifdef OCI_EMBED
+// Oracle Instant Client comprimido (gerado por tools/PackOci), extraido em runtime por OCI8/EmbeddedOci.cpp
+IDR_OCI_BUNDLE          RCDATA                  "..\\3dParty\\oracle\\instantclient19\\oci19.bin"
+#endif
+
 #ifndef NOMANIFEST
 IDR_MANIFEST            RT_MANIFEST             "RES\\sqltools.manifest"
 #endif//MANIFEST

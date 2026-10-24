@@ -32,6 +32,7 @@ using namespace Gdiplus;
 #include "ChildFrm.h"
 #include "SQLWorksheet/SQLWorksheetDoc.h"
 #include "Dlg/AboutDlg.h"
+#include "OCI8/EmbeddedOci.h"
 #include "OpenEditor/OEGeneralPage.h"
 #include "CommandLineparser.h"
 #include "VersionInfo.rh"
@@ -267,6 +268,8 @@ BOOL CSQLToolsApp::InitInstance()
 #endif
 
     try { EXCEPTION_FRAME;
+
+        EmbeddedOci::Activate(); // usa o Instant Client embutido quando nao ha OCI.DLL instalado
 
         SetRegistryBase(L"Workspace_2.0.1");
 
