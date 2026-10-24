@@ -2,6 +2,11 @@ SQLTools Changelog
 ==================
 
 
+3.2.0
+-----
+  * Release used to validate the update flow (no functional changes).
+
+
 3.1.0
 -----
   * Oracle Instant Client 19c is now embedded in SQLTools.exe: no Oracle Client
