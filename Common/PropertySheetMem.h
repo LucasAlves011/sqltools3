@@ -27,10 +27,17 @@ namespace Common {
 class CPropertySheetMem : public TreePropSheet::CTreePropSheet
 {
     UINT& m_selectPage;
+    bool m_modern;
 public:
     CPropertySheetMem(LPCTSTR pszCaption, UINT& selectPage, CWnd* pParentWnd = NULL);
 
     virtual CTreeCtrl* CreatePageTreeObject ();
+    virtual TreePropSheet::CPropPageFrame* CreatePageFrame ();
+    virtual BOOL OnInitDialog ();
+    virtual INT_PTR DoModal ();
+
+    // visual moderno (fundo, caixas de selecao, botoes, arvore); desligado por padrao
+    void SetModernStyle (bool modern) { m_modern = modern; }
 
 protected:
 	DECLARE_MESSAGE_MAP()

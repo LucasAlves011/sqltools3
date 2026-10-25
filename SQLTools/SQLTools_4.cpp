@@ -228,6 +228,7 @@ bool ShowDDLPreferences (SQLToolsSettings& settings, bool bLocal)
     static UINT gStartPage = 0;
     Common::CPropertySheetMem sheet(bLocal ? L"Local DDL Preferences" : L"Global DDL Preferences", gStartPage);
     sheet.SetTreeViewMode(/*bTreeViewMode =*/TRUE, /*bPageCaption =*/FALSE, /*bTreeImages =*/FALSE);
+    sheet.SetModernStyle(true);
     sheet.m_psh.dwFlags |= PSH_NOAPPLYNOW;
     sheet.m_psh.dwFlags &= ~PSH_HASHELP;
 	sheet.SetTreeWidth(180);
