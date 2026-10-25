@@ -4,6 +4,7 @@
 #include <COMMCTRL.H>
 #include <gdiplus.h>
 #include "Theme/ModernTheme.h"
+#include "resource.h"
 
 namespace OG2
 {
@@ -92,39 +93,33 @@ static void DrawCloseGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF c
     g.DrawLine(&pen, cx - 4, cy + 4, cx + 4, cy - 4);
 }
 
-static void DrawCodeGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
+// Icones Tabler da tira ValuePanelIcons.bmp (gerada por tools/GenToolbarIcons), os mesmos das barras.
+// Posicoes: 0 code, 1 copy, 2 salvar, 3 seta do menu; 4..7 = os mesmos na cor de realce.
+enum { VI_CODE = 0, VI_COPY = 1, VI_SAVE = 2, VI_DROPDOWN = 3, VI_HILITE = 4 };
+
+static CImageList& ValueIcons ()
 {
-    Gdiplus::Pen pen(Clr(color), 1.5f); MakeRoundPen(pen);
-    Gdiplus::PointF l[3] = { Gdiplus::PointF(cx - 3.5f, cy - 4), Gdiplus::PointF(cx - 7, cy), Gdiplus::PointF(cx - 3.5f, cy + 4) };
-    Gdiplus::PointF r[3] = { Gdiplus::PointF(cx + 3.5f, cy - 4), Gdiplus::PointF(cx + 7, cy), Gdiplus::PointF(cx + 3.5f, cy + 4) };
-    g.DrawLines(&pen, l, 3);
-    g.DrawLines(&pen, r, 3);
-    g.DrawLine(&pen, cx + 1.5f, cy - 5, cx - 1.5f, cy + 5);
+    static CImageList s_list;
+    if (!s_list.GetSafeHandle())
+    {
+        HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_VALUE_ICONS),
+                                            IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+        if (hBmp)
+        {
+            s_list.Create(16, 16, ILC_COLOR32, 8, 0);
+            CBitmap bmp;
+            bmp.Attach(hBmp);
+            s_list.Add(&bmp, (CBitmap*)NULL);
+        }
+    }
+    return s_list;
 }
 
-static void DrawCopyGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
+static void DrawValueIcon (CDC& dc, int index, float cx, float cy, bool hilite)
 {
-    Gdiplus::Pen pen(Clr(color), 1.4f); MakeRoundPen(pen);
-    Gdiplus::GraphicsPath front;
-    RoundRectPath(front, Gdiplus::RectF(cx - 2, cy - 2, 9, 9), 1.5f);
-    g.DrawPath(&pen, &front);
-    Gdiplus::PointF back[5] = {
-        Gdiplus::PointF(cx + 3, cy - 2), Gdiplus::PointF(cx + 3, cy - 5.5f), Gdiplus::PointF(cx - 5, cy - 5.5f),
-        Gdiplus::PointF(cx - 5, cy + 2), Gdiplus::PointF(cx - 2, cy + 2) };
-    g.DrawLines(&pen, back, 5);
-}
-
-static void DrawSaveGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
-{
-    Gdiplus::Pen pen(Clr(color), 1.4f); MakeRoundPen(pen);
-    Gdiplus::PointF body[6] = {
-        Gdiplus::PointF(cx - 6, cy - 6), Gdiplus::PointF(cx + 3.5f, cy - 6), Gdiplus::PointF(cx + 6, cy - 3.5f),
-        Gdiplus::PointF(cx + 6, cy + 6), Gdiplus::PointF(cx - 6, cy + 6), Gdiplus::PointF(cx - 6, cy - 6) };
-    g.DrawLines(&pen, body, 6);
-    Gdiplus::PointF notch[4] = { Gdiplus::PointF(cx - 3, cy - 6), Gdiplus::PointF(cx - 3, cy - 2.5f), Gdiplus::PointF(cx + 2, cy - 2.5f), Gdiplus::PointF(cx + 2, cy - 6) };
-    g.DrawLines(&pen, notch, 4);
-    Gdiplus::PointF label[4] = { Gdiplus::PointF(cx - 3, cy + 6), Gdiplus::PointF(cx - 3, cy + 1.5f), Gdiplus::PointF(cx + 3, cy + 1.5f), Gdiplus::PointF(cx + 3, cy + 6) };
-    g.DrawLines(&pen, label, 4);
+    CImageList& list = ValueIcons();
+    if (list.GetSafeHandle())
+        list.Draw(&dc, index + (hilite ? VI_HILITE : 0), CPoint((int)(cx - 8), (int)(cy - 8)), ILD_TRANSPARENT);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -220,13 +215,13 @@ void CModernButton::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 
     float centerY = rcBtn.Height() / 2.0f;
     int textLeft = 10;
-    COLORREF iconCol = isDisabled ? TextMuted : (isHover || isPressed ? Accent : TextMuted);
+    bool hiliteIcon = !isDisabled && (isHover || isPressed);
 
     switch (m_iconType)
     {
-    case ICON_FORMAT: DrawCodeGlyph(g, 17.0f, centerY, isDisabled ? TextMuted : Accent); textLeft = 31; break;
-    case ICON_COPY:   DrawCopyGlyph(g, 16.0f, centerY, iconCol);                          textLeft = 29; break;
-    case ICON_SAVE:   DrawSaveGlyph(g, 16.0f, centerY, iconCol);                          textLeft = 29; break;
+    case ICON_FORMAT: DrawValueIcon(memDC, VI_CODE, 18.0f, centerY, !isDisabled);   textLeft = 32; break;
+    case ICON_COPY:   DrawValueIcon(memDC, VI_COPY, 18.0f, centerY, hiliteIcon);    textLeft = 32; break;
+    case ICON_SAVE:   DrawValueIcon(memDC, VI_SAVE, 18.0f, centerY, hiliteIcon);    textLeft = 32; break;
     default: break;
     }
 
@@ -253,7 +248,7 @@ void CModernButton::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 
     // seta do dropdown
     if (m_bDropdown)
-        DrawChevron(g, rcBtn.right - 12.0f, centerY, 2, isHover ? Accent : TextMuted, 1.4f, 0.9f);
+        DrawValueIcon(memDC, VI_DROPDOWN, rcBtn.right - 14.0f, centerY, isHover);
 
     dc.BitBlt(rc.left, rc.top, rc.Width(), rc.Height(), &memDC, 0, 0, SRCCOPY);
     memDC.SelectObject(pOldBmp);

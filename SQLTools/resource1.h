@@ -5,6 +5,7 @@
 #define IDR_MANIFEST                    1
 #define IDR_OCI_BUNDLE                  9100
 #define IDR_CHANGELOG                   9101
+#define IDB_VALUE_ICONS                 9103
 #define IDD_UPDATE_AVAILABLE            10010
 #define IDD_CHANGELOG                   10011
 #define IDC_UPD_HEADER                  1440

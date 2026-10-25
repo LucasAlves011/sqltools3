@@ -55,7 +55,14 @@ $BookletBar = @(
 # --- barra do popup do grid (3) ---
 $GridPopupBar = @('file-text', 'code', 'text-wrap')
 
+# --- botoes do painel Valor (8): repouso (cinza-azulado) e realce (azul): code, copy, salvar, seta do menu ---
+$ValuePanelBar = @(
+    'code', 'copy', 'device-floppy', 'chevron-down',
+    'code:blue', 'copy:blue', 'device-floppy:blue', 'chevron-down:blue'
+)
+
 $Bars = @(
+    @{ File = 'ValuePanelIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ValuePanelBar },
     @{ File = 'FileToolbar.bmp';      Size = 19; Glyph = 19; Offset = 0;  Icons = $FileBar },
     @{ File = 'SqlToolbar.bmp';       Size = 19; Glyph = 19; Offset = 0;  Icons = $SqlBar },
     @{ File = 'ConnectToolbar.bmp';   Size = 19; Glyph = 19; Offset = 0;  Icons = $ConnectBar },
