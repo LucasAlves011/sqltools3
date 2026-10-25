@@ -8,6 +8,9 @@
 #include "COMMON/ConfigFilesLocator.h"
 #include "COMMON/VisualAttributes.h"
 #include <map>
+#include <set>
+#include <commctrl.h>
+#pragma comment(lib, "comctl32.lib")
 #include <string>
 
 using namespace ModernTheme;
@@ -105,8 +108,59 @@ COLORREF CModernVisualManager::OnDrawPaneCaption (CDC* pDC, CDockablePane* /*pBa
     return Text;
 }
 
-COLORREF CModernVisualManager::OnFillMiniFrameCaption (CDC* pDC, CRect rectCaption, CPaneFrameWnd* /*pFrameWnd*/, BOOL /*bActive*/)
+namespace
 {
+    const UINT WM_APPLY_SHADOW = WM_APP + 77;
+
+    LRESULT CALLBACK ShadowProc (HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR)
+    {
+        if (msg == WM_APPLY_SHADOW)
+        {
+            if (HMODULE hDwm = ::LoadLibraryW(L"dwmapi.dll"))
+            {
+                typedef HRESULT (WINAPI *SetAttr)(HWND, DWORD, LPCVOID, DWORD);
+                typedef HRESULT (WINAPI *ExtendFrame)(HWND, const void*);
+                if (SetAttr setAttr = (SetAttr)::GetProcAddress(hDwm, "DwmSetWindowAttribute"))
+                {
+                    const int policy = 2;   // DWMNCRP_ENABLED
+                    setAttr(h, 2 /*DWMWA_NCRENDERING_POLICY*/, &policy, sizeof(policy));
+                    const int corner = 2;   // DWMWCP_ROUND
+                    setAttr(h, 33 /*DWMWA_WINDOW_CORNER_PREFERENCE*/, &corner, sizeof(corner));
+                }
+                if (ExtendFrame extend = (ExtendFrame)::GetProcAddress(hDwm, "DwmExtendFrameIntoClientArea"))
+                {
+                    const int margins[4] = { 0, 0, 0, 0 };
+                    extend(h, margins);
+                }
+                ::FreeLibrary(hDwm);
+            }
+            // a sombra e criada quando a janela e exibida: reexibe a janela uma vez, sem ativar
+            const UINT keep = SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE;
+            ::SetWindowPos(h, NULL, 0, 0, 0, 0, keep | SWP_HIDEWINDOW);
+            ::SetWindowPos(h, NULL, 0, 0, 0, 0, keep | SWP_SHOWWINDOW);
+            return 0;
+        }
+        if (msg == WM_NCDESTROY)
+            ::RemoveWindowSubclass(h, ShadowProc, 1);
+        return ::DefSubclassProc(h, msg, wp, lp);
+    }
+
+    // janelas flutuantes (painel destacado) ganham a mesma sombra dos dialogos do sistema
+    void EnsureWindowShadow (HWND hWnd)
+    {
+        static std::set<HWND> done;
+        if (!hWnd || !done.insert(hWnd).second)
+            return;
+        ::SetClassLongPtr(hWnd, GCL_STYLE, ::GetClassLongPtr(hWnd, GCL_STYLE) | CS_DROPSHADOW);
+        ::SetWindowSubclass(hWnd, ShadowProc, 1, 0);
+        ::PostMessage(hWnd, WM_APPLY_SHADOW, 0, 0);
+    }
+}
+
+COLORREF CModernVisualManager::OnFillMiniFrameCaption (CDC* pDC, CRect rectCaption, CPaneFrameWnd* pFrameWnd, BOOL /*bActive*/)
+{
+    if (pFrameWnd)
+        EnsureWindowShadow(pFrameWnd->GetSafeHwnd());
     pDC->FillSolidRect(rectCaption, Surface);
     pDC->FillSolidRect(rectCaption.left, rectCaption.bottom - 1, rectCaption.Width(), 1, Border);
     return Text;
