@@ -192,10 +192,11 @@ void COEViewPaintAccessories::OnSettingsChanged (CWnd* pwnd, const VisualAttribu
     m_CharSize.cy = highest;
 
 // ruler
-    m_COLOR_BTNHIGHLIGHT  = GetSysColor(COLOR_BTNHIGHLIGHT);
-    m_COLOR_BTNFACE = GetSysColor(COLOR_BTNFACE);
-    m_COLOR_BTNTEXT = GetSysColor(COLOR_BTNTEXT);
-    m_COLOR_BTNSHADOW = GetSysColor(COLOR_BTNSHADOW);
+    // visual moderno: regua e margem em tons suaves (somente cores)
+    m_COLOR_BTNHIGHLIGHT  = RGB(255, 255, 255);
+    m_COLOR_BTNFACE = RGB(246, 247, 249);
+    m_COLOR_BTNTEXT = RGB(138, 146, 156);
+    m_COLOR_BTNSHADOW = RGB(205, 210, 218);
 
     m_RulerPen.DeleteObject();
     m_RulerPen.CreatePen(PS_SOLID, 1, m_COLOR_BTNFACE);
@@ -204,7 +205,7 @@ void COEViewPaintAccessories::OnSettingsChanged (CWnd* pwnd, const VisualAttribu
 
     LOGBRUSH logbrush;
     logbrush.lbStyle = BS_SOLID;
-    logbrush.lbColor = GetSysColor(/*COLOR_BTNFACE*/COLOR_BTNSHADOW);
+    logbrush.lbColor = m_COLOR_BTNSHADOW;
     logbrush.lbHatch = HS_VERTICAL;
     m_IndentGuidelinePen.CreatePen(PS_GEOMETRIC|PS_DOT, 1, &logbrush, 0, 0);
 
@@ -230,6 +231,6 @@ void COEViewPaintAccessories::OnSettingsChanged (CWnd* pwnd, const VisualAttribu
     m_RulerCharSize.cy = tm.tmHeight + tm.tmExternalLeading;
 
     m_BtnFaceBrush.DeleteObject();
-    m_BtnFaceBrush.CreateSysColorBrush(COLOR_BTNFACE);
+    m_BtnFaceBrush.CreateSolidBrush(m_COLOR_BTNFACE);
 }
 

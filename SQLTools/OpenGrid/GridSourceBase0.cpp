@@ -262,27 +262,14 @@ void GridSourceBase::CalculateCell (DrawCellContexts& dcc, size_t maxTextLength)
 
 void GridSourceBase::DrawDecFrame (DrawCellContexts& dcc) const
 {
-    //dcc.m_Dc->FillRect(dcc.m_Rect, (dcc.m_Select == esNone) ? &dcc.m_FixBrush : &dcc.m_HightLightBrush);
-    dcc.m_Dc->FillRect(dcc.m_Rect, &dcc.m_FixBrush);
+    // cabecalho plano: fundo suave, so as linhas de baixo e da direita; selecionado usa o destaque
+    if (dcc.m_Select == esNone)
+        dcc.m_Dc->FillRect(dcc.m_Rect, &dcc.m_FixBrush);
+    else
+        dcc.m_Dc->FillRect(dcc.m_Rect, &dcc.m_HightLightBrush);
 
-    CPen lgtPen(PS_SOLID|PS_JOIN_ROUND, 1,  (dcc.m_Select == esNone) ? dcc.m_LightColor : dcc.m_FixShdColor);
-    CPen* oldPen = dcc.m_Dc->SelectObject(&lgtPen);
-
-    //dcc.m_Dc->SetROP2(R2_COPYPEN);
-    {
-        POINT pts[3] = { dcc.m_Rect.left, dcc.m_Rect.bottom, dcc.m_Rect.left, dcc.m_Rect.top, dcc.m_Rect.right, dcc.m_Rect.top };
-        dcc.m_Dc->Polyline(pts, 3);
-    }
-
-    CPen shdPen(PS_SOLID, 1, (dcc.m_Select == esNone) ? dcc.m_FixShdColor : dcc.m_LightColor);
-    dcc.m_Dc->SelectObject(&shdPen);
-
-    {
-        POINT pts[3] = { dcc.m_Rect.left + 1, dcc.m_Rect.bottom - 1, dcc.m_Rect.right - 1, dcc.m_Rect.bottom - 1, dcc.m_Rect.right - 1, dcc.m_Rect.top };
-        dcc.m_Dc->Polyline(pts, 3);
-    }
-
-    dcc.m_Dc->SelectObject(*oldPen);
+    dcc.m_Dc->FillSolidRect(dcc.m_Rect.left, dcc.m_Rect.bottom - 1, dcc.m_Rect.Width(), 1, dcc.m_FixShdColor);
+    dcc.m_Dc->FillSolidRect(dcc.m_Rect.right - 1, dcc.m_Rect.top, 1, dcc.m_Rect.Height(), dcc.m_FixShdColor);
 }
 
 CWnd* GridSourceBase::BeginEdit (int row, int col, CWnd* parent, const CRect& rect)  // get editor for grid window

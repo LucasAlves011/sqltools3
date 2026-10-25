@@ -34,6 +34,7 @@ using namespace Gdiplus;
 #include "Dlg/AboutDlg.h"
 #include "OCI8/EmbeddedOci.h"
 #include "Update/UpdateManager.h"
+#include "Theme/ModernTheme.h"
 #include "OpenEditor/OEGeneralPage.h"
 #include "CommandLineparser.h"
 #include "VersionInfo.rh"
@@ -312,6 +313,9 @@ BOOL CSQLToolsApp::InitInstance()
             return FALSE;
 
         SetRegistryKey(L"KochWare");
+
+        if (ModernTheme::ApplyOnce()) // fontes e cores modernas (uma unica vez, com copia de seguranca)
+            SaveSettings();
         
         m_pRecentFileList->Open(Common::ConfigFilesLocator::GetBaseFolder() + L"\\history.xml");
         m_pFavoritesList->Open(Common::ConfigFilesLocator::GetBaseFolder() + L"\\favorites.xml");

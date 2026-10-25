@@ -189,7 +189,7 @@ void COEditorView::DrawHorzRuler (CDC& realDc, const CRect& rc, int start, int e
     COLORREF bkColor = dc.SetBkColor(m_paintAccessories->m_COLOR_BTNFACE);
     COLORREF txtColor = dc.SetTextColor(m_paintAccessories->m_COLOR_BTNTEXT);
     CFont* pOrgFont = dc.SelectObject(&m_paintAccessories->m_RulerFont);
-    CPen* pOrgPen = dc.SelectObject(&m_paintAccessories->m_BmkPen);
+    CPen* pOrgPen = dc.SelectObject(&m_paintAccessories->m_BtnShadowPen);
 
     dc.MoveTo(rc.left, rc.bottom-1);
     dc.LineTo(rc.right, rc.bottom-1);
@@ -249,7 +249,7 @@ void COEditorView::DrawVertRuler (CDC& realDc, const CRect& rc, int start, int e
         extGutterRc = stdGutterRc;
         stdGutterRc.right -= EXT_SYN_GUTTER_WIDTH;
         extGutterRc.left   = stdGutterRc.right;
-        dc.FillRect(&extGutterRc, dc.GetHalftoneBrush());
+        dc.FillSolidRect(&extGutterRc, m_paintAccessories->m_COLOR_BTNFACE);
         dc.FillSolidRect(&stdGutterRc, m_paintAccessories->m_COLOR_BTNFACE);
         extGutterRc.right--;
         stdGutterRc.right--;
@@ -259,7 +259,7 @@ void COEditorView::DrawVertRuler (CDC& realDc, const CRect& rc, int start, int e
     }
     else
     {
-        dc.FillRect(&stdGutterRc, dc.GetHalftoneBrush());
+        dc.FillSolidRect(&stdGutterRc, m_paintAccessories->m_COLOR_BTNFACE);
         stdGutterRc.right--;
     }
     dc.MoveTo(stdGutterRc.right, stdGutterRc.top);

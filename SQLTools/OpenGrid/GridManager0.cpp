@@ -507,7 +507,7 @@ void CalcGridManager::SetupRuller (eDirection dir, int charSize, bool resetPos)
     m_Rulers[dir].SetLastFixCount(m_pSource->GetLastFixCount(dir));
     m_Rulers[dir].SetFirstFixSize(0);
     m_Rulers[dir].SetLastFixSize(0);
-    m_Rulers[dir].SetCellMargin((dir == edHorz) ? 3 : 1);
+    m_Rulers[dir].SetCellMargin((dir == edHorz) ? 5 : 3);
 
     if (dir == edHorz) 
         m_Rulers[edHorz].SetLineSize(m_Options.m_VertLine ? 1 : 0);

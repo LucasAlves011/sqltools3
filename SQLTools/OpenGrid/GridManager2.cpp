@@ -54,16 +54,17 @@ PaintGridManager::PaintGridManager (CWnd* client, AGridSource* source, bool shou
 
 void PaintGridManager::InitColors ()
 {
-    m_Dcc.m_TextColor           = GetSysColor(COLOR_WINDOWTEXT);
-    m_Dcc.m_BkColor[0]          = GetSysColor(COLOR_WINDOW);
-    m_Dcc.m_BkColor[1]          = RGB(255-8, 255-8, 255-8);
-    m_Dcc.m_FixTextColor        = GetSysColor(COLOR_BTNTEXT);
-    m_Dcc.m_FixBkColor          = GetSysColor(COLOR_BTNFACE);
-    m_Dcc.m_FixShdColor         = GetSysColor(COLOR_BTNSHADOW);
-    m_Dcc.m_LightColor          = GetSysColor(COLOR_BTNHILIGHT);
-    m_Dcc.m_UnusedColor         = GetSysColor(COLOR_WINDOW/*COLOR_APPWORKSPACE*/);
-    m_Dcc.m_HightLightColor     = GetSysColor(COLOR_HIGHLIGHT);
-    m_Dcc.m_HightLightTextColor = GetSysColor(COLOR_HIGHLIGHTTEXT);
+    // visual moderno: paleta suave, cabecalho plano e linhas finas (somente cores)
+    m_Dcc.m_TextColor           = RGB( 31,  35,  40);
+    m_Dcc.m_BkColor[0]          = RGB(255, 255, 255);
+    m_Dcc.m_BkColor[1]          = RGB(248, 250, 252);
+    m_Dcc.m_FixTextColor        = RGB( 91, 101, 115);
+    m_Dcc.m_FixBkColor          = RGB(243, 245, 248);
+    m_Dcc.m_FixShdColor         = RGB(217, 222, 229);
+    m_Dcc.m_LightColor          = RGB(255, 255, 255);
+    m_Dcc.m_UnusedColor         = RGB(255, 255, 255);
+    m_Dcc.m_HightLightColor     = RGB(207, 224, 253);
+    m_Dcc.m_HightLightTextColor = RGB( 31,  35,  40);
 
     m_Dcc.m_BkBrush[0].DeleteObject();
     m_Dcc.m_BkBrush[0].CreateSolidBrush(m_Dcc.m_BkColor[0]);
@@ -324,42 +325,42 @@ void PaintGridManager::Paint (CDC& dc, bool erase_flag, const CRect& rect)
     int lim[4];
     m_Rulers[edHorz].GetDataLoc(lim);
     m_Rulers[edVert].GetDataLoc(lim+2);
-    drawLines(edHorz, dc, lim, m_Dcc.m_FixBkColor);
-    drawLines(edVert, dc, lim, m_Dcc.m_FixBkColor);
+    drawLines(edHorz, dc, lim, RGB(236, 239, 243));
+    drawLines(edVert, dc, lim, RGB(236, 239, 243));
 
     if (m_Rulers[edVert].GetFirstFixCount())
     {
         m_Rulers[edHorz].GetLeftFixDataLoc(lim);
         m_Rulers[edVert].GetLeftFixLoc(lim+2);
-        drawLines(edHorz, dc, lim, m_Dcc.m_FixTextColor);
-        drawLines(edVert, dc, lim, m_Dcc.m_FixTextColor);
+        drawLines(edHorz, dc, lim, m_Dcc.m_FixShdColor);
+        drawLines(edVert, dc, lim, m_Dcc.m_FixShdColor);
     }
     if (m_Rulers[edHorz].GetFirstFixCount())
     {
         m_Rulers[edHorz].GetLeftFixLoc(lim);
         m_Rulers[edVert].GetLeftFixDataLoc(lim+2);
-        drawLines(edHorz, dc, lim, m_Dcc.m_FixTextColor);
-        drawLines(edVert, dc, lim, m_Dcc.m_FixTextColor);
+        drawLines(edHorz, dc, lim, m_Dcc.m_FixShdColor);
+        drawLines(edVert, dc, lim, m_Dcc.m_FixShdColor);
     }
     if (m_Rulers[edVert].GetLastFixCount())
     {
         m_Rulers[edHorz].GetLeftFixDataLoc(lim);
         m_Rulers[edVert].GetRightFixLoc(lim+2);
-        drawLines(edHorz, dc, lim, m_Dcc.m_FixTextColor);
-        drawLines(edVert, dc, lim, m_Dcc.m_FixTextColor);
+        drawLines(edHorz, dc, lim, m_Dcc.m_FixShdColor);
+        drawLines(edVert, dc, lim, m_Dcc.m_FixShdColor);
         lim[3] = lim[2];
         lim[2] -= m_Rulers[edVert].GetLineSize();
-        drawLines(edVert, dc, lim, m_Dcc.m_FixTextColor);
+        drawLines(edVert, dc, lim, m_Dcc.m_FixShdColor);
     }
     if (m_Rulers[edHorz].GetLastFixCount())
     {
         m_Rulers[edHorz].GetRightFixLoc(lim);
         m_Rulers[edVert].GetLeftFixDataLoc(lim+2);
-        drawLines(edHorz, dc, lim, m_Dcc.m_FixTextColor);
-        drawLines(edVert, dc, lim, m_Dcc.m_FixTextColor);
+        drawLines(edHorz, dc, lim, m_Dcc.m_FixShdColor);
+        drawLines(edVert, dc, lim, m_Dcc.m_FixShdColor);
         lim[1] = lim[0];
         lim[0] -= m_Rulers[edHorz].GetLineSize();
-        drawLines(edHorz, dc, lim, m_Dcc.m_FixTextColor);
+        drawLines(edHorz, dc, lim, m_Dcc.m_FixShdColor);
     }
 
     DrawFocus(dc);

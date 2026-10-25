@@ -23,6 +23,7 @@
 #include "COMMON/GUICommandDictionary.h"
 #include "SQLTools.h"
 #include "Update/UpdateManager.h"
+#include "Theme/ModernTheme.h"
 #include "MainFrm.h"
 #include "Tools/Grep/GrepDlg.h"
 #include "ConnectionTasks.h"
@@ -188,7 +189,7 @@ int CMDIMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
         return -1;
 
     // FRM
-    CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerWindows7));
+    CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CModernVisualManager));
     CDockingManager::SetDockingMode(DT_SMART);
     EnableAutoHidePanes(CBRS_ALIGN_ANY);
 
