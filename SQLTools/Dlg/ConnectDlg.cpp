@@ -40,6 +40,8 @@
 #include <COMMON/InputDlg.h>
 #include <COMMON/MyUtf.h>
 #include <COMMON/AppUtilities.h>
+#include "Theme/ModernDialog.h"
+#include "Theme/ModernDraw.h"
 
     using namespace std;
 
@@ -87,6 +89,7 @@ CConnectDlg::CConnectDlg(CWnd* pParent /*=NULL*/)
 // TODO: attach help to F1
 BEGIN_MESSAGE_MAP(CConnectDlg, CDialog)
     ON_NOTIFY(LVN_ITEMCHANGED, IDC_C_PROFILES, OnItemChanged_Profiles)
+    ON_NOTIFY(NM_CUSTOMDRAW, IDC_C_PROFILES, OnCustomDraw_Profiles)
     ON_BN_CLICKED(IDC_C_TEST, OnTest)
     ON_BN_CLICKED(IDC_C_DELETE, OnDelete)
     ON_WM_PAINT()
@@ -425,6 +428,74 @@ BOOL CConnectDlg::OnInitDialog()
     }   
     _DEFAULT_HANDLER_
 
+    // visual moderno: icones e cores nos botoes, controles redesenhados e lista com cabecalho proprio
+    static const ModernDialog::ButtonIcon icons[] = {
+        { IDOK,          ModernDraw::DI_CONNECT,  ModernTheme::Accent },
+        { IDC_C_SAVE,    ModernDraw::DI_SAVE,     ModernTheme::Success },
+        { IDCANCEL,      ModernDraw::DI_CLOSE,    RGB(91, 101, 115) },
+        { IDC_C_TEST,    ModernDraw::DI_TEST,     RGB(217, 138, 0) },
+        { IDC_C_DELETE,  ModernDraw::DI_DELETE,   ModernTheme::Danger },
+        { IDC_C_SETTINGS,ModernDraw::DI_SETTINGS, ModernTheme::Accent }
+    };
+    ModernDialog::SkinDialog(m_hWnd, icons, sizeof(icons) / sizeof(icons[0]));
+    if (CHeaderCtrl* header = m_profiles.GetHeaderCtrl())
+        m_modernHeader.Attach(header->GetSafeHwnd());
+
+    // com icone, os botoes precisam de mais largura: alarga a coluna direita do dialogo
+    {
+        static const UINT buttonIds[2][3] = { { IDOK, IDC_C_SAVE, IDCANCEL }, { IDC_C_TEST, IDC_C_DELETE, IDC_C_SETTINGS } };
+        static const UINT fieldIds[] = { IDC_C_TAG, IDC_C_USER, IDC_C_PASSWORD, IDC_C_CONNECT, IDC_C_HOST, IDC_C_TCP_PORT, IDC_C_SID, IDC_C_MODE };
+
+        CRect rects[2][3];
+        int width = 0;
+        CClientDC dc(this);
+        CFont* oldFont = dc.SelectObject(GetFont());
+        for (int r = 0; r < 2; ++r)
+            for (int c = 0; c < 3; ++c)
+            {
+                CWnd* b = GetDlgItem(buttonIds[r][c]);
+                b->GetWindowRect(rects[r][c]);
+                ScreenToClient(rects[r][c]);
+                CString text;
+                b->GetWindowText(text);
+                text.Remove(L'&');
+                width = (std::max)(width, (int)(rects[r][c].Width()));
+                width = (std::max)(width, (int)(dc.GetTextExtent(text).cx + 16 + 6 + 24));
+            }
+        dc.SelectObject(oldFont);
+
+        const int gap = rects[0][1].left - rects[0][0].right;
+        const int oldTotal = rects[0][2].right - rects[0][0].left;
+        const int delta = 3 * width + 2 * gap - oldTotal;
+        if (delta > 0)
+        {
+            CRect wr;
+            GetWindowRect(wr);
+            SetWindowPos(NULL, 0, 0, wr.Width() + delta, wr.Height(), SWP_NOMOVE | SWP_NOZORDER);
+            for (int r = 0; r < 2; ++r)
+                for (int c = 0; c < 3; ++c)
+                    GetDlgItem(buttonIds[r][c])->SetWindowPos(NULL, rects[0][0].left + c * (width + gap), rects[r][c].top, width, rects[r][c].Height(), SWP_NOZORDER);
+            for (UINT id : fieldIds)
+                if (CWnd* f = GetDlgItem(id))
+                {
+                    CRect fr;
+                    f->GetWindowRect(fr);
+                    ScreenToClient(fr);
+                    f->SetWindowPos(NULL, 0, 0, fr.Width() + delta, fr.Height(), SWP_NOMOVE | SWP_NOZORDER);
+                }
+            CenterWindow();
+        }
+
+        // campos de combinacao com a mesma altura dos campos de texto e sem o texto selecionado
+        for (UINT id : { IDC_C_CONNECT, IDC_C_HOST, IDC_C_TCP_PORT, IDC_C_MODE })
+            if (CComboBox* combo = (CComboBox*)GetDlgItem(id))
+            {
+                combo->SetItemHeight(-1, 15);
+                if (id != IDC_C_MODE)
+                    combo->SetEditSel(0, 0);
+            }
+    }
+
     return TRUE;
 }
 
@@ -444,6 +515,32 @@ try {
     }
         
 } _COMMON_DEFAULT_HANDLER_;
+
+void CConnectDlg::OnCustomDraw_Profiles (NMHDR* pNMHDR, LRESULT* pResult)
+{
+    using namespace ModernTheme;
+    LPNMLVCUSTOMDRAW cd = reinterpret_cast<LPNMLVCUSTOMDRAW>(pNMHDR);
+    *pResult = CDRF_DODEFAULT;
+
+    switch (cd->nmcd.dwDrawStage)
+    {
+    case CDDS_PREPAINT:
+        *pResult = CDRF_NOTIFYITEMDRAW;
+        break;
+
+    case CDDS_ITEMPREPAINT:
+    {
+        const int item = (int)cd->nmcd.dwItemSpec;
+        const bool selected = (m_profiles.GetItemState(item, LVIS_SELECTED) & LVIS_SELECTED) != 0;
+        cd->clrText   = Text;
+        cd->clrTextBk = selected ? ((::GetFocus() == m_profiles.m_hWnd) ? AccentTint : RGB(238, 240, 244))
+                                 : ((item & 1) ? RGB(250, 251, 252) : Surface);
+        cd->nmcd.uItemState &= ~(CDIS_SELECTED | CDIS_FOCUS);
+        *pResult = CDRF_NEWFONT;
+        break;
+    }
+    }
+}
 
 bool CConnectDlg::doTest (bool showMessage, std::wstring& error) 
 {

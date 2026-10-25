@@ -11,6 +11,18 @@ namespace ModernDialog
     // pagina de configuracao (fundo branco)
     void SkinPage (HWND hPage);
 
+    // icone e cor de um botao de comando, pelo id do controle (icone da tira DialogIcons.bmp)
+    struct ButtonIcon
+    {
+        UINT id;
+        int icon;           // ModernDraw::DI_*
+        COLORREF tint;      // cor do contorno e do realce
+    };
+
+    // dialogo comum (nao folha de propriedades): fundo cinza claro, controles redesenhados e,
+    // opcionalmente, icones e cores nos botoes de comando
+    void SkinDialog (HWND hDlg, const ButtonIcon* icons = NULL, int iconCount = 0);
+
     // moldura da janela de configuracao (fundo cinza claro, botoes OK/Cancelar e contorno da arvore)
     void SkinSheet (HWND hSheet);
 

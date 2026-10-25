@@ -82,6 +82,42 @@ namespace ModernDraw
         }
     }
 
+    void DrawDialogIcon (HDC hdc, int index, int x, int y, bool disabled)
+    {
+        static CImageList list;
+        if (!list.GetSafeHandle())
+        {
+            HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_DIALOG_ICONS),
+                                                IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+            if (hBmp)
+            {
+                list.Create(16, 16, ILC_COLOR32, 6, 0);
+                CBitmap bmp;
+                bmp.Attach(hBmp);
+                list.Add(&bmp, (CBitmap*)NULL);
+            }
+        }
+        if (!list.GetSafeHandle() || index < 0)
+            return;
+
+        IMAGELISTDRAWPARAMS p = {};
+        p.cbSize = sizeof(p);
+        p.himl = list.GetSafeHandle();
+        p.i = index;
+        p.hdcDst = hdc;
+        p.x = x;
+        p.y = y;
+        p.rgbBk = CLR_NONE;
+        p.rgbFg = CLR_NONE;
+        p.fStyle = ILD_TRANSPARENT;
+        if (disabled)
+        {
+            p.fState = ILS_ALPHA;
+            p.Frame = 90;
+        }
+        ImageList_DrawIndirect(&p);
+    }
+
     void DrawImage (CDC& dc, int index, int x, int y, bool disabled)
     {
         CImageList& list = Images();

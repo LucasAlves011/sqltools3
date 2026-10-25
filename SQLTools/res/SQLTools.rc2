@@ -52,6 +52,9 @@ IDB_OBJLIST_ICONS      BITMAP                  "res\\ObjectListIcons.bmp"
 // icones dos paineis Output, Estatisticas e Plano (mesma ordem de pane_list.bmp)
 IDB_PANE_ICONS32       BITMAP                  "res\\PaneIcons.bmp"
 
+// icones dos botoes do dialogo Connect (gerados por tools/GenToolbarIcons)
+IDB_DIALOG_ICONS       BITMAP                  "res\\DialogIcons.bmp"
+
 #ifdef OCI_EMBED
 // Oracle Instant Client comprimido (gerado por tools/PackOci), extraido em runtime por OCI8/EmbeddedOci.cpp
 IDR_OCI_BUNDLE          RCDATA                  "..\\3dParty\\oracle\\instantclient19\\oci19.bin"

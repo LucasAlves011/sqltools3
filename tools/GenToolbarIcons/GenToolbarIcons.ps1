@@ -20,6 +20,7 @@ $Colors = @{
     green = @(22, 136, 84)
     red   = @(214, 69, 65)
     amber = @(217, 138, 0)
+    white = @(255, 255, 255)
 }
 
 # especificacao: nome[:cor][+sobreposicao][#pilha]   ex.: "search+arrow-down", "device-floppy#", "player-play:blue"
@@ -83,7 +84,11 @@ foreach ($n in $ObjUi) { switch ($n) { 'circle-check' { $ObjectListBar += "${n}:
 # 0 pasta, 1 pasta aberta, 2 informacao, 3 aviso, 4 erro, 5 saida DBMS, 6 tempo
 $PaneBar = @('folder', 'folder-open', 'info-circle:blue', 'alert-circle:amber', 'circle-x:red', 'terminal-2:green', 'clock')
 
+# --- botoes do dialogo Connect (6): conectar (branco, sobre fundo azul), salvar, fechar, testar, excluir, configuracoes ---
+$DialogBar = @('plug-connected:white', 'device-floppy:green', 'x', 'bolt:amber', 'trash:red', 'settings:blue')
+
 $Bars = @(
+    @{ File = 'DialogIcons.bmp';      Size = 16; Glyph = 18; Offset = -1; Icons = $DialogBar },
     @{ File = 'PaneIcons.bmp';        Size = 16; Glyph = 18; Offset = -1; Icons = $PaneBar },
     @{ File = 'ObjectListIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ObjectListBar },
     @{ File = 'ValuePanelIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ValuePanelBar },

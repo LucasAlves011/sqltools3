@@ -23,6 +23,7 @@
 #include "ConnectData\ConnectData.h"
 #include "COMMON\ListCtrlDataProvider.h"
 #include "COMMON\ManagedListCtrl.h"
+#include "Theme/ModernHeader.h"
 
     class CConnectSettingsDlg;
 
@@ -128,6 +129,7 @@ class CConnectDlg : public CDialog
     ConnectEntry m_current;
     ConnectInfoAdapter m_adapter;
     Common::CManagedListCtrl m_profiles;
+    CModernHeader m_modernHeader;
     CImageList m_sortImages;
 
     static bool m_OnLoginPlSqlBlockInitialized;
@@ -169,6 +171,7 @@ protected:
 
 	afx_msg void OnItemChanged_Profiles(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnTest();
+	afx_msg void OnCustomDraw_Profiles(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDelete();
 	afx_msg void OnDblClk_Profiles(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRClick_Profiles(NMHDR* pNMHDR, LRESULT* pResult);

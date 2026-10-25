@@ -35,6 +35,9 @@ namespace ModernDraw
     CImageList& Images ();
     // lista de icones dos paineis Output/Estatisticas/Plano (7 icones de 16x16)
     void CreatePaneImageList (CImageList& list);
+    // icones dos botoes dos dialogos (16x16): conectar (branco), salvar, fechar, testar, excluir, configuracoes
+    enum { DI_CONNECT = 0, DI_SAVE, DI_CLOSE, DI_TEST, DI_DELETE, DI_SETTINGS };
+    void DrawDialogIcon (HDC hdc, int index, int x, int y, bool disabled = false);
     void DrawImage (CDC& dc, int index, int x, int y, bool disabled = false);
     void DrawUiIcon (CDC& dc, UiIcon icon, int x, int y, bool accent, bool disabled = false);
     void DrawTypeIcon (CDC& dc, int imageIndex, int x, int y, bool accent, bool disabled = false);

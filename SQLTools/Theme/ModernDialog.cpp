@@ -43,7 +43,7 @@ namespace
             {
                 // contorno fino em volta da arvore de paginas
                 for (HWND c = ::GetWindow(h, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
-                    if (ClassOf(c) == L"SysTreeView32")
+                    if (ClassOf(c) == L"SysTreeView32" || ClassOf(c) == L"SysListView32")
                     {
                         CRect tr;
                         ::GetWindowRect(c, tr);
@@ -73,7 +73,17 @@ namespace
     {
         COLORREF bg;
         bool hover;
+        int icon;           // -1 = sem icone
+        COLORREF tint;
     };
+
+    // mistura duas cores: percentual 'pct' de a e o resto de b
+    COLORREF Mix (COLORREF a, COLORREF b, int pct)
+    {
+        return RGB((GetRValue(a) * pct + GetRValue(b) * (100 - pct)) / 100,
+                   (GetGValue(a) * pct + GetGValue(b) * (100 - pct)) / 100,
+                   (GetBValue(a) * pct + GetBValue(b) * (100 - pct)) / 100);
+    }
 
     void PaintButton (HWND h, HDC hdc, const ButtonData& data)
     {
@@ -204,6 +214,13 @@ namespace
                 fill = pressed ? RGB(35, 90, 200) : (hot ? RGB(62, 125, 245) : Accent);
                 edge = fill; fore = RGB(255, 255, 255);
             }
+            else if (data.icon >= 0)
+            {
+                // botao colorido: contorno suave na cor do botao, realce ao passar o mouse
+                fill = pressed ? Mix(data.tint, Surface, 22) : (hot ? Mix(data.tint, Surface, 11) : Surface);
+                edge = (hot || pressed) ? data.tint : Mix(data.tint, Surface, 45);
+                fore = Text;
+            }
             else
             {
                 fill = pressed ? AccentStrong : (hot ? AccentTint : (checked && pushLike ? AccentTint : Surface));
@@ -219,7 +236,19 @@ namespace
             buf.SetTextColor(fore);
             CRect tr = br;
             tr.DeflateRect(6, 0);
-            buf.DrawText(text, tr, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | prefix);
+            if (data.icon >= 0)
+            {
+                // icone + texto, centralizados juntos
+                CSize ts = buf.GetTextExtent(StripMnemonic(text));
+                const int gap = 6, iconSize = 16;
+                int total = iconSize + gap + ts.cx;
+                int x = tr.left + (std::max)(0, (tr.Width() - total) / 2);
+                ModernDraw::DrawDialogIcon(buf.GetSafeHdc(), data.icon, x, br.top + (br.Height() - iconSize) / 2, !enabled);
+                tr.left = x + iconSize + gap;
+                buf.DrawText(text, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | prefix);
+            }
+            else
+                buf.DrawText(text, tr, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | prefix);
         }
 
         if (oldFont)
@@ -317,6 +346,157 @@ namespace
         return ::DefSubclassProc(h, msg, wp, lp);
     }
 
+    // ---- caixas de combinacao ----
+    struct ComboData
+    {
+        COLORREF bg;
+        bool hover;
+    };
+
+    bool ComboHasFocus (HWND h)
+    {
+        HWND f = ::GetFocus();
+        return f && (f == h || ::IsChild(h, f));
+    }
+
+    void PaintCombo (HWND h, HDC hdc, const ComboData& data)
+    {
+        CRect rc;
+        ::GetClientRect(h, rc);
+        if (rc.IsRectEmpty())
+            return;
+
+        COMBOBOXINFO ci = { sizeof(ci) };
+        ::GetComboBoxInfo(h, &ci);
+        const bool dropList = (::GetWindowLong(h, GWL_STYLE) & 3) == CBS_DROPDOWNLIST;
+        const bool enabled = ::IsWindowEnabled(h) != FALSE;
+        const bool open = ::SendMessage(h, CB_GETDROPPEDSTATE, 0, 0) != 0;
+        const bool focus = ComboHasFocus(h) || open;
+
+        CDC mem;
+        mem.Attach(hdc);
+        CDC buf;
+        buf.CreateCompatibleDC(&mem);
+        CBitmap bmp;
+        bmp.CreateCompatibleBitmap(&mem, rc.Width(), rc.Height());
+        CBitmap* pOld = buf.SelectObject(&bmp);
+
+        buf.FillSolidRect(rc, enabled ? Surface : SurfaceAlt);
+        CBrush border(!enabled ? Border : (focus ? Accent : (data.hover ? Mix(Accent, BorderStrong, 50) : BorderStrong)));
+        buf.FrameRect(rc, &border);
+
+        // seta
+        CRect ar = ci.rcButton;
+        if (ar.IsRectEmpty())
+            ar = CRect(rc.right - 22, rc.top, rc.right - 1, rc.bottom);
+        Gdiplus::Graphics g(buf.GetSafeHdc());
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        Gdiplus::Pen pen(Clr(enabled ? (focus ? Accent : TextMuted) : RGB(154, 161, 171)), 1.5f);
+        pen.SetStartCap(Gdiplus::LineCapRound);
+        pen.SetEndCap(Gdiplus::LineCapRound);
+        pen.SetLineJoin(Gdiplus::LineJoinRound);
+        const float cx = (float)(rc.right - 12), cy = (float)rc.CenterPoint().y;
+        Gdiplus::PointF p[3] = { Gdiplus::PointF(cx - 3.5f, cy - 1.5f), Gdiplus::PointF(cx, cy + 2.0f), Gdiplus::PointF(cx + 3.5f, cy - 1.5f) };
+        g.DrawLines(&pen, p, 3);
+
+        if (dropList)
+        {
+            HFONT font = (HFONT)::SendMessage(h, WM_GETFONT, 0, 0);
+            HGDIOBJ oldFont = font ? buf.SelectObject(font) : NULL;
+            CString text;
+            int sel = (int)::SendMessage(h, CB_GETCURSEL, 0, 0);
+            if (sel >= 0)
+            {
+                int len = (int)::SendMessage(h, CB_GETLBTEXTLEN, sel, 0);
+                if (len > 0)
+                    ::SendMessage(h, CB_GETLBTEXT, sel, (LPARAM)text.GetBuffer(len + 1));
+                text.ReleaseBuffer();
+            }
+            buf.SetBkMode(TRANSPARENT);
+            buf.SetTextColor(enabled ? Text : RGB(154, 161, 171));
+            CRect tr(rc.left + 6, rc.top, ar.left - 2, rc.bottom);
+            buf.DrawText(text, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+            if (oldFont)
+                buf.SelectObject(oldFont);
+        }
+
+        // com campo de edicao, a area do campo pertence ao proprio controle de edicao
+        if (!dropList && !::IsRectEmpty(&ci.rcItem))
+            ::ExcludeClipRect(hdc, ci.rcItem.left, ci.rcItem.top, ci.rcItem.right, ci.rcItem.bottom);
+        mem.BitBlt(0, 0, rc.Width(), rc.Height(), &buf, 0, 0, SRCCOPY);
+        buf.SelectObject(pOld);
+        mem.Detach();
+    }
+
+    // o campo de edicao do combo avisa o combo quando o foco muda (para redesenhar a borda)
+    LRESULT CALLBACK ComboEditProc (HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR)
+    {
+        if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS)
+        {
+            LRESULT r = ::DefSubclassProc(h, msg, wp, lp);
+            if (HWND combo = ::GetParent(h))
+                ::InvalidateRect(combo, NULL, FALSE);
+            return r;
+        }
+        if (msg == WM_NCDESTROY)
+            ::RemoveWindowSubclass(h, ComboEditProc, 1);
+        return ::DefSubclassProc(h, msg, wp, lp);
+    }
+
+    LRESULT CALLBACK ComboProc (HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR ref)
+    {
+        ComboData* data = (ComboData*)ref;
+        switch (msg)
+        {
+        case WM_ERASEBKGND:
+            return 1;
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = ::BeginPaint(h, &ps);
+            PaintCombo(h, hdc, *data);
+            ::EndPaint(h, &ps);
+            return 0;
+        }
+        case WM_PRINTCLIENT:
+            PaintCombo(h, (HDC)wp, *data);
+            return 0;
+        case WM_MOUSEMOVE:
+            if (!data->hover)
+            {
+                data->hover = true;
+                TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, h, 0 };
+                ::TrackMouseEvent(&tme);
+                ::InvalidateRect(h, NULL, FALSE);
+            }
+            break;
+        case WM_MOUSELEAVE:
+            data->hover = false;
+            ::InvalidateRect(h, NULL, FALSE);
+            break;
+        case WM_SETFOCUS:
+        case WM_KILLFOCUS:
+        case WM_ENABLE:
+        case WM_LBUTTONDOWN:
+        case WM_LBUTTONUP:
+        case WM_KEYDOWN:
+        case CB_SETCURSEL:
+        case CB_SHOWDROPDOWN:
+        case WM_SETTEXT:
+        case WM_COMMAND:
+        {
+            LRESULT r = ::DefSubclassProc(h, msg, wp, lp);
+            ::InvalidateRect(h, NULL, FALSE);
+            return r;
+        }
+        case WM_NCDESTROY:
+            ::RemoveWindowSubclass(h, ComboProc, 1);
+            delete data;
+            break;
+        }
+        return ::DefSubclassProc(h, msg, wp, lp);
+    }
+
     // remove os marcadores de tecla de atalho ('&'), mantendo '&&' como um '&'
     CString StripMnemonic (const CString& text)
     {
@@ -369,7 +549,7 @@ namespace
         }
     }
 
-    void SkinControls (HWND hParent, COLORREF bg)
+    void SkinControls (HWND hParent, COLORREF bg, const ModernDialog::ButtonIcon* icons = NULL, int iconCount = 0)
     {
         for (HWND c = ::GetWindow(hParent, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
         {
@@ -385,8 +565,34 @@ namespace
                 if ((type == BS_CHECKBOX || type == BS_AUTOCHECKBOX || type == BS_3STATE || type == BS_AUTO3STATE ||
                      type == BS_RADIOBUTTON || type == BS_AUTORADIOBUTTON) && !(style & (BS_PUSHLIKE | BS_MULTILINE)))
                     FitCheckWidth(c, hParent);
-                ::SetWindowSubclass(c, ButtonProc, 1, (DWORD_PTR) new ButtonData{ bg, false });
+                ButtonData* bd = new ButtonData{ bg, false, -1, 0 };
+                if (type == BS_PUSHBUTTON || type == BS_DEFPUSHBUTTON)
+                    for (int k = 0; k < iconCount; ++k)
+                        if (icons[k].id == (UINT)::GetDlgCtrlID(c))
+                        {
+                            bd->icon = icons[k].icon;
+                            bd->tint = icons[k].tint;
+                        }
+                ::SetWindowSubclass(c, ButtonProc, 1, (DWORD_PTR)bd);
                 ::InvalidateRect(c, NULL, TRUE);
+            }
+            else if (cls.CompareNoCase(L"ComboBox") == 0)
+            {
+                ::SetWindowSubclass(c, ComboProc, 1, (DWORD_PTR) new ComboData{ bg, false });
+                COMBOBOXINFO ci = { sizeof(ci) };
+                if (::GetComboBoxInfo(c, &ci) && ci.hwndItem)
+                {
+                    ::SetWindowSubclass(ci.hwndItem, ComboEditProc, 1, 0);
+                    ::SendMessage(ci.hwndItem, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(5, 3));
+                }
+                ::InvalidateRect(c, NULL, TRUE);
+            }
+            else if (cls.CompareNoCase(L"SysListView32") == 0)
+            {
+                // sem a borda preta: o contorno fino e desenhado pelo fundo do dialogo
+                ::SetWindowLong(c, GWL_STYLE, style & ~WS_BORDER);
+                ::SetWindowLong(c, GWL_EXSTYLE, ::GetWindowLong(c, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+                ::SetWindowPos(c, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
             }
             else if (cls.CompareNoCase(L"Edit") == 0)
             {
@@ -407,6 +613,13 @@ namespace ModernDialog
         ::SetWindowSubclass(hPage, DialogProc, 1, (DWORD_PTR)Surface);
         SkinControls(hPage, Surface);
         ::InvalidateRect(hPage, NULL, TRUE);
+    }
+
+    void SkinDialog (HWND hDlg, const ButtonIcon* icons, int iconCount)
+    {
+        ::SetWindowSubclass(hDlg, DialogProc, 1, (DWORD_PTR)SurfaceAlt);
+        SkinControls(hDlg, SurfaceAlt, icons, iconCount);
+        ::InvalidateRect(hDlg, NULL, TRUE);
     }
 
     void SkinSheet (HWND hSheet)
