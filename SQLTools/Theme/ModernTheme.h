@@ -33,4 +33,9 @@ public:
 
     virtual void OnUpdateSystemColors ();
     virtual void OnDrawTab (CDC* pDC, CRect rectTab, int iTab, BOOL bIsActive, const CMFCBaseTabCtrl* pTabWnd);
+
+    // barra de status: fundo plano, separadores finos e texto discreto
+    virtual void OnFillBarBackground (CDC* pDC, CBasePane* pBar, CRect rectClient, CRect rectClip, BOOL bNCArea = FALSE);
+    virtual void OnDrawStatusBarPaneBorder (CDC* pDC, CMFCStatusBar* pBar, CRect rectPane, UINT uiID, UINT nStyle);
+    virtual COLORREF GetStatusBarPaneTextColor (CMFCStatusBar* pStatusBar, CMFCStatusBarPaneInfo* pPane);
 };

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Theme/ModernTheme.h"
 #include "SQLTools.h"
+#include "resource.h"
 #include "OpenEditor/OEDocument.h"
 #include "COMMON/AppGlobal.h"
 #include "COMMON/ConfigFilesLocator.h"
@@ -69,6 +70,33 @@ void CModernVisualManager::OnDrawTab (CDC* pDC, CRect rectTab, int iTab, BOOL bI
     OnDrawTabContent(pDC, rectTab, iTab, bIsActive, pTabWnd, bIsActive ? Text : TextMuted);
 }
 
+void CModernVisualManager::OnFillBarBackground (CDC* pDC, CBasePane* pBar, CRect rectClient, CRect rectClip, BOOL bNCArea)
+{
+    CMFCVisualManagerOfficeXP::OnFillBarBackground(pDC, pBar, rectClient, rectClip, bNCArea);
+
+    // linha fina no topo da barra de status
+    if (pBar && pBar->IsKindOf(RUNTIME_CLASS(CMFCStatusBar)))
+        pDC->FillSolidRect(rectClient.left, rectClient.top, rectClient.Width(), 1, Border);
+}
+
+void CModernVisualManager::OnDrawStatusBarPaneBorder (CDC* pDC, CMFCStatusBar* /*pBar*/, CRect rectPane, UINT uiID, UINT /*nStyle*/)
+{
+    // sem relevo: so um separador fino a esquerda de cada indicador (a mensagem principal nao tem)
+    if (uiID != ID_SEPARATOR)
+        pDC->FillSolidRect(rectPane.left, rectPane.top + 5, 1, (std::max)(0, rectPane.Height() - 10), Border);
+}
+
+COLORREF CModernVisualManager::GetStatusBarPaneTextColor (CMFCStatusBar* /*pStatusBar*/, CMFCStatusBarPaneInfo* pPane)
+{
+    if (!pPane)
+        return TextMuted;
+    if (pPane->nID == ID_INDICATOR_OCIGRID)
+        return Accent;
+    if (pPane->nID == ID_SEPARATOR || pPane->nID == 0)
+        return Text;
+    return TextMuted;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Atualizacao unica das fontes e cores
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,7 +105,7 @@ namespace
 {
     const wchar_t* const SECTION = L"Appearance";
     const wchar_t* const KEY_THEME_VERSION = L"ModernThemeVersion";
-    const int THEME_VERSION = 2;
+    const int THEME_VERSION = 3;
 
     void copyIfAbsent (const wchar_t* fileName)
     {
@@ -139,6 +167,15 @@ namespace
                 else if (name == "Current Line")
                 {
                     attr.m_Background = RGB(246, 248, 252);
+                }
+                else if (name == "Bookmark")
+                {
+                    attr.m_Background = RGB(59, 130, 246);
+                }
+                else if (name == "Random Bookmark")
+                {
+                    attr.m_Background = RGB(99, 102, 241);
+                    attr.m_Foreground = RGB(255, 255, 255);
                 }
                 else if (name == "Highlighting")
                 {

@@ -78,7 +78,7 @@ void ConnectionButton::OnChangeParentWnd (CWnd* pWndParent)
 	rect.InflateRect(-2, 0);
 
     m_pLabel = new LabelWithWaitBar();
-	if (!m_pLabel->CreateEx(WS_EX_STATICEDGE, L"Static", NULL, WS_CHILDWINDOW|WS_VISIBLE|SS_OWNERDRAW, rect, pWndParent, m_nID))
+	if (!m_pLabel->CreateEx(0, L"Static", NULL, WS_CHILDWINDOW|WS_VISIBLE|SS_OWNERDRAW, rect, pWndParent, m_nID))
 	{
         TRACE0("ConnectionBar::Create: m_wndLabel.CreateEx failed\n");
 		return;

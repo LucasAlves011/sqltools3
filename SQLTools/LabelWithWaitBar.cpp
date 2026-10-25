@@ -20,6 +20,7 @@
 #include "stdafx.h"
 #include "LabelWithWaitBar.h"
 #include <gdiplus.h>
+#include "Theme/ModernTheme.h"
 using namespace Gdiplus;
 
 
@@ -76,52 +77,128 @@ void LabelWithWaitBar::StartAnimation (bool animation)
     }
 }
 
-void LabelWithWaitBar::DrawItem (LPDRAWITEMSTRUCT lpDrawItemStruct)
+void LabelWithWaitBar::DrawItem (LPDRAWITEMSTRUCT d)
 {
-    if (lpDrawItemStruct)
+    using namespace ModernTheme;
+
+    if (!d)
+        return;
+
+    CDC dc;
+    dc.Attach(d->hDC);
+    CRect rc = d->rcItem;
+    int w = rc.Width(), h = rc.Height();
+
+    CDC mem;
+    mem.CreateCompatibleDC(&dc);
+    CBitmap bmp;
+    bmp.CreateCompatibleBitmap(&dc, w, h);
+    CBitmap* pOldBmp = mem.SelectObject(&bmp);
+
+    // fundo da barra e "chip" arredondado com borda fina
+    mem.FillSolidRect(0, 0, w, h, Surface);
+
+    Graphics g(mem.GetSafeHdc());
+    g.SetSmoothingMode(SmoothingModeAntiAlias);
+
+    GraphicsPath chip;
     {
-        DWORD bkColor = GetSysColor(COLOR_3DFACE);
-        HBRUSH hbrush = CreateSolidBrush(bkColor);
-        ::FillRect(lpDrawItemStruct->hDC, &lpDrawItemStruct->rcItem, hbrush);
-        ::DeleteObject(hbrush);
-
-        if (m_animation)
-        {
-            Graphics graphics(lpDrawItemStruct->hDC);
-
-            BYTE red   = static_cast<BYTE>((bkColor & 0xFF0000) >> 16);
-            BYTE green = static_cast<BYTE>((bkColor & 0x00FF00) >> 8);
-            BYTE blue  = static_cast<BYTE>((bkColor & 0x0000FF));
-
-            LinearGradientBrush linGrBrush(
-               Point(0,   10),
-               Point(m_nGradientWidth, 10),
-               Color(255, red, green, blue), 
-               Color(255, 0, 255, 0));    
-
-            REAL relativeIntensities[] = {0.0f, 1.0f, 0.0f};
-            REAL relativePositions[]   = {0.0f, 0.5f, 1.0f};
-
-            linGrBrush.SetBlend(relativeIntensities, relativePositions, 3);
-            graphics.TranslateTransform(static_cast<REAL>(m_nProgressPos), 0);
-            graphics.FillRectangle(&linGrBrush, lpDrawItemStruct->rcItem.left/* + m_nProgressPos*/, lpDrawItemStruct->rcItem.top, 
-                m_nGradientWidth/*rc.Width()*/, lpDrawItemStruct->rcItem.bottom - lpDrawItemStruct->rcItem.top);
-        }
-        ::SetTextColor(lpDrawItemStruct->hDC, m_textColor);
-
-        bool center = (m_nTextPosition == DT_CENTER) ? true : false;
-
-        if (center)
-        {
-            RECT rc = lpDrawItemStruct->rcItem;
-            ::DrawText(lpDrawItemStruct->hDC, m_text, -1, &rc, DT_CALCRECT|DT_VCENTER|DT_SINGLELINE);
-            if ((rc.right - rc.left) > (lpDrawItemStruct->rcItem.right - lpDrawItemStruct->rcItem.left))
-                center = false;
-        }
-
-        SetBkMode(lpDrawItemStruct->hDC, TRANSPARENT);
-        ::DrawText(lpDrawItemStruct->hDC, m_text, -1, &lpDrawItemStruct->rcItem, center ? DT_CENTER|DT_VCENTER|DT_SINGLELINE : DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+        RectF r(0.5f, 1.5f, (REAL)w - 1.0f, (REAL)h - 3.0f);
+        REAL rad = 7.0f, dia = rad * 2;
+        chip.AddArc(r.X, r.Y, dia, dia, 180, 90);
+        chip.AddArc(r.GetRight() - dia, r.Y, dia, dia, 270, 90);
+        chip.AddArc(r.GetRight() - dia, r.GetBottom() - dia, dia, dia, 0, 90);
+        chip.AddArc(r.X, r.GetBottom() - dia, dia, dia, 90, 90);
+        chip.CloseFigure();
     }
+    SolidBrush fill(Color(255, GetRValue(Surface), GetGValue(Surface), GetBValue(Surface)));
+    g.FillPath(&fill, &chip);
+
+    // indicador de atividade: linha de destaque que corre pela base do campo
+    if (m_animation)
+    {
+        GraphicsPath* clipPath = chip.Clone();
+        Region clip(clipPath);
+        g.SetClip(&clip);
+        BYTE r8 = GetRValue(Accent), g8 = GetGValue(Accent), b8 = GetBValue(Accent);
+        LinearGradientBrush bar(
+            PointF((REAL)m_nProgressPos, 0), PointF((REAL)(m_nProgressPos + m_nGradientWidth), 0),
+            Color(0, r8, g8, b8), Color(255, r8, g8, b8));
+        REAL intensities[] = { 0.0f, 1.0f, 0.0f };
+        REAL positions[]   = { 0.0f, 0.5f, 1.0f };
+        bar.SetBlend(intensities, positions, 3);
+        g.FillRectangle(&bar, (REAL)m_nProgressPos, (REAL)h - 4.5f, (REAL)m_nGradientWidth, 3.0f);
+        g.ResetClip();
+        delete clipPath;
+    }
+
+    Pen border(Color(255, GetRValue(Border), GetGValue(Border), GetBValue(Border)), 1.0f);
+    g.DrawPath(&border, &chip);
+
+    // texto: "usuario@alias:host as papel [versao]"; a cor da conexao vale para o nome
+    static CFont s_font, s_fontBold;
+    if (!s_font.GetSafeHandle())
+    {
+        s_font.CreatePointFont(90, L"Segoe UI");
+        s_fontBold.CreatePointFont(90, L"Segoe UI Semibold");
+    }
+
+    COLORREF mainColor = (m_textColor == RGB(0, 0, 0)) ? Text : m_textColor;
+
+    CString mainPart = m_text, rolePart, versionPart;
+    int v = mainPart.ReverseFind(L'[');
+    if (v > 0 && mainPart.Right(1) == L"]")
+    {
+        versionPart = mainPart.Mid(v);
+        mainPart = mainPart.Left(v);
+        mainPart.TrimRight();
+    }
+    int a2 = mainPart.Find(L" as ");
+    if (a2 > 0)
+    {
+        rolePart = mainPart.Mid(a2);
+        mainPart = mainPart.Left(a2);
+    }
+
+    mem.SetBkMode(TRANSPARENT);
+    CRect rcText(10, 0, w - 10, h);
+
+    CFont* pOld = mem.SelectObject(&s_fontBold);
+    CSize szMain = mem.GetTextExtent(mainPart);
+    mem.SelectObject(&s_font);
+    CSize szRole = mem.GetTextExtent(rolePart);
+    CSize szVer  = mem.GetTextExtent(versionPart);
+    int gap = versionPart.IsEmpty() ? 0 : 8;
+    int total = szMain.cx + szRole.cx + gap + szVer.cx;
+
+    if (total <= rcText.Width())
+    {
+        int x = (m_nTextPosition == DT_CENTER) ? rcText.left + (rcText.Width() - total) / 2 : rcText.left;
+        int ty = (h - szMain.cy) / 2;
+
+        mem.SelectObject(&s_fontBold);
+        mem.SetTextColor(mainColor);
+        mem.TextOut(x, ty, mainPart);
+        x += szMain.cx;
+
+        mem.SelectObject(&s_font);
+        mem.SetTextColor(TextMuted);
+        mem.TextOut(x, ty, rolePart);
+        x += szRole.cx + gap;
+        mem.TextOut(x, ty, versionPart);
+    }
+    else
+    {
+        // nao cabe: texto unico com reticencias, como antes
+        mem.SelectObject(&s_font);
+        mem.SetTextColor(mainColor);
+        mem.DrawText(m_text, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+    }
+    mem.SelectObject(pOld);
+
+    dc.BitBlt(rc.left, rc.top, w, h, &mem, 0, 0, SRCCOPY);
+    mem.SelectObject(pOldBmp);
+    dc.Detach();
 }
 
 

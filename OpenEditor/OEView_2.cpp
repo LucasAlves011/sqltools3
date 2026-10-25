@@ -27,6 +27,7 @@
 */
 
 #include "stdafx.h"
+#include <gdiplus.h>
 namespace MyMemDC 
 {
 #include "MemDC.h"
@@ -70,8 +71,13 @@ void COEditorView::DrawLineNumber (CDC& dc, RECT rc, int line)
     char buff[40];
     itoa(line + 1, buff, 10);
     dc.SetBkMode(TRANSPARENT);
-    dc.SetTextColor(m_paintAccessories->m_COLOR_BTNTEXT);
-    
+    COLORREF numberColor = m_paintAccessories->m_COLOR_BTNTEXT;
+    if (IsBookmarked(line, eBmkGroup1))
+        numberColor = RGB(255, 255, 255);
+    else if (GetPosition().line == line)
+        numberColor = RGB(31, 35, 40);
+    dc.SetTextColor(numberColor);
+
     CFont* pOrgFont = m_paintAccessories->SelectFontEx(dc, 0);
     DrawTextA(dc.m_hDC, buff, strlen(buff), &rc, DT_RIGHT|DT_TOP);
     dc.SelectObject(pOrgFont);
@@ -79,11 +85,13 @@ void COEditorView::DrawLineNumber (CDC& dc, RECT rc, int line)
 
 void COEditorView::DrawBookmark (CDC& dc, RECT rc)
 {
-    rc.left  += 2; 
-    rc.right -= 2 + LINE_STATUS_WIDTH;
+    rc.left  += 3;
+    rc.right -= 3 + LINE_STATUS_WIDTH;
+    rc.top += 2;
+    rc.bottom -= 2;
     CBrush* pOrgBrush = dc.SelectObject(&m_paintAccessories->m_BmkBrush);
-    CPen* pOrgPen = dc.SelectObject(&m_paintAccessories->m_BtnShadowPen/*m_BmkPen*/);
-    dc.RoundRect(&rc, CPoint(3, 3));
+    CPen* pOrgPen = (CPen*)dc.SelectStockObject(NULL_PEN);
+    dc.RoundRect(rc.left, rc.top, rc.right + 1, rc.bottom + 1, 6, 6);
     dc.SelectObject(pOrgBrush);
     dc.SelectObject(pOrgPen);
 }
@@ -143,8 +151,10 @@ void fill_gradient (HDC hDC, LPCRECT lpRect, COLORREF colorStart, COLORREF color
 
 void COEditorView::DrawRandomBookmark (CDC& dc, RECT rc, int index, bool halfclip)
 {
-    rc.left  += 2; 
-    rc.right -= 2 + LINE_STATUS_WIDTH;
+    rc.left  += 3;
+    rc.right -= 3 + LINE_STATUS_WIDTH;
+    rc.top += 2;
+    rc.bottom -= 2;
 
     if (halfclip)
     {
@@ -154,8 +164,8 @@ void COEditorView::DrawRandomBookmark (CDC& dc, RECT rc, int index, bool halfcli
     }
 
     CBrush* pOrgBrush = dc.SelectObject(&m_paintAccessories->m_RndBmkBrush);
-    CPen* pOrgPen = dc.SelectObject(&m_paintAccessories->m_BtnShadowPen/*m_BmkPen*/);
-    dc.RoundRect(&rc, CPoint(3, 3));
+    CPen* pOrgPen = (CPen*)dc.SelectStockObject(NULL_PEN);
+    dc.RoundRect(rc.left, rc.top, rc.right + 1, rc.bottom + 1, 6, 6);
     dc.SelectObject(pOrgBrush);
     dc.SelectObject(pOrgPen);
 
@@ -177,7 +187,7 @@ void COEditorView::DrawRandomBookmark (CDC& dc, RECT rc, int index, bool halfcli
     //CFont* pOrgFont = m_paintAccessories->SelectFont(dc, GetSettings().GetLineNumbers() ? HighlighterBase::efmBold : HighlighterBase::efmNormal);
     CFont* pOrgFont = m_paintAccessories->SelectFontEx(dc, HighlighterBase::efmNormal);
 
-    DrawTextA(dc.m_hDC, buff, strlen(buff), &rc, DT_CENTER|DT_TOP);
+    DrawTextA(dc.m_hDC, buff, strlen(buff), &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
     dc.SelectObject(pOrgFont);
 }
 
@@ -287,10 +297,12 @@ void COEditorView::DrawVertRuler (CDC& realDc, const CRect& rc, int start, int e
             CRect gtRc = stdGutterRc;
             gtRc.right -= 1;
             gtRc.left  = gtRc.right - LINE_STATUS_WIDTH;
-            dc.FillSolidRect(gtRc, 
-                    status == elsUpdated ? RGB(255, 255, 0) 
-                        : status == elsRevertedBevoreSaved ? RGB(255, 215, 0) 
-                            : RGB(124, 252, 0));
+            gtRc.top += 1;
+            gtRc.bottom -= 1;
+            dc.FillSolidRect(gtRc,
+                    status == elsUpdated ? RGB(245, 166, 35)
+                        : status == elsRevertedBevoreSaved ? RGB(250, 204, 21)
+                            : RGB(34, 160, 107));
         }
 
         if (isRandomBmkLine)
@@ -307,18 +319,14 @@ void COEditorView::DrawVertRuler (CDC& realDc, const CRect& rc, int start, int e
         if (m_nExecutionLine != -1 && m_nExecutionLine == line)
         {
             //TODO#2: maybe to add the color attributes?
-            CBrush* pOrgBrush = dc.SelectObject(&m_paintAccessories->m_RndBmkBrush);
-            CPen* pOrgPen2 = dc.SelectObject(&m_paintAccessories->m_RndBmkPen);
-
-            POINT pt[3] = { 
-                { stdGutterRc.left + 2, stdGutterRc.top + 2 },
-                { stdGutterRc.left + 2, stdGutterRc.bottom - 2 },
-                { min((stdGutterRc.bottom - stdGutterRc.top) / 2, stdGutterRc.right - stdGutterRc.left - 4), (stdGutterRc.bottom + stdGutterRc.top) / 2 }
-            };
-            dc.Polygon(pt, sizeof(pt)/sizeof(pt[0]));
-
-            dc.SelectObject(pOrgBrush);
-            dc.SelectObject(pOrgPen2);
+            Gdiplus::Graphics g(dc.m_hDC);
+            g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+            float top = (float)stdGutterRc.top + 4.0f, bottom = (float)stdGutterRc.bottom - 4.0f;
+            float left = (float)stdGutterRc.left + 4.0f;
+            float right = left + (bottom - top) * 0.75f;
+            Gdiplus::PointF pts[3] = { Gdiplus::PointF(left, top), Gdiplus::PointF(left, bottom), Gdiplus::PointF(right, (top + bottom) / 2) };
+            Gdiplus::SolidBrush brush(Gdiplus::Color(255, 47, 111, 237));
+            g.FillPolygon(&brush, pts, 3);
         }
 
         if (syntaxExtendedSupport) 
