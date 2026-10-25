@@ -36,8 +36,7 @@ A dedicated viewer for whatever cell you've got selected in the results grid —
 
 Grab a ready-to-run build from the **[Releases](../../releases)** page:
 
-- **`SQLTools-v3.0.1-x64.zip`** — full package with the executable and its dependencies.
-- **`SQLTools.exe`** — standalone 64-bit executable, no install needed.
+- **`SQLTools-v<version>-x64.exe`** — standalone 64-bit executable (the version is part of the file name, e.g. `SQLTools-v3.2.0-x64.exe`). No install and no Oracle Client needed: Oracle Instant Client is embedded.
 
 ---
 

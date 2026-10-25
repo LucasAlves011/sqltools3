@@ -32,13 +32,19 @@ jobs:
       - name: Prepare Release Package
         shell: pwsh
         run: |
-          Copy-Item "_output_\Release.x64\SQLTools.exe" -Destination "SQLTools.exe"
+          # o nome do exe leva a versao definida em VersionInfo.rh (a mesma que o programa exibe)
+          $line = Select-String -Path "SQLTools\VersionInfo.rh" -Pattern 'SQLTOOLS_RELEASE_STR\s+"SQLTools\s+([^"]+)"'
+          if (-not $line) { throw "Cannot read the version from SQLTools\VersionInfo.rh" }
+          $ver = $line.Matches[0].Groups[1].Value.Trim()
+          $exeName = "SQLTools-v$ver-x64.exe"
+          Copy-Item "_output_\Release.x64\SQLTools.exe" -Destination $exeName
+          "EXE_NAME=$exeName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SQLTools-Release-x64
-          path: SQLTools.exe
+          path: ${{ env.EXE_NAME }}
 
       - name: Extract release notes from CHANGELOG.md
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
@@ -62,4 +68,4 @@ jobs:
         with:
           tag_name: ${{ github.event.release.tag_name || github.ref_name }}
           body_path: release_notes.md
-          files: SQLTools.exe
+          files: ${{ env.EXE_NAME }}
