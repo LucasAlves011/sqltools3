@@ -2,6 +2,8 @@
 #include "ValuePanelWnd.h"
 #include "OCIGridView.h"
 #include <COMMCTRL.H>
+#include <gdiplus.h>
+#include "Theme/ModernTheme.h"
 
 namespace OG2
 {
@@ -33,6 +35,97 @@ enum
 static const TCHAR* s_szSplitterClass = _T("SQLTools_ValueSplitter");
 static const TCHAR* s_szGutterClass   = _T("SQLTools_ValueGutter");
 static const TCHAR* s_szPanelClass    = _T("SQLTools_ValuePanel");
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Visual moderno: paleta (ModernTheme) e icones vetoriais suaves (GDI+)
+/////////////////////////////////////////////////////////////////////////////
+
+static const int kHeaderH  = 30;
+static const int kToolbarH = 36;
+
+static Gdiplus::Color Clr (COLORREF c, BYTE a = 255)
+{
+    return Gdiplus::Color(a, GetRValue(c), GetGValue(c), GetBValue(c));
+}
+
+static void RoundRectPath (Gdiplus::GraphicsPath& path, const Gdiplus::RectF& r, float rad)
+{
+    float d = rad * 2;
+    path.AddArc(r.X, r.Y, d, d, 180, 90);
+    path.AddArc(r.GetRight() - d, r.Y, d, d, 270, 90);
+    path.AddArc(r.GetRight() - d, r.GetBottom() - d, d, d, 0, 90);
+    path.AddArc(r.X, r.GetBottom() - d, d, d, 90, 90);
+    path.CloseFigure();
+}
+
+static void FillRoundRect (Gdiplus::Graphics& g, const CRect& rc, float rad, COLORREF color)
+{
+    Gdiplus::GraphicsPath path;
+    RoundRectPath(path, Gdiplus::RectF((float)rc.left, (float)rc.top, (float)rc.Width(), (float)rc.Height()), rad);
+    Gdiplus::SolidBrush brush(Clr(color));
+    g.FillPath(&brush, &path);
+}
+
+static void MakeRoundPen (Gdiplus::Pen& pen)
+{
+    pen.SetStartCap(Gdiplus::LineCapRound);
+    pen.SetEndCap(Gdiplus::LineCapRound);
+    pen.SetLineJoin(Gdiplus::LineJoinRound);
+}
+
+// icones de 16x16 centrados em (cx, cy)
+static void DrawChevron (Gdiplus::Graphics& g, float cx, float cy, int dir /*0 esq,1 dir,2 baixo*/, COLORREF color, float w, float s = 1.0f)
+{
+    Gdiplus::Pen pen(Clr(color), w); MakeRoundPen(pen);
+    Gdiplus::PointF p[3];
+    if (dir == 0)      { p[0] = Gdiplus::PointF(cx + 2*s, cy - 4*s); p[1] = Gdiplus::PointF(cx - 2*s, cy); p[2] = Gdiplus::PointF(cx + 2*s, cy + 4*s); }
+    else if (dir == 1) { p[0] = Gdiplus::PointF(cx - 2*s, cy - 4*s); p[1] = Gdiplus::PointF(cx + 2*s, cy); p[2] = Gdiplus::PointF(cx - 2*s, cy + 4*s); }
+    else               { p[0] = Gdiplus::PointF(cx - 3.5f*s, cy - 1.5f*s); p[1] = Gdiplus::PointF(cx, cy + 2*s); p[2] = Gdiplus::PointF(cx + 3.5f*s, cy - 1.5f*s); }
+    g.DrawLines(&pen, p, 3);
+}
+
+static void DrawCloseGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
+{
+    Gdiplus::Pen pen(Clr(color), 1.5f); MakeRoundPen(pen);
+    g.DrawLine(&pen, cx - 4, cy - 4, cx + 4, cy + 4);
+    g.DrawLine(&pen, cx - 4, cy + 4, cx + 4, cy - 4);
+}
+
+static void DrawCodeGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
+{
+    Gdiplus::Pen pen(Clr(color), 1.5f); MakeRoundPen(pen);
+    Gdiplus::PointF l[3] = { Gdiplus::PointF(cx - 3.5f, cy - 4), Gdiplus::PointF(cx - 7, cy), Gdiplus::PointF(cx - 3.5f, cy + 4) };
+    Gdiplus::PointF r[3] = { Gdiplus::PointF(cx + 3.5f, cy - 4), Gdiplus::PointF(cx + 7, cy), Gdiplus::PointF(cx + 3.5f, cy + 4) };
+    g.DrawLines(&pen, l, 3);
+    g.DrawLines(&pen, r, 3);
+    g.DrawLine(&pen, cx + 1.5f, cy - 5, cx - 1.5f, cy + 5);
+}
+
+static void DrawCopyGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
+{
+    Gdiplus::Pen pen(Clr(color), 1.4f); MakeRoundPen(pen);
+    Gdiplus::GraphicsPath front;
+    RoundRectPath(front, Gdiplus::RectF(cx - 2, cy - 2, 9, 9), 1.5f);
+    g.DrawPath(&pen, &front);
+    Gdiplus::PointF back[5] = {
+        Gdiplus::PointF(cx + 3, cy - 2), Gdiplus::PointF(cx + 3, cy - 5.5f), Gdiplus::PointF(cx - 5, cy - 5.5f),
+        Gdiplus::PointF(cx - 5, cy + 2), Gdiplus::PointF(cx - 2, cy + 2) };
+    g.DrawLines(&pen, back, 5);
+}
+
+static void DrawSaveGlyph (Gdiplus::Graphics& g, float cx, float cy, COLORREF color)
+{
+    Gdiplus::Pen pen(Clr(color), 1.4f); MakeRoundPen(pen);
+    Gdiplus::PointF body[6] = {
+        Gdiplus::PointF(cx - 6, cy - 6), Gdiplus::PointF(cx + 3.5f, cy - 6), Gdiplus::PointF(cx + 6, cy - 3.5f),
+        Gdiplus::PointF(cx + 6, cy + 6), Gdiplus::PointF(cx - 6, cy + 6), Gdiplus::PointF(cx - 6, cy - 6) };
+    g.DrawLines(&pen, body, 6);
+    Gdiplus::PointF notch[4] = { Gdiplus::PointF(cx - 3, cy - 6), Gdiplus::PointF(cx - 3, cy - 2.5f), Gdiplus::PointF(cx + 2, cy - 2.5f), Gdiplus::PointF(cx + 2, cy - 6) };
+    g.DrawLines(&pen, notch, 4);
+    Gdiplus::PointF label[4] = { Gdiplus::PointF(cx - 3, cy + 6), Gdiplus::PointF(cx - 3, cy + 1.5f), Gdiplus::PointF(cx + 3, cy + 1.5f), Gdiplus::PointF(cx + 3, cy + 6) };
+    g.DrawLines(&pen, label, 4);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // CModernButton
@@ -95,6 +188,8 @@ void CModernButton::OnMouseLeave()
 
 void CModernButton::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 {
+    using namespace ModernTheme;
+
     CDC dc;
     dc.Attach(lpDIS->hDC);
     CRect rc = lpDIS->rcItem;
@@ -109,130 +204,33 @@ void CModernButton::DrawItem(LPDRAWITEMSTRUCT lpDIS)
     memBmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
     CBitmap* pOldBmp = memDC.SelectObject(&memBmp);
 
-    // Fundo da toolbar atrás do botão
-    memDC.FillSolidRect(rc, RGB(245, 246, 248));
+    // fundo da toolbar atras do botao
+    memDC.FillSolidRect(0, 0, rc.Width(), rc.Height(), Surface);
 
-    // Cores modernas estilo Fluent / VS Code
-    COLORREF bgCol = RGB(255, 255, 255);
-    COLORREF borderCol = RGB(218, 222, 228);
+    // botao "chip": tom suave em repouso, destaque no hover e ao pressionar
+    COLORREF bgCol = SurfaceAlt;
+    if (isPressed)    bgCol = AccentStrong;
+    else if (isHover) bgCol = AccentTint;
 
-    if (isPressed)
+    CRect rcBtn(0, 0, rc.Width(), rc.Height());
+
+    Gdiplus::Graphics g(memDC.GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    FillRoundRect(g, rcBtn, 6.0f, bgCol);
+
+    float centerY = rcBtn.Height() / 2.0f;
+    int textLeft = 10;
+    COLORREF iconCol = isDisabled ? TextMuted : (isHover || isPressed ? Accent : TextMuted);
+
+    switch (m_iconType)
     {
-        bgCol = RGB(212, 228, 250);
-        borderCol = RGB(0, 120, 215);
-    }
-    else if (isHover)
-    {
-        bgCol = RGB(232, 242, 254);
-        borderCol = RGB(160, 198, 245);
-    }
-
-    CBrush bgBrush(bgCol);
-    CPen borderPen(PS_SOLID, 1, borderCol);
-    CBrush* pOldBrush = memDC.SelectObject(&bgBrush);
-    CPen* pOldPen = memDC.SelectObject(&borderPen);
-
-    memDC.RoundRect(rc, CPoint(4, 4));
-
-    memDC.SelectObject(pOldBrush);
-    memDC.SelectObject(pOldPen);
-
-    int textLeft = rc.left + 8;
-    int centerY = rc.CenterPoint().y;
-
-    if (m_iconType != ICON_NONE)
-    {
-        int iconX = rc.left + 9;
-        COLORREF iconCol = isHover ? RGB(0, 90, 180) : RGB(70, 75, 85);
-
-        switch (m_iconType)
-        {
-        case ICON_FORMAT:
-            {
-                // Ícone de código < / >
-                CPen tagPen(PS_SOLID, 1, RGB(0, 102, 204));
-                CPen* pOld = memDC.SelectObject(&tagPen);
-
-                // '<'
-                memDC.MoveTo(iconX + 3, centerY - 4);
-                memDC.LineTo(iconX, centerY);
-                memDC.LineTo(iconX + 3, centerY + 4);
-
-                // '/'
-                memDC.MoveTo(iconX + 4, centerY + 4);
-                memDC.LineTo(iconX + 7, centerY - 4);
-
-                // '>'
-                memDC.MoveTo(iconX + 8, centerY - 4);
-                memDC.LineTo(iconX + 11, centerY);
-                memDC.LineTo(iconX + 8, centerY + 4);
-
-                memDC.SelectObject(pOld);
-                textLeft = iconX + 16;
-            }
-            break;
-
-        case ICON_COPY:
-            {
-                // Ícone de copiar (duas páginas sobrepostas)
-                CPen copyPen(PS_SOLID, 1, iconCol);
-                CPen* pOld = memDC.SelectObject(&copyPen);
-
-                // Folha de trás
-                memDC.MoveTo(iconX + 2, centerY - 5);
-                memDC.LineTo(iconX + 8, centerY - 5);
-                memDC.LineTo(iconX + 8, centerY + 2);
-                memDC.MoveTo(iconX + 2, centerY - 5);
-                memDC.LineTo(iconX - 1, centerY - 5);
-                memDC.LineTo(iconX - 1, centerY + 2);
-
-                // Folha da frente
-                CRect rcFront(iconX + 1, centerY - 2, iconX + 8, centerY + 6);
-                memDC.FillSolidRect(&rcFront, bgCol);
-                memDC.Draw3dRect(&rcFront, iconCol, iconCol);
-
-                memDC.SelectObject(pOld);
-                textLeft = iconX + 13;
-            }
-            break;
-
-        case ICON_SAVE:
-            {
-                // Ícone de salvar (disquete)
-                CPen savePen(PS_SOLID, 1, iconCol);
-                CPen* pOld = memDC.SelectObject(&savePen);
-
-                memDC.MoveTo(iconX - 1, centerY - 5);
-                memDC.LineTo(iconX + 6, centerY - 5);
-                memDC.LineTo(iconX + 8, centerY - 3);
-                memDC.LineTo(iconX + 8, centerY + 5);
-                memDC.LineTo(iconX - 1, centerY + 5);
-                memDC.LineTo(iconX - 1, centerY - 5);
-
-                // Obturador
-                memDC.MoveTo(iconX + 1, centerY - 5);
-                memDC.LineTo(iconX + 1, centerY - 2);
-                memDC.LineTo(iconX + 4, centerY - 2);
-                memDC.LineTo(iconX + 4, centerY - 5);
-
-                // Etiqueta
-                memDC.MoveTo(iconX + 1, centerY + 1);
-                memDC.LineTo(iconX + 6, centerY + 1);
-                memDC.LineTo(iconX + 6, centerY + 5);
-                memDC.LineTo(iconX + 1, centerY + 5);
-                memDC.LineTo(iconX + 1, centerY + 1);
-
-                memDC.SelectObject(pOld);
-                textLeft = iconX + 14;
-            }
-            break;
-
-        default:
-            break;
-        }
+    case ICON_FORMAT: DrawCodeGlyph(g, 17.0f, centerY, isDisabled ? TextMuted : Accent); textLeft = 31; break;
+    case ICON_COPY:   DrawCopyGlyph(g, 16.0f, centerY, iconCol);                          textLeft = 29; break;
+    case ICON_SAVE:   DrawSaveGlyph(g, 16.0f, centerY, iconCol);                          textLeft = 29; break;
+    default: break;
     }
 
-    // Texto do botão
+    // texto do botao
     CString text;
     GetWindowText(text);
 
@@ -246,32 +244,18 @@ void CModernButton::DrawItem(LPDRAWITEMSTRUCT lpDIS)
     CFont* pFont = GetFont();
     CFont* pOldF = memDC.SelectObject(pFont ? pFont : CFont::FromHandle((HFONT)::GetStockObject(DEFAULT_GUI_FONT)));
     memDC.SetBkMode(TRANSPARENT);
-    memDC.SetTextColor(isDisabled ? RGB(160, 160, 165) : RGB(35, 38, 44));
+    memDC.SetTextColor(isDisabled ? TextMuted : Text);
 
-    int textRight = m_bDropdown ? rc.right - 14 : rc.right - 4;
-    CRect rcText(textLeft, rc.top, textRight, rc.bottom);
-    memDC.DrawText(text, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-
-    // Seta Dropdown discreta à direita
-    if (m_bDropdown)
-    {
-        int arrowX = rc.right - 10;
-        CPen arrowPen(PS_SOLID, 1, isHover ? RGB(0, 102, 204) : RGB(100, 105, 115));
-        CPen* pOld = memDC.SelectObject(&arrowPen);
-
-        memDC.MoveTo(arrowX - 3, centerY - 1);
-        memDC.LineTo(arrowX + 2, centerY - 1);
-        memDC.MoveTo(arrowX - 2, centerY);
-        memDC.LineTo(arrowX + 1, centerY);
-        memDC.MoveTo(arrowX - 1, centerY + 1);
-        memDC.LineTo(arrowX, centerY + 1);
-
-        memDC.SelectObject(pOld);
-    }
-
+    int textRight = m_bDropdown ? rcBtn.right - 18 : rcBtn.right - 6;
+    CRect rcText(textLeft, rcBtn.top, textRight, rcBtn.bottom);
+    memDC.DrawText(text, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     memDC.SelectObject(pOldF);
 
-    dc.BitBlt(0, 0, rc.Width(), rc.Height(), &memDC, 0, 0, SRCCOPY);
+    // seta do dropdown
+    if (m_bDropdown)
+        DrawChevron(g, rcBtn.right - 12.0f, centerY, 2, isHover ? Accent : TextMuted, 1.4f, 0.9f);
+
+    dc.BitBlt(rc.left, rc.top, rc.Width(), rc.Height(), &memDC, 0, 0, SRCCOPY);
     memDC.SelectObject(pOldBmp);
     dc.Detach();
 }
@@ -352,6 +336,8 @@ BOOL CValueSplitterBar::OnEraseBkgnd(CDC*)
 
 void CValueSplitterBar::OnPaint()
 {
+    using namespace ModernTheme;
+
     CPaintDC dc(this);
     CRect rc;
     GetClientRect(rc);
@@ -362,65 +348,21 @@ void CValueSplitterBar::OnPaint()
     memBmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
     CBitmap* pOldBmp = memDC.SelectObject(&memBmp);
 
-    // Fundo da barra divisória
-    COLORREF bgCol = RGB(245, 246, 248);
-    memDC.FillSolidRect(rc, bgCol);
+    // fundo e linha lateral esquerda
+    memDC.FillSolidRect(rc, Surface);
+    memDC.FillSolidRect(rc.left, rc.top, 1, rc.Height(), Border);
 
-    // Linha divisória lateral esquerda
-    CPen linePen(PS_SOLID, 1, RGB(222, 225, 230));
-    CPen* pOldPen = memDC.SelectObject(&linePen);
-    memDC.MoveTo(rc.left, rc.top);
-    memDC.LineTo(rc.left, rc.bottom);
-
-    // Desenha o botão em formato de pílula central moderno
+    // botao de colapsar em formato de pilula, discreto
     CRect rcPill = GetPillRect();
-    COLORREF pillBg = m_bHoverPill ? RGB(225, 238, 255) : RGB(240, 242, 246);
-    COLORREF pillBorder = m_bHoverPill ? RGB(0, 120, 215) : RGB(210, 214, 220);
+    Gdiplus::Graphics g(memDC.GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    FillRoundRect(g, rcPill, 4.0f, m_bHoverPill ? AccentTint : SurfaceAlt);
 
-    CBrush pillBrush(pillBg);
-    CPen borderPen(PS_SOLID, 1, pillBorder);
-    memDC.SelectObject(&pillBrush);
-    memDC.SelectObject(&borderPen);
-    memDC.RoundRect(rcPill, CPoint(6, 6));
+    float midX = rcPill.CenterPoint().x + 0.5f;
+    float midY = (float)rcPill.CenterPoint().y;
+    // painel colapsado: chevron para a esquerda; expandido: para a direita
+    DrawChevron(g, midX, midY, m_bCollapsed ? 0 : 1, m_bHoverPill ? Accent : TextMuted, 1.6f, 0.9f);
 
-    // Desenha chevron moderno e nítido
-    COLORREF arrowCol = m_bHoverPill ? RGB(0, 102, 204) : RGB(90, 95, 105);
-    CPen arrowPen(PS_SOLID, 2, arrowCol);
-    memDC.SelectObject(&arrowPen);
-
-    int midX = rcPill.CenterPoint().x;
-    int midY = rcPill.CenterPoint().y;
-
-    if (m_bCollapsed)
-    {
-        // Painel colapsado: chevron aponta para a esquerda (<)
-        memDC.MoveTo(midX + 2, midY - 5);
-        memDC.LineTo(midX - 2, midY);
-        memDC.LineTo(midX + 2, midY + 5);
-    }
-    else
-    {
-        // Painel expandido: chevron aponta para a direita (>)
-        memDC.MoveTo(midX - 2, midY - 5);
-        memDC.LineTo(midX + 2, midY);
-        memDC.LineTo(midX - 2, midY + 5);
-    }
-
-    // Risquinhos táteis de gripper acima e abaixo da seta
-    CPen gripPen(PS_SOLID, 1, m_bHoverPill ? RGB(140, 185, 240) : RGB(190, 195, 205));
-    memDC.SelectObject(&gripPen);
-
-    memDC.MoveTo(midX - 2, midY - 12);
-    memDC.LineTo(midX + 3, midY - 12);
-    memDC.MoveTo(midX - 2, midY - 15);
-    memDC.LineTo(midX + 3, midY - 15);
-
-    memDC.MoveTo(midX - 2, midY + 12);
-    memDC.LineTo(midX + 3, midY + 12);
-    memDC.MoveTo(midX - 2, midY + 15);
-    memDC.LineTo(midX + 3, midY + 15);
-
-    memDC.SelectObject(pOldPen);
     dc.BitBlt(0, 0, rc.Width(), rc.Height(), &memDC, 0, 0, SRCCOPY);
     memDC.SelectObject(pOldBmp);
 }
@@ -592,10 +534,10 @@ void CValueLineGutter::OnPaint()
     CBitmap* pOldBmp = memDC.SelectObject(&memBmp);
 
     // Fundo do gutter
-    memDC.FillSolidRect(rc, RGB(245, 245, 247));
+    memDC.FillSolidRect(rc, ModernTheme::SurfaceAlt);
 
     // Borda vertical direita do gutter
-    CPen borderPen(PS_SOLID, 1, RGB(225, 225, 230));
+    CPen borderPen(PS_SOLID, 1, ModernTheme::Border);
     CPen* pOldPen = memDC.SelectObject(&borderPen);
     memDC.MoveTo(rc.right - 1, rc.top);
     memDC.LineTo(rc.right - 1, rc.bottom);
@@ -607,7 +549,7 @@ void CValueLineGutter::OnPaint()
             pOldFont = memDC.SelectObject(m_pFont);
 
         memDC.SetBkMode(TRANSPARENT);
-        memDC.SetTextColor(RGB(145, 148, 155));
+        memDC.SetTextColor(RGB(138, 146, 156));
 
         int firstLine = m_pEdit->GetFirstVisibleLine();
         int lineCount = m_pEdit->GetLineCount();
@@ -880,33 +822,31 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 CRect CValuePanelWnd::GetTabRect() const
 {
-    return CRect(0, 0, 80, 25);
+    return CRect(0, 0, 76, kHeaderH);
 }
 
 CRect CValuePanelWnd::GetCloseButtonRect() const
 {
     CRect rc;
     GetClientRect(rc);
-    return CRect(rc.right - 24, 2, rc.right - 2, 23);
+    return CRect(rc.right - 30, 4, rc.right - 6, kHeaderH - 4);
 }
 
 void CValuePanelWnd::LayoutChildren(int cx, int cy)
 {
     if (cx <= 0 || cy <= 0) return;
 
-    int headerH = 25;
-    int toolbarH = 30;
-    int topOffset = headerH + toolbarH;
+    int topOffset = kHeaderH + kToolbarH;
 
-    // Posiciona botões da toolbar (altura 24px, moderno)
-    int btnY = headerH + 3;
-    int btnH = 24;
-    m_btnFormat.MoveWindow(6, btnY, 84, btnH);
-    m_btnCopy.MoveWindow(94, btnY, 78, btnH);
-    m_btnSave.MoveWindow(176, btnY, 84, btnH);
+    // botoes da toolbar
+    int btnY = kHeaderH + 5;
+    int btnH = 26;
+    m_btnFormat.MoveWindow(8, btnY, 88, btnH);
+    m_btnCopy.MoveWindow(102, btnY, 80, btnH);
+    m_btnSave.MoveWindow(188, btnY, 88, btnH);
 
-    // Área do editor e gutter
-    int gutterW = 38;
+    // area do editor e gutter
+    int gutterW = 40;
     int editW = (std::max)(10, cx - gutterW);
     int contentH = (std::max)(10, cy - topOffset);
 
@@ -927,60 +867,38 @@ BOOL CValuePanelWnd::OnEraseBkgnd(CDC*)
 
 void CValuePanelWnd::OnPaint()
 {
+    using namespace ModernTheme;
+
     CPaintDC dc(this);
     CRect rc;
     GetClientRect(rc);
 
-    int headerH = 25;
-    int toolbarH = 30;
+    // cabecalho e barra de ferramentas
+    CRect rcHeader(rc.left, rc.top, rc.right, rc.top + kHeaderH);
+    dc.FillSolidRect(rcHeader, Surface);
+    CRect rcToolbar(rc.left, rcHeader.bottom, rc.right, rcHeader.bottom + kToolbarH);
+    dc.FillSolidRect(rcToolbar, Surface);
+    dc.FillSolidRect(rc.left, rcToolbar.bottom - 1, rc.Width(), 1, Border);
+    dc.FillSolidRect(rc.left, rcHeader.bottom - 1, rc.Width(), 1, Border);
 
-    // Header Background
-    CRect rcHeader(rc.left, rc.top, rc.right, rc.top + headerH);
-    dc.FillSolidRect(rcHeader, RGB(232, 234, 238));
-
-    // Tab "Valor"
+    // titulo "Valor" com sublinhado de destaque
     CRect rcTab = GetTabRect();
-    dc.FillSolidRect(rcTab, RGB(255, 255, 255));
-    CPen tabBorder(PS_SOLID, 1, RGB(200, 202, 208));
-    CPen* pOldPen = dc.SelectObject(&tabBorder);
-    dc.MoveTo(rcTab.right, rcTab.top);
-    dc.LineTo(rcTab.right, rcTab.bottom);
-
-    // Texto da aba
     CFont* pOldFont = dc.SelectObject(&m_fontUiBold);
     dc.SetBkMode(TRANSPARENT);
-    dc.SetTextColor(RGB(40, 40, 45));
+    dc.SetTextColor(Text);
     CRect rcTabText = rcTab;
-    rcTabText.left += 8;
+    rcTabText.left += 12;
     dc.DrawText(_T("Valor"), rcTabText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    dc.FillSolidRect(rcTab.left, rcHeader.bottom - 2, rcTab.Width(), 2, Accent);
 
-    // Botão Fechar [X] no header
+    // botao fechar
     CRect rcClose = GetCloseButtonRect();
+    Gdiplus::Graphics g(dc.GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
     if (m_bHoverClose)
-    {
-        dc.FillSolidRect(rcClose, RGB(232, 17, 35));
-        dc.SetTextColor(RGB(255, 255, 255));
-    }
-    else
-    {
-        dc.SetTextColor(RGB(110, 115, 125));
-    }
-    dc.SelectObject(&m_fontUi);
-    dc.DrawText(_T("\x2715"), rcClose, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        FillRoundRect(g, rcClose, 5.0f, RGB(236, 238, 242));
+    DrawCloseGlyph(g, (float)rcClose.CenterPoint().x, (float)rcClose.CenterPoint().y, m_bHoverClose ? Text : TextMuted);
 
-    // Linha divisória abaixo do header
-    dc.MoveTo(rc.left, rcHeader.bottom - 1);
-    dc.LineTo(rc.right, rcHeader.bottom - 1);
-
-    // Toolbar Background
-    CRect rcToolbar(rc.left, rcHeader.bottom, rc.right, rcHeader.bottom + toolbarH);
-    dc.FillSolidRect(rcToolbar, RGB(245, 246, 248));
-
-    // Linha divisória abaixo da toolbar
-    dc.MoveTo(rc.left, rcToolbar.bottom - 1);
-    dc.LineTo(rc.right, rcToolbar.bottom - 1);
-
-    dc.SelectObject(pOldPen);
     dc.SelectObject(pOldFont);
 }
 

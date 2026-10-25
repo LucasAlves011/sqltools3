@@ -629,12 +629,12 @@ static const char* s_rtfHeader =
     "{\\rtf1\\ansi\\ansicpg1252\\deff0"
     "{\\fonttbl{\\f0\\fnil\\fcharset0 Consolas;}}"
     "{\\colortbl ;"
-    "\\red0\\green0\\blue180;"     // cf1: delimiters < > / = { } [ ] , :
-    "\\red128\\green0\\blue64;"    // cf2: tag names / json keys
-    "\\red160\\green60\\blue0;"    // cf3: attr names / numbers / booleans
-    "\\red0\\green110\\blue0;"     // cf4: attr values / string values
-    "\\red0\\green128\\blue0;"     // cf5: comments / offsets
-    "\\red100\\green100\\blue100;" // cf6: declaration <?xml ... ?>
+    "\\red107\\green114\\blue128;" // cf1: delimiters < > / = { } [ ] , :
+    "\\red122\\green63\\blue181;"  // cf2: tag names / json keys
+    "\\red180\\green83\\blue9;"    // cf3: attr names / numbers / booleans
+    "\\red10\\green125\\blue79;"   // cf4: attr values / string values
+    "\\red138\\green146\\blue156;" // cf5: comments / offsets
+    "\\red156\\green163\\blue175;" // cf6: declaration <?xml ... ?>
     "}"
     "\\viewkind4\\uc1\\pard\\f0\\fs19 ";
 
