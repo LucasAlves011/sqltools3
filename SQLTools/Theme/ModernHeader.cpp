@@ -157,7 +157,19 @@ void CModernHeader::OnPaint ()
                 CRect ft(fr.left + 8, fr.top, fr.right - 24, fr.bottom);
                 mem.DrawText(active ? filter : L"Filtrar...", ft, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-                DrawUiIcon(mem, UI_FILTER, fr.right - 20, fr.CenterPoint().y - 8, active);
+                // funil pequeno desenhado por codigo (o icone de 16 px ficava grande para o campo)
+                {
+                    float cx = (float)fr.right - 13.0f, cy = (float)fr.CenterPoint().y;
+                    Gdiplus::Pen fpen(Clr(active ? Accent : RGB(120, 128, 140)), 1.3f);
+                    fpen.SetLineJoin(Gdiplus::LineJoinRound);
+                    fpen.SetStartCap(Gdiplus::LineCapRound);
+                    fpen.SetEndCap(Gdiplus::LineCapRound);
+                    Gdiplus::PointF f[6] = {
+                        Gdiplus::PointF(cx - 4.5f, cy - 4.0f), Gdiplus::PointF(cx + 4.5f, cy - 4.0f),
+                        Gdiplus::PointF(cx + 1.2f, cy + 0.2f), Gdiplus::PointF(cx + 1.2f, cy + 4.0f),
+                        Gdiplus::PointF(cx - 1.2f, cy + 3.0f), Gdiplus::PointF(cx - 1.2f, cy + 0.2f) };
+                    g.DrawPolygon(&fpen, f, 6);
+                }
             }
         }
     }

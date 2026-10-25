@@ -41,4 +41,10 @@ public:
     virtual void OnFillBarBackground (CDC* pDC, CBasePane* pBar, CRect rectClient, CRect rectClip, BOOL bNCArea = FALSE);
     virtual void OnDrawStatusBarPaneBorder (CDC* pDC, CMFCStatusBar* pBar, CRect rectPane, UINT uiID, UINT nStyle);
     virtual COLORREF GetStatusBarPaneTextColor (CMFCStatusBar* pStatusBar, CMFCStatusBarPaneInfo* pPane);
+
+    // legendas dos paineis (acoplados e flutuantes): planas, com borda fina
+    virtual COLORREF OnDrawPaneCaption (CDC* pDC, CDockablePane* pBar, BOOL bActive, CRect rectCaption, CRect rectButtons);
+    virtual void OnDrawCaptionButton (CDC* pDC, CMFCCaptionButton* pButton, BOOL bActive, BOOL bHorz, BOOL bMaximized, BOOL bDisabled, int nImageID = -1);
+    virtual COLORREF OnFillMiniFrameCaption (CDC* pDC, CRect rectCaption, CPaneFrameWnd* pFrameWnd, BOOL bActive);
+    virtual void OnDrawMiniFrameBorder (CDC* pDC, CPaneFrameWnd* pFrameWnd, CRect rectBorder, CRect rectBorderSize);
 };

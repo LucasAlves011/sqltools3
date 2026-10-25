@@ -2,6 +2,7 @@
 #include "Theme/ModernTheme.h"
 #include "SQLTools.h"
 #include "resource.h"
+#include "Theme/ModernDraw.h"
 #include "OpenEditor/OEDocument.h"
 #include "COMMON/AppGlobal.h"
 #include "COMMON/ConfigFilesLocator.h"
@@ -95,6 +96,56 @@ COLORREF CModernVisualManager::GetStatusBarPaneTextColor (CMFCStatusBar* /*pStat
     if (pPane->nID == ID_SEPARATOR || pPane->nID == 0)
         return Text;
     return TextMuted;
+}
+
+COLORREF CModernVisualManager::OnDrawPaneCaption (CDC* pDC, CDockablePane* /*pBar*/, BOOL /*bActive*/, CRect rectCaption, CRect /*rectButtons*/)
+{
+    pDC->FillSolidRect(rectCaption, Surface);
+    pDC->FillSolidRect(rectCaption.left, rectCaption.bottom - 1, rectCaption.Width(), 1, Border);
+    return Text;
+}
+
+COLORREF CModernVisualManager::OnFillMiniFrameCaption (CDC* pDC, CRect rectCaption, CPaneFrameWnd* /*pFrameWnd*/, BOOL /*bActive*/)
+{
+    pDC->FillSolidRect(rectCaption, Surface);
+    pDC->FillSolidRect(rectCaption.left, rectCaption.bottom - 1, rectCaption.Width(), 1, Border);
+    return Text;
+}
+
+void CModernVisualManager::OnDrawMiniFrameBorder (CDC* pDC, CPaneFrameWnd* /*pFrameWnd*/, CRect rectBorder, CRect rectBorderSize)
+{
+    // faixas da moldura em branco e um contorno fino por fora
+    pDC->FillSolidRect(rectBorder.left, rectBorder.top, rectBorder.Width(), rectBorderSize.top, Surface);
+    pDC->FillSolidRect(rectBorder.left, rectBorder.bottom - rectBorderSize.bottom, rectBorder.Width(), rectBorderSize.bottom, Surface);
+    pDC->FillSolidRect(rectBorder.left, rectBorder.top, rectBorderSize.left, rectBorder.Height(), Surface);
+    pDC->FillSolidRect(rectBorder.right - rectBorderSize.right, rectBorder.top, rectBorderSize.right, rectBorder.Height(), Surface);
+    pDC->Draw3dRect(rectBorder, BorderStrong, BorderStrong);
+}
+
+void CModernVisualManager::OnDrawCaptionButton (CDC* pDC, CMFCCaptionButton* pButton, BOOL bActive, BOOL bHorz, BOOL bMaximized, BOOL bDisabled, int nImageID)
+{
+    // so o botao de fechar e redesenhado; os demais (fixar etc.) seguem o estilo base
+    if (pButton->GetHit() != HTCLOSE)
+    {
+        CMFCVisualManagerOfficeXP::OnDrawCaptionButton(pDC, pButton, bActive, bHorz, bMaximized, bDisabled, nImageID);
+        return;
+    }
+
+    CRect rc = pButton->GetRect();
+    rc.DeflateRect(1, 1);
+    bool hot = (pButton->m_bFocused || pButton->m_bPushed) && !bDisabled;
+
+    Gdiplus::Graphics g(pDC->GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    if (hot)
+        ModernDraw::FillRoundRect(g, rc, 5.0f, pButton->m_bPushed ? AccentStrong : RGB(236, 238, 242));
+
+    float cx = rc.CenterPoint().x + 0.0f, cy = rc.CenterPoint().y + 0.0f;
+    Gdiplus::Pen pen(ModernDraw::Clr(hot ? Text : TextMuted), 1.5f);
+    pen.SetStartCap(Gdiplus::LineCapRound);
+    pen.SetEndCap(Gdiplus::LineCapRound);
+    g.DrawLine(&pen, cx - 3.5f, cy - 3.5f, cx + 3.5f, cy + 3.5f);
+    g.DrawLine(&pen, cx - 3.5f, cy + 3.5f, cx + 3.5f, cy - 3.5f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
