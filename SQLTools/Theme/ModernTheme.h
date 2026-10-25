@@ -17,6 +17,9 @@ namespace ModernTheme
     const COLORREF Accent        = RGB( 47, 111, 237);
     const COLORREF AccentTint    = RGB(230, 238, 253);
     const COLORREF AccentStrong  = RGB(207, 224, 253);
+    const COLORREF Danger        = RGB(214,  69,  65);
+    const COLORREF Success       = RGB( 22, 136,  84);
+    const COLORREF Favorite      = RGB(240, 160,   0);
 
     // Aplica (uma unica vez, com copia de seguranca) as fontes e cores modernas ao editor e as fontes
     // das janelas do SQLTools. Retorna true se alterou as configuracoes do SQLTools (precisam ser salvas).

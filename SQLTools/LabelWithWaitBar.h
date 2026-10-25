@@ -34,6 +34,7 @@ class LabelWithWaitBar : public CStatic
     int      m_nTimerElapse;
     bool     m_animation;
     UINT     m_nTextPosition;
+    bool     m_flat;
 
 public:
 	LabelWithWaitBar ();
@@ -43,6 +44,7 @@ public:
     void SetText (LPCTSTR pText, COLORREF color);
     void AlignLeft ()                               { m_nTextPosition = DT_LEFT; }
     void AlignCenter ()                             { m_nTextPosition = DT_CENTER; }
+    void SetFlat (bool flat = true)                 { m_flat = flat; if (m_hWnd) Invalidate(FALSE); }
     void StartAnimation (bool);
     
     virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);

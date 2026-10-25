@@ -34,7 +34,8 @@ LabelWithWaitBar::LabelWithWaitBar()
     m_nTimerId(777),
     m_nTimerElapse(200),
     m_animation(false),
-    m_nTextPosition(DT_CENTER)
+    m_nTextPosition(DT_CENTER),
+    m_flat(false)
 {
 }
 
@@ -97,6 +98,36 @@ void LabelWithWaitBar::DrawItem (LPDRAWITEMSTRUCT d)
 
     // fundo da barra e "chip" arredondado com borda fina
     mem.FillSolidRect(0, 0, w, h, Surface);
+
+    if (m_flat)
+    {
+        mem.FillSolidRect(0, 0, w, 1, Border);
+        if (m_animation)
+        {
+            Graphics gf(mem.GetSafeHdc());
+            BYTE r8 = GetRValue(Accent), g8 = GetGValue(Accent), b8 = GetBValue(Accent);
+            LinearGradientBrush bar(
+                PointF((REAL)m_nProgressPos, 0), PointF((REAL)(m_nProgressPos + m_nGradientWidth), 0),
+                Color(0, r8, g8, b8), Color(255, r8, g8, b8));
+            REAL intensities[] = { 0.0f, 1.0f, 0.0f };
+            REAL positions[]   = { 0.0f, 0.5f, 1.0f };
+            bar.SetBlend(intensities, positions, 3);
+            gf.FillRectangle(&bar, (REAL)m_nProgressPos, (REAL)h - 2.0f, (REAL)m_nGradientWidth, 2.0f);
+        }
+        static CFont s_flatFont;
+        if (!s_flatFont.GetSafeHandle())
+            s_flatFont.CreatePointFont(90, L"Segoe UI");
+        CFont* pOldFlat = mem.SelectObject(&s_flatFont);
+        mem.SetBkMode(TRANSPARENT);
+        mem.SetTextColor(TextMuted);
+        CRect rt(12, 0, w - 8, h);
+        mem.DrawText(m_text, rt, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+        mem.SelectObject(pOldFlat);
+        dc.BitBlt(rc.left, rc.top, w, h, &mem, 0, 0, SRCCOPY);
+        mem.SelectObject(pOldBmp);
+        dc.Detach();
+        return;
+    }
 
     Graphics g(mem.GetSafeHdc());
     g.SetSmoothingMode(SmoothingModeAntiAlias);

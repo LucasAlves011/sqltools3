@@ -18,6 +18,7 @@
 */
 
 #include "stdafx.h"
+#include "Theme/ModernDraw.h"
 #include "SQLTools.h"
 #include "DbBrowser\DbBrowserList.h"
 #include "MetaDict\MetaDictionary.h"
@@ -383,7 +384,7 @@ int DbBrowserList::OnCreate(LPCREATESTRUCT lpCreateStruct)
     if (!(::GetVersion() & 0x80000000))
     {
         if (m_images.m_hImageList == NULL)
-            m_images.Create(IDB_DB_OBJ, 16, 64, RGB(0,255,0));
+            m_images.Attach(ImageList_Duplicate(ModernDraw::Images().GetSafeHandle()));
 
         SetImageList(&m_images, LVSIL_SMALL);
 

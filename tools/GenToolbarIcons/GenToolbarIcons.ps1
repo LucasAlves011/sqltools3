@@ -61,7 +61,25 @@ $ValuePanelBar = @(
     'code:blue', 'copy:blue', 'device-floppy:blue', 'chevron-down:blue'
 )
 
+# --- Lista de objetos (Alt+3): 72 icones ---
+# 0..23   tipos de objeto na ordem de IDB_DB_OBJ_IMAGE_INDEX (DbBrowserList.h), repouso
+# 24..47  os mesmos tipos na cor de destaque
+# 48..59  interface (refresh, list, table, check, x, filter, settings, adjustments, chevron, user, plus, search), repouso
+# 60..71  interface, cor de destaque
+$ObjTypes = @(
+    'math-function', 'code', 'package', 'box', 'bolt', 'eye', 'table', 'numbers', 'arrows-exchange', 'users',
+    'hierarchy-2', 'plug-connected', 'database-import', 'file-text', 'category', 'shape', 'list-search', 'checks',
+    'key', 'lock', 'link', 'trash', 'alert-triangle', 'coffee'
+)
+$ObjUi = @('refresh', 'list', 'table', 'circle-check', 'circle-x', 'filter', 'settings', 'adjustments-horizontal', 'chevron-down', 'user', 'plus', 'search')
+$ObjectListBar = @()
+foreach ($n in $ObjTypes) { if ($n -eq 'alert-triangle') { $ObjectListBar += "${n}:red" } else { $ObjectListBar += $n } }
+foreach ($n in $ObjTypes) { if ($n -eq 'alert-triangle') { $ObjectListBar += "${n}:red" } else { $ObjectListBar += "${n}:blue" } }
+foreach ($n in $ObjUi) { switch ($n) { 'circle-check' { $ObjectListBar += "${n}:green" } 'circle-x' { $ObjectListBar += "${n}:red" } default { $ObjectListBar += $n } } }
+foreach ($n in $ObjUi) { switch ($n) { 'circle-check' { $ObjectListBar += "${n}:green" } 'circle-x' { $ObjectListBar += "${n}:red" } default { $ObjectListBar += "${n}:blue" } } }
+
 $Bars = @(
+    @{ File = 'ObjectListIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ObjectListBar },
     @{ File = 'ValuePanelIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ValuePanelBar },
     @{ File = 'FileToolbar.bmp';      Size = 19; Glyph = 19; Offset = 0;  Icons = $FileBar },
     @{ File = 'SqlToolbar.bmp';       Size = 19; Glyph = 19; Offset = 0;  Icons = $SqlBar },

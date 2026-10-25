@@ -46,6 +46,9 @@ IDR_CHANGELOG           RCDATA                  "..\\CHANGELOG.md"
 // icones dos botoes do painel Valor (gerados por tools/GenToolbarIcons)
 IDB_VALUE_ICONS         BITMAP                  "res\\ValuePanelIcons.bmp"
 
+// icones da Lista de objetos (tipos e botoes), gerados por tools/GenToolbarIcons
+IDB_OBJLIST_ICONS      BITMAP                  "res\\ObjectListIcons.bmp"
+
 #ifdef OCI_EMBED
 // Oracle Instant Client comprimido (gerado por tools/PackOci), extraido em runtime por OCI8/EmbeddedOci.cpp
 IDR_OCI_BUNDLE          RCDATA                  "..\\3dParty\\oracle\\instantclient19\\oci19.bin"

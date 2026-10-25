@@ -26,6 +26,8 @@
 #include <COMMON/FixedArray.h>
 #include "DbBrowser\DbBrowserList.h"
 #include "LabelWithWaitBar.h"
+#include "DbBrowser/TypeBar.h"
+#include "DbBrowser/OwnerBar.h"
 
 
     class SQLToolsSettings;
@@ -72,7 +74,9 @@ public:
 	
 	SchemaComboBox   m_wndSchemaList;
 	LabelWithWaitBar m_wndStatus;
-	CComboBoxEx      m_wndTypeCombo;  // alternative object-type selector
+	CComboBoxEx      m_wndTypeCombo;  // guarda o tipo selecionado no modo "combo" (fica oculto)
+	CTypeBar         m_wndTypeBar;    // barra de tipos (categorias e botoes)
+	COwnerBar        m_wndOwnerBar;   // owner atual, favoritos e painel de busca
 
 	BOOL m_bAllSchemas;
 	BOOL m_bShowTabTitles;
@@ -93,6 +97,7 @@ public:
     void PopulateSchemaList ();
     void SetSchemaForObjectLists ();
     void OnSwitchTab (unsigned int);
+    void RefreshOwnerPopup ();
 
     void EvOnConnect ();
     void EvOnDisconnect ();
@@ -107,10 +112,11 @@ public:
 	virtual void OnOK ();
 	virtual void OnCancel();
 
-    CButton m_btnDbamv;
-    CButton m_btnMvintegra;
+    CRect m_rcSeg;   // fundo do par "lista curta / detalhada"
 
     void SelectSchema (const wchar_t* schemaName);
+    void LayoutAll (int cx, int cy);
+    void GetOwnerList (std::vector<CString>& owners) const;
 
 protected:
 	int  GetCurrentTabIndex () const;
@@ -121,8 +127,13 @@ protected:
     afx_msg void OnDropDownSchema();
     afx_msg void OnSetFocusSchema();
     afx_msg void OnSchemaChanged();
-    afx_msg void OnBnClickedDbamv();
-    afx_msg void OnBnClickedMvintegra();
+    afx_msg BOOL OnEraseBkgnd (CDC* pDC);
+    afx_msg HBRUSH OnCtlColor (CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+    afx_msg void OnToolbarCustomDraw (UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnTypeBarSelChange ();
+    afx_msg void OnTypeBarRelayout ();
+    afx_msg void OnOwnerPick ();
+    afx_msg void OnOwnerOpen ();
     afx_msg void OnToolbarFilterChanged();
     afx_msg void OnRefresh();
     afx_msg void OnShowAsList();

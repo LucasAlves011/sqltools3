@@ -30,6 +30,7 @@
 
 #include "stdafx.h"
 #include "SQLTools.h"
+#include "Theme/ModernDraw.h"
 #include "DbSourceWnd.h"
 #include "OCI8/BCursor.h"
 #include "DbBrowser\DBBrowserTableList.h"
@@ -145,6 +146,13 @@ void CDbSourceWnd::DoDataExchange (CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CDbSourceWnd, CDialog)
     ON_WM_SIZE()
+    ON_WM_ERASEBKGND()
+    ON_WM_CTLCOLOR()
+    ON_NOTIFY_RANGE(NM_CUSTOMDRAW, IDC_DS_AS_LIST, IDC_DS_REFRESH, OnToolbarCustomDraw)
+    ON_CONTROL(TBN_TYPE_SELCHANGE, IDC_DS_TYPEBAR, OnTypeBarSelChange)
+    ON_CONTROL(2 /*TBN_TYPE_RELAYOUT*/, IDC_DS_TYPEBAR, OnTypeBarRelayout)
+    ON_CONTROL(OBN_OWNER_PICK, IDC_DS_OWNERBAR, OnOwnerPick)
+    ON_CONTROL(OBN_OWNER_OPEN, IDC_DS_OWNERBAR, OnOwnerOpen)
     ON_CBN_DROPDOWN(IDC_DS_SCHEMA, OnDropDownSchema)
     ON_CBN_SETFOCUS(IDC_DS_SCHEMA, OnSetFocusSchema)
     ON_CBN_SELCHANGE(IDC_DS_SCHEMA, OnSchemaChanged)
@@ -161,8 +169,6 @@ BEGIN_MESSAGE_MAP(CDbSourceWnd, CDialog)
     ON_BN_CLICKED(IDC_DS_SETTINGS, OnSettings)
     ON_BN_CLICKED(IDC_DS_FILTER, OnFilter)
     ON_BN_CLICKED(IDC_DS_REFRESH, OnRefresh)
-    ON_BN_CLICKED(10111, OnBnClickedDbamv)
-    ON_BN_CLICKED(10112, OnBnClickedMvintegra)
 
     ON_COMMAND(ID_DS_REFRESH, OnRefresh)
     ON_COMMAND(ID_DS_SETTINGS, OnSettings)
@@ -185,7 +191,7 @@ BOOL CDbSourceWnd::OnInitDialog()
     UpdateData(FALSE);
 
     if (m_Images.m_hImageList == NULL)
-        m_Images.Create(IDB_DB_OBJ, 16, 64, RGB(0,255,0));
+        m_Images.Attach(ImageList_Duplicate(ModernDraw::Images().GetSafeHandle()));
 
     m_wndTab.SetImageList(&m_Images);
 
@@ -224,33 +230,6 @@ BOOL CDbSourceWnd::OnInitDialog()
             m_wndTabLists[i]->GetImageIndex());
     }
 
-    CWinApp* pApp = AfxGetApp();
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_REFRESH), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_REFRESH));
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_AS_REPORT), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_AS_REPORT));
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_AS_LIST), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_AS_LIST));
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_VALID), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_VALID));
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_INVALID), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_INVALID));
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_FILTER), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_FILTER));
-    ::SendMessage(::GetDlgItem(*this, IDC_DS_SETTINGS), BM_SETIMAGE, IMAGE_ICON, (LPARAM)pApp->LoadIcon(IDI_SETTINGS));
-
-    CRect rcSettings;
-    if (CWnd* pSettings = GetDlgItem(IDC_DS_SETTINGS))
-    {
-        pSettings->GetWindowRect(&rcSettings);
-        ScreenToClient(&rcSettings);
-
-        int btnTop = rcSettings.top;
-        int btnHeight = rcSettings.Height();
-
-        CRect rcDbamv(rcSettings.right + 6, btnTop, rcSettings.right + 6 + 56, btnTop + btnHeight);
-        m_btnDbamv.Create(_T("DBAMV"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, rcDbamv, this, 10111);
-        m_btnDbamv.SetFont(GetFont());
-
-        CRect rcMvintegra(rcDbamv.right + 4, btnTop, rcDbamv.right + 4 + 80, btnTop + btnHeight);
-        m_btnMvintegra.Create(_T("MVINTEGRA"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, rcMvintegra, this, 10112);
-        m_btnMvintegra.SetFont(GetFont());
-    }
-
     int nTab = AfxGetApp()->GetProfileInt(L"Code", L"nTab", 0);
     _ASSERTE((unsigned int)nTab < m_wndTabLists.size());
 
@@ -279,16 +258,40 @@ BOOL CDbSourceWnd::OnInitDialog()
         }
     }
 
+    // seletores modernos: owner (com favoritos) e barra de tipos
+    m_wndOwnerBar.Create(this, IDC_DS_OWNERBAR);
+    m_wndTypeBar.Create(this, IDC_DS_TYPEBAR);
+    {
+        std::vector<CTypeBar::Item> items;
+        for (unsigned int i = 0; i < m_wndTabLists.size(); i++)
+        {
+            CTypeBar::Item it;
+            it.title = Common::wstr(m_wndTabLists[i]->GetTitle()).c_str();
+            it.imageIndex = m_wndTabLists[i]->GetImageIndex();
+            it.category = CTypeBar::CategoryOfType((int)i);
+            items.push_back(it);
+        }
+        m_wndTypeBar.SetItems(items);
+        if (!m_wndTypeBar.IsTypeVisible(nTab))
+            for (unsigned int i = 0; i < m_wndTabLists.size(); i++)
+                if (m_wndTypeBar.IsTypeVisible((int)i)) { nTab = (int)i; break; }
+        m_wndTypeBar.SetSel(nTab);
+    }
+    m_wndSchemaList.ShowWindow(SW_HIDE);   // continua guardando a lista de owners e o atual
+    m_wndStatus.SetFlat();
+
     // Apply selector mode: show one control, hide the other
     if (m_bUseCombo)
     {
         m_wndTab.ShowWindow(SW_HIDE);
-        m_wndTypeCombo.ShowWindow(SW_SHOW);
+        m_wndTypeCombo.ShowWindow(SW_HIDE);
+        m_wndTypeBar.ShowWindow(SW_SHOW);
         m_wndTypeCombo.SetCurSel(nTab);
     }
     else
     {
         m_wndTypeCombo.ShowWindow(SW_HIDE);
+        m_wndTypeBar.ShowWindow(SW_HIDE);
         m_wndTab.SetCurSel(nTab);
     }
 
@@ -409,55 +412,210 @@ void CDbSourceWnd::OnSize (UINT nType, int cx, int cy)
 
     if (cx > 0 && cy > 0
     && nType != SIZE_MAXHIDE
-    && nType != SIZE_MINIMIZED)
+    && nType != SIZE_MINIMIZED
+    && m_wndOwnerBar.GetSafeHwnd())
+        LayoutAll(cx, cy);
+}
+
+void CDbSourceWnd::LayoutAll (int cx, int cy)
+{
+    const int pad = 8, btn = 28, rowTop = 6, statusH = 24;
+
+    auto place = [this](UINT id, int x, int y, int w, int h)
     {
-        if (CWnd* pWnd = GetDlgItem(IDC_DS_STATUS))
-        {
-            // Resize and reposition the status bar at the bottom
-            CRect statusRect;
-            pWnd->GetWindowRect(statusRect);
-            ScreenToClient(&statusRect);
-            pWnd->SetWindowPos(0, statusRect.left, cy - statusRect.Height() - 2,
-                               cx - statusRect.left, statusRect.Height(), SWP_NOZORDER);
-            pWnd->GetWindowRect(statusRect);
-            ScreenToClient(&statusRect);
+        if (CWnd* pWnd = GetDlgItem(id))
+            pWnd->SetWindowPos(0, x, y, w, h, SWP_NOZORDER | SWP_NOACTIVATE);
+    };
 
-            if (!m_bUseCombo)
-            {
-                // Tab mode: resize tab to fill the space, position list views in its client area
-                CRect rcTab;
-                m_wndTab.GetWindowRect(rcTab);
-                ScreenToClient(&rcTab);
+    // barra de status no rodape
+    place(IDC_DS_STATUS, 0, cy - statusH, cx, statusH);
 
-                m_wndTab.SetWindowPos(0, 0, 0, cx, statusRect.top - rcTab.top - 4, SWP_NOMOVE|SWP_NOZORDER);
+    // linha de botoes: atualizar | lista curta/detalhada | owner ... validos invalidos filtro configuracoes
+    int x = pad;
+    place(IDC_DS_REFRESH, x, rowTop, btn, btn);
+    x += btn + 6;
+    m_rcSeg = CRect(x, rowTop, x + 62, rowTop + btn);
+    place(IDC_DS_AS_LIST,   x + 2,      rowTop + 2, 28, btn - 4);
+    place(IDC_DS_AS_REPORT, x + 2 + 30, rowTop + 2, 28, btn - 4);
+    x = m_rcSeg.right + 8;
 
-                CRect listRect;
-                m_wndTab.GetWindowRect(&listRect);
-                m_wndTab.AdjustRect(FALSE, &listRect);
-                ScreenToClient(listRect);
-                listRect.InflateRect(1, 0);
+    int rx = cx - pad - btn;
+    place(IDC_DS_SETTINGS, rx, rowTop, btn, btn);  rx -= btn + 2;
+    place(IDC_DS_FILTER,   rx, rowTop, btn, btn);  rx -= btn + 2;
+    place(IDC_DS_INVALID,  rx, rowTop, btn, btn);  rx -= btn + 2;
+    place(IDC_DS_VALID,    rx, rowTop, btn, btn);
 
-                for (unsigned int i(0); i < m_wndTabLists.size(); i++)
-                    m_wndTabLists[i]->SetWindowPos(&CWnd::wndTop, listRect.left, listRect.top, listRect.Width(), listRect.Height(), 0);
-            }
-            else
-            {
-                // Combo mode: resize combo width, position list views directly below it
-                CRect rcCombo;
-                m_wndTypeCombo.GetWindowRect(rcCombo);
-                ScreenToClient(&rcCombo);
-                m_wndTypeCombo.SetWindowPos(0, 0, 0, cx, rcCombo.Height(), SWP_NOMOVE|SWP_NOZORDER);
+    int ownerRight = rx - 8;
+    int ownerW = (std::max)(m_wndOwnerBar.MinWidth(), ownerRight - x);
+    m_wndOwnerBar.SetWindowPos(0, x, rowTop - 2, ownerW, 32, SWP_NOZORDER | SWP_NOACTIVATE);
 
-                int listLeft   = 0;
-                int listTop    = rcCombo.bottom + 2;
-                int listWidth  = cx;
-                int listHeight = statusRect.top - 4 - listTop;
-                if (listHeight > 0)
-                    for (unsigned int i(0); i < m_wndTabLists.size(); i++)
-                        m_wndTabLists[i]->SetWindowPos(&CWnd::wndTop, listLeft, listTop, listWidth, listHeight, 0);
-            }
-        }
+    // seletor de tipo e listas
+    int top = rowTop + btn + 6;
+    int listTop;
+    if (m_bUseCombo)
+    {
+        int h = m_wndTypeBar.CalcHeight(cx);
+        m_wndTypeBar.SetWindowPos(0, 0, top, cx, h, SWP_NOZORDER | SWP_NOACTIVATE);
+        listTop = top + h + 2;
     }
+    else
+    {
+        m_wndTab.SetWindowPos(0, 0, top, cx, cy - statusH - top - 4, SWP_NOZORDER);
+
+        CRect listRect;
+        m_wndTab.GetWindowRect(&listRect);
+        m_wndTab.AdjustRect(FALSE, &listRect);
+        ScreenToClient(listRect);
+        listRect.InflateRect(1, 0);
+
+        for (unsigned int i(0); i < m_wndTabLists.size(); i++)
+            m_wndTabLists[i]->SetWindowPos(&CWnd::wndTop, listRect.left, listRect.top, listRect.Width(), listRect.Height(), 0);
+        Invalidate(FALSE);
+        return;
+    }
+
+    int listHeight = cy - statusH - 4 - listTop;
+    if (listHeight > 0)
+        for (unsigned int i(0); i < m_wndTabLists.size(); i++)
+            m_wndTabLists[i]->SetWindowPos(&CWnd::wndTop, 0, listTop, cx, listHeight, 0);
+
+    Invalidate(FALSE);
+}
+
+BOOL CDbSourceWnd::OnEraseBkgnd (CDC* pDC)
+{
+    CRect rc;
+    GetClientRect(rc);
+    pDC->FillSolidRect(rc, ModernTheme::Surface);
+
+    // fundo do par "lista curta / detalhada"
+    if (!m_rcSeg.IsRectEmpty())
+    {
+        Gdiplus::Graphics g(pDC->GetSafeHdc());
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        ModernDraw::FillRoundRect(g, m_rcSeg, 7.0f, ModernTheme::SurfaceAlt);
+    }
+    return TRUE;
+}
+
+HBRUSH CDbSourceWnd::OnCtlColor (CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+    if (nCtlColor == CTLCOLOR_DLG || nCtlColor == CTLCOLOR_STATIC)
+    {
+        static CBrush s_surface(ModernTheme::Surface);
+        pDC->SetBkColor(ModernTheme::Surface);
+        return (HBRUSH)s_surface.GetSafeHandle();
+    }
+    return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+void CDbSourceWnd::OnToolbarCustomDraw (UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+    *pResult = CDRF_DODEFAULT;
+    NMCUSTOMDRAW* cd = reinterpret_cast<NMCUSTOMDRAW*>(pNMHDR);
+    if (cd->dwDrawStage != CDDS_PREPAINT)
+        return;
+
+    ModernDraw::UiIcon icon;
+    switch (id)
+    {
+    case IDC_DS_REFRESH:   icon = ModernDraw::UI_REFRESH;  break;
+    case IDC_DS_AS_LIST:   icon = ModernDraw::UI_LIST;     break;
+    case IDC_DS_AS_REPORT: icon = ModernDraw::UI_TABLE;    break;
+    case IDC_DS_VALID:     icon = ModernDraw::UI_CHECK;    break;
+    case IDC_DS_INVALID:   icon = ModernDraw::UI_X;        break;
+    case IDC_DS_FILTER:    icon = ModernDraw::UI_FILTER;   break;
+    case IDC_DS_SETTINGS:  icon = ModernDraw::UI_SETTINGS; break;
+    default: return;
+    }
+
+    CDC* dc = CDC::FromHandle(cd->hdc);
+    CRect rc(cd->rc);
+    bool disabled = (cd->uItemState & CDIS_DISABLED) != 0;
+    bool hot      = (cd->uItemState & CDIS_HOT) != 0 && !disabled;
+    bool pressed  = (cd->uItemState & CDIS_SELECTED) != 0;
+    bool checked  = ::SendMessage(cd->hdr.hwndFrom, BM_GETCHECK, 0, 0) == BST_CHECKED;
+    bool seg      = (id == IDC_DS_AS_LIST || id == IDC_DS_AS_REPORT);
+
+    dc->FillSolidRect(rc, seg ? ModernTheme::SurfaceAlt : ModernTheme::Surface);
+
+    Gdiplus::Graphics g(dc->GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+
+    if (seg && checked)
+    {
+        // opcao ativa do par: "pastilha" branca com borda fina
+        ModernDraw::FillRoundRect(g, rc, 6.0f, ModernTheme::Surface);
+        ModernDraw::StrokeRoundRect(g, rc, 6.0f, ModernTheme::BorderStrong);
+    }
+    else if (!seg && !disabled && (pressed || hot || checked))
+    {
+        ModernDraw::FillRoundRect(g, rc, 6.0f, pressed ? ModernTheme::AccentStrong : ModernTheme::AccentTint);
+    }
+    else if (seg && hot)
+    {
+        ModernDraw::FillRoundRect(g, rc, 6.0f, ModernTheme::AccentTint);
+    }
+
+    // validos/invalidos ja sao coloridos; os demais ganham a cor de destaque quando ativos
+    bool accent = !disabled && (hot || checked || pressed);
+    ModernDraw::DrawUiIcon(*dc, icon, rc.CenterPoint().x - 8, rc.CenterPoint().y - 8, accent, disabled);
+
+    *pResult = CDRF_SKIPDEFAULT;
+}
+
+void CDbSourceWnd::OnTypeBarSelChange ()
+{
+    int nSel = m_wndTypeBar.GetSel();
+    if (nSel >= 0)
+    {
+        m_wndTypeCombo.SetCurSel(nSel);
+        OnSwitchTab(nSel);
+    }
+}
+
+void CDbSourceWnd::OnTypeBarRelayout ()
+{
+    CRect rc;
+    GetClientRect(rc);
+    LayoutAll(rc.Width(), rc.Height());
+}
+
+void CDbSourceWnd::GetOwnerList (std::vector<CString>& owners) const
+{
+    owners.clear();
+    for (int i = 0; i < m_wndSchemaList.GetCount(); ++i)
+    {
+        CString s;
+        m_wndSchemaList.GetLBText(i, s);
+        owners.push_back(s);
+    }
+}
+
+void CDbSourceWnd::RefreshOwnerPopup ()
+{
+    if (m_wndOwnerBar.IsPopupOpen())
+    {
+        std::vector<CString> owners;
+        GetOwnerList(owners);
+        m_wndOwnerBar.UpdatePopup(owners, m_schemaListStatus == SLS_LOADING);
+    }
+}
+
+void CDbSourceWnd::OnOwnerOpen ()
+{
+    PopulateSchemaList();          // carrega a lista completa de owners em segundo plano
+
+    std::vector<CString> owners;
+    GetOwnerList(owners);
+    m_wndOwnerBar.ShowPopup(owners, m_recentSchemas, m_schemaListStatus == SLS_LOADING);
+}
+
+void CDbSourceWnd::OnOwnerPick ()
+{
+    const CString& owner = m_wndOwnerBar.GetPicked();
+    if (!owner.IsEmpty())
+        SelectSchema(owner);
 }
 
 void CDbSourceWnd::OnSwitchTab (unsigned int nTab)
@@ -466,6 +624,9 @@ void CDbSourceWnd::OnSwitchTab (unsigned int nTab)
 
     if (nTab < m_wndTabLists.size())
     {
+        if (m_bUseCombo && m_wndTypeBar.GetSafeHwnd() && m_wndTypeBar.GetSel() != (int)nTab)
+            m_wndTypeBar.SetSel((int)nTab);
+
         for (unsigned int i(0); i < m_wndTabLists.size(); i++)
             m_wndTabLists[i]->ShowWindow(i == nTab ? SW_SHOW : SW_HIDE);
 
@@ -487,7 +648,7 @@ void CDbSourceWnd::OnSwitchTab (unsigned int nTab)
 
             HWND hFocus = ::GetFocus();
             bool selectorHasFocus = m_bUseCombo
-                ? (::IsChild(m_wndTypeCombo.m_hWnd, hFocus))
+                ? (m_wndTypeBar.m_hWnd == hFocus)
                 : (m_wndTab.m_hWnd == hFocus);
             if (!selectorHasFocus)
                 m_wndTabLists[nTab]->SetFocus();
@@ -523,13 +684,18 @@ void CDbSourceWnd::OnUseCombo ()
     if (m_bUseCombo)
     {
         m_wndTab.ShowWindow(SW_HIDE);
-        m_wndTypeCombo.ShowWindow(SW_SHOW);
+        m_wndTypeCombo.ShowWindow(SW_HIDE);
+        m_wndTypeBar.ShowWindow(SW_SHOW);
         if (nSel != -1)
+        {
             m_wndTypeCombo.SetCurSel(nSel);
+            m_wndTypeBar.SetSel(nSel);
+        }
     }
     else
     {
         m_wndTypeCombo.ShowWindow(SW_HIDE);
+        m_wndTypeBar.ShowWindow(SW_HIDE);
         m_wndTab.ShowWindow(SW_SHOW);
         if (nSel != -1)
             m_wndTab.SetCurSel(nSel);
@@ -629,6 +795,7 @@ void CDbSourceWnd::InitSchemaList ()
                 m_dbSourceWnd.m_schemaListStatus = CDbSourceWnd::SLS_LOADED;
             }
             m_dbSourceWnd.m_wndSchemaList.SetBusy(false);
+            m_dbSourceWnd.RefreshOwnerPopup();
         }
 
         void ReturnErrorInForeground () 
@@ -716,16 +883,6 @@ void CDbSourceWnd::SelectSchema (const wchar_t* schemaName)
         m_wndTabLists[nTab]->Refresh();
 }
 
-void CDbSourceWnd::OnBnClickedDbamv ()
-{
-    SelectSchema(L"DBAMV");
-}
-
-void CDbSourceWnd::OnBnClickedMvintegra ()
-{
-    SelectSchema(L"MVINTEGRA");
-}
-
 void CDbSourceWnd::OnToolbarFilterChanged ()
 {
     UpdateData();
@@ -783,6 +940,8 @@ void CDbSourceWnd::OnIdleUpdateCmdUI ()
 
     if (!IsVisible())
         return;
+
+    m_wndOwnerBar.SetCurrent(m_strSchema);
 
     int nTab = GetCurrentTabIndex();
     if (nTab != -1)
