@@ -19,6 +19,8 @@
 
 #include "stdafx.h"
 #include "Theme/ModernDraw.h"
+#include <uxtheme.h>
+#pragma comment(lib, "uxtheme.lib")
 #include "SQLTools.h"
 #include "DbBrowser\DbBrowserList.h"
 #include "MetaDict\MetaDictionary.h"
@@ -356,6 +358,7 @@ BEGIN_MESSAGE_MAP(DbBrowserList, Common::CManagedListCtrl)
     ON_WM_CREATE()
     ON_WM_CONTEXTMENU()
     ON_NOTIFY_REFLECT(NM_DBLCLK, OnNMDblclk)
+    ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnCustomDrawList)
     ON_COMMAND(IDC_DS_AS_LIST, OnShowAsList)
     ON_COMMAND(IDC_DS_AS_REPORT, OnShowAsReport)
     ON_COMMAND(ID_EDIT_SELECT_ALL, OnSelectAll)
@@ -373,12 +376,161 @@ BEGIN_MESSAGE_MAP(DbBrowserList, Common::CManagedListCtrl)
     ON_WM_SETCURSOR()
 END_MESSAGE_MAP()
 
+namespace
+{
+    struct BadgeStyle { COLORREF bg, fg; };
+
+    bool isStatusColumn (const CString& c)
+    {
+        return c.CompareNoCase(L"Status") == 0 || c.CompareNoCase(L"Validated") == 0;
+    }
+
+    bool isTypeColumn (const CString& c)
+    {
+        return c.CompareNoCase(L"Type") == 0 || c.CompareNoCase(L"Object Type") == 0;
+    }
+
+    // valores fixos (status e tipos de objeto) viram etiquetas coloridas
+    bool badgeFor (const CString& column, const CString& text, BadgeStyle& out)
+    {
+        CString up = text;
+        up.Trim();
+        up.MakeUpper();
+
+        if (isStatusColumn(column))
+        {
+            if (up == L"VALID" || up == L"ENABLED" || up == L"VALIDATED")
+            { out.bg = RGB(225, 245, 236); out.fg = ModernTheme::Success; return true; }
+            if (up == L"INVALID" || up == L"ERROR")
+            { out.bg = RGB(253, 232, 232); out.fg = ModernTheme::Danger; return true; }
+            if (up == L"DISABLED" || up == L"UNUSABLE" || up == L"NOT VALIDATED")
+            { out.bg = RGB(254, 243, 214); out.fg = RGB(168, 104, 0); return true; }
+            return false;
+        }
+
+        if (isTypeColumn(column))
+        {
+            static const wchar_t* const types[] = {
+                L"PROCEDURE", L"FUNCTION", L"PACKAGE", L"PACKAGE BODY", L"TRIGGER", L"VIEW", L"TABLE", L"INDEX",
+                L"SEQUENCE", L"SYNONYM", L"TYPE", L"TYPE BODY", L"JAVA CLASS", L"JAVA SOURCE", L"CLUSTER",
+                L"DATABASE LINK", L"MATERIALIZED VIEW" };
+            for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); ++i)
+                if (up == types[i])
+                { out.bg = ModernTheme::SurfaceAlt; out.fg = ModernTheme::TextMuted; return true; }
+        }
+        return false;
+    }
+}
+
+void DbBrowserList::OnCustomDrawList (NMHDR* pNMHDR, LRESULT* pResult)
+{
+    using namespace ModernTheme;
+
+    LPNMLVCUSTOMDRAW cd = reinterpret_cast<LPNMLVCUSTOMDRAW>(pNMHDR);
+    *pResult = CDRF_DODEFAULT;
+
+    auto rowColor = [this](int item, bool selected) -> COLORREF
+    {
+        if (selected)
+            return (::GetFocus() == m_hWnd) ? AccentTint : RGB(238, 240, 244);
+        return (item & 1) ? RGB(250, 251, 252) : Surface;
+    };
+
+    switch (cd->nmcd.dwDrawStage)
+    {
+    case CDDS_PREPAINT:
+        *pResult = CDRF_NOTIFYITEMDRAW;
+        break;
+
+    case CDDS_ITEMPREPAINT:
+    {
+        int item = (int)cd->nmcd.dwItemSpec;
+        bool selected = (GetItemState(item, LVIS_SELECTED) & LVIS_SELECTED) != 0;
+        cd->clrText   = Text;
+        cd->clrTextBk = rowColor(item, selected);
+        // a selecao passa a ser o tom de destaque (sem o azul forte do sistema nem o retangulo de foco)
+        cd->nmcd.uItemState &= ~(CDIS_SELECTED | CDIS_FOCUS);
+        *pResult = CDRF_NOTIFYSUBITEMDRAW;
+        break;
+    }
+
+    case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
+    {
+        int item = (int)cd->nmcd.dwItemSpec;
+        int sub  = cd->iSubItem;
+        if (sub <= 0 || !(GetStyle() & LVS_REPORT))
+            break;
+
+        CHeaderCtrl* header = GetHeaderCtrl();
+        if (!header)
+            break;
+
+        wchar_t title[128] = L"";
+        HDITEM hdi = {};
+        hdi.mask = HDI_TEXT;
+        hdi.pszText = title;
+        hdi.cchTextMax = 127;
+        header->GetItem(sub, &hdi);
+
+        CString text = GetItemText(item, sub);
+        BadgeStyle style;
+        if (text.IsEmpty() || !badgeFor(title, text, style))
+            break;
+
+        bool selected = (GetItemState(item, LVIS_SELECTED) & LVIS_SELECTED) != 0;
+        CRect cell;
+        GetSubItemRect(item, sub, LVIR_LABEL, cell);
+
+        CDC* dc = CDC::FromHandle(cd->nmcd.hdc);
+        dc->FillSolidRect(cell, rowColor(item, selected));
+
+        CFont* pOld = dc->SelectObject(&ModernDraw::UiFont());
+        CSize ts = dc->GetTextExtent(text);
+        int w = (std::min)((int)ts.cx + 18, (int)cell.Width() - 6);
+        int h = 18;
+        CRect badge(cell.left + 4, cell.CenterPoint().y - h / 2, cell.left + 4 + w, cell.CenterPoint().y - h / 2 + h);
+
+        Gdiplus::Graphics g(dc->GetSafeHdc());
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        ModernDraw::FillRoundRect(g, badge, h / 2.0f, style.bg);
+
+        // o texto tambem por GDI+, para ficar no mesmo sistema de coordenadas da etiqueta
+        {
+            Gdiplus::Font font(dc->GetSafeHdc(), (HFONT)ModernDraw::UiFont().GetSafeHandle());
+            Gdiplus::StringFormat fmt;
+            fmt.SetAlignment(Gdiplus::StringAlignmentCenter);
+            fmt.SetLineAlignment(Gdiplus::StringAlignmentCenter);
+            fmt.SetTrimming(Gdiplus::StringTrimmingEllipsisCharacter);
+            fmt.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap);
+            g.SetTextRenderingHint(Gdiplus::TextRenderingHintClearTypeGridFit);
+            Gdiplus::SolidBrush brush(ModernDraw::Clr(style.fg));
+            Gdiplus::RectF rf((Gdiplus::REAL)badge.left, (Gdiplus::REAL)badge.top, (Gdiplus::REAL)badge.Width(), (Gdiplus::REAL)badge.Height());
+            g.DrawString(text, -1, &font, rf, &fmt, &brush);
+        }
+        dc->SelectObject(pOld);
+
+        *pResult = CDRF_SKIPDEFAULT;
+        break;
+    }
+
+    default:
+        break;
+    }
+}
+
+
 int DbBrowserList::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
     if (CManagedListCtrl::OnCreate(lpCreateStruct) == -1)
         return -1;
 
     ModifyStyle(LVS_SINGLESEL, 0);
+
+    // visual moderno: fonte, tema, sem moldura e cabecalho com filtros redesenhado
+    SetFont(&ModernDraw::UiFont());
+    ModifyStyle(WS_BORDER, 0, SWP_FRAMECHANGED);
+    if (CHeaderCtrl* header = GetHeaderCtrl())
+        m_modernHeader.Attach(header->GetSafeHwnd());
 
     // 30.03.2003 optimization, removed images from Object Browser for Win95/Win98/WinMe because of resource cost
     if (!(::GetVersion() & 0x80000000))

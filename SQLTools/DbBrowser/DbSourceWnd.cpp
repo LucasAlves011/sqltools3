@@ -305,6 +305,7 @@ BOOL CDbSourceWnd::OnInitDialog()
     ModifyStyle(::GetDlgItem(*this, IDC_DS_AS_LIST), WS_TABSTOP, 0, 0);
 
     m_wndStatus.ModifyStyle(0, SS_OWNERDRAW);
+    m_wndStatus.ModifyStyleEx(WS_EX_STATICEDGE | WS_EX_CLIENTEDGE, 0, SWP_FRAMECHANGED);
     m_wndStatus.AlignLeft();
     //ModifyStyleEx(0, WS_EX_COMPOSITED); // for smoother animation in status
 

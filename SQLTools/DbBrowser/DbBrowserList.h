@@ -22,6 +22,7 @@
 // 24.09.2007 some improvements taken from sqltools++ by Randolf Geist
 
 #include "COMMON\ManagedListCtrl.h"
+#include "Theme/ModernHeader.h"
 
     enum IDB_DB_OBJ_IMAGE_INDEX
     {
@@ -55,6 +56,7 @@ class DbBrowserList : public Common::CManagedListCtrl
 {
     friend struct BackgroundTask_ListSqlBatch;
     bool m_dirty, m_useStateImage, m_busy;
+    CModernHeader m_modernHeader;
     std::string m_schema;
 	static HACCEL m_accelTable;
 
@@ -114,6 +116,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg void OnCustomDrawList(NMHDR* pNMHDR, LRESULT* pResult);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
     afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
     afx_msg void OnNMDblclk(NMHDR *pNMHDR, LRESULT *pResult);
