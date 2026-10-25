@@ -368,6 +368,7 @@ int COEditorView::CalculateLeftMargin (int digits)
             : m_Rulers[0].m_CharSize * 25 / 10;
 
     leftMargin += LINE_STATUS_WIDTH; // extra for line status
+    leftMargin += 6;                 // espaco entre o triangulo de execucao e o numero da linha
 
     LanguageSupportPtr ls = GetLanguageSupport();
     if (m_syntaxGutter && ls.get() && ls->HasExtendedSupport())

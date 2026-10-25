@@ -26,6 +26,7 @@
 #include "SQLToolsSettings.h"
 #include "SQLTools.h"
 #include "StatView.h"
+#include "Theme/ModernDraw.h"
 #include <OCI8/BCursor.h>
 #include <OpenGrid/GridSourceBase.h>
 #include "ServerBackgroundThread\TaskQueue.h"
@@ -401,7 +402,7 @@ CStatView::CStatView ()
     m_pManager->m_Options.m_ExpandLastCol = false;
 
     if (!m_imageList.m_hImageList)
-        m_imageList.Create(IDB_PANE_ICONS, 16, 64, RGB(0,255,0));
+        ModernDraw::CreatePaneImageList(m_imageList);
 
     m_pStrSource->SetImageList(&m_imageList, FALSE);
 

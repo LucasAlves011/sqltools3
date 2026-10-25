@@ -22,6 +22,7 @@
 #include <iomanip>
 #include "resource.h"
 #include "ExplainPlanSource.h"
+#include "Theme/ModernDraw.h"
 #include "COMMON\StrHelpers.h"
 
 using namespace OG2;
@@ -55,7 +56,7 @@ ExplainPlanSource::ExplainPlanSource ()
     m_lastRow(-1), m_lastIndex(-1)
 {
     if (!m_imageList.m_hImageList)
-        m_imageList.Create(IDB_PANE_ICONS, 16, 64, RGB(0, 255, 0));
+        ModernDraw::CreatePaneImageList(m_imageList);
 
     SetImageList(&m_imageList, FALSE);
 

@@ -69,6 +69,19 @@ namespace ModernDraw
         return list;
     }
 
+    void CreatePaneImageList (CImageList& list)
+    {
+        HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_PANE_ICONS32),
+                                            IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+        if (hBmp)
+        {
+            list.Create(16, 16, ILC_COLOR32, 7, 0);
+            CBitmap bmp;
+            bmp.Attach(hBmp);
+            list.Add(&bmp, (CBitmap*)NULL);
+        }
+    }
+
     void DrawImage (CDC& dc, int index, int x, int y, bool disabled)
     {
         CImageList& list = Images();

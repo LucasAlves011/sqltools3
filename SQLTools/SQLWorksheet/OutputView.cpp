@@ -26,6 +26,7 @@
 #include "COMMON\AppGlobal.h"
 #include "resource.h"
 #include "OutputView.h"
+#include "Theme/ModernDraw.h"
 #include "SQLWorksheetDoc.h"
 #include <OpenGrid/GridSourceBase.h>
 
@@ -62,7 +63,7 @@ COutputView::COutputView()
     m_pStrSource->SetFixSize(eoVert, edHorz, 3);
 
     if (!m_imageList.m_hImageList)
-        m_imageList.Create(IDB_PANE_ICONS, 16, 64, RGB(0,255,0));
+        ModernDraw::CreatePaneImageList(m_imageList);
 
     m_pStrSource->SetImageList(&m_imageList, FALSE);
 

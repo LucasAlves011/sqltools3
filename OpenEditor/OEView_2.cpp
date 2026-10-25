@@ -297,8 +297,6 @@ void COEditorView::DrawVertRuler (CDC& realDc, const CRect& rc, int start, int e
             CRect gtRc = stdGutterRc;
             gtRc.right -= 1;
             gtRc.left  = gtRc.right - LINE_STATUS_WIDTH;
-            gtRc.top += 1;
-            gtRc.bottom -= 1;
             dc.FillSolidRect(gtRc,
                     status == elsUpdated ? RGB(245, 166, 35)
                         : status == elsRevertedBevoreSaved ? RGB(250, 204, 21)
@@ -322,7 +320,7 @@ void COEditorView::DrawVertRuler (CDC& realDc, const CRect& rc, int start, int e
             Gdiplus::Graphics g(dc.m_hDC);
             g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
             float top = (float)stdGutterRc.top + 4.0f, bottom = (float)stdGutterRc.bottom - 4.0f;
-            float left = (float)stdGutterRc.left + 4.0f;
+            float left = (float)stdGutterRc.left + 3.0f;
             float right = left + (bottom - top) * 0.75f;
             Gdiplus::PointF pts[3] = { Gdiplus::PointF(left, top), Gdiplus::PointF(left, bottom), Gdiplus::PointF(right, (top + bottom) / 2) };
             Gdiplus::SolidBrush brush(Gdiplus::Color(255, 47, 111, 237));

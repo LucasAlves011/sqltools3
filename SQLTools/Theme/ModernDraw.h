@@ -33,6 +33,8 @@ namespace ModernDraw
 
     // tira de icones (16x16, 32 bits com alfa); a lista tem os 72 icones na ordem acima
     CImageList& Images ();
+    // lista de icones dos paineis Output/Estatisticas/Plano (7 icones de 16x16)
+    void CreatePaneImageList (CImageList& list);
     void DrawImage (CDC& dc, int index, int x, int y, bool disabled = false);
     void DrawUiIcon (CDC& dc, UiIcon icon, int x, int y, bool accent, bool disabled = false);
     void DrawTypeIcon (CDC& dc, int imageIndex, int x, int y, bool accent, bool disabled = false);

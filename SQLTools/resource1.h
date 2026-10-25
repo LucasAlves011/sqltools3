@@ -7,6 +7,7 @@
 #define IDR_CHANGELOG                   9101
 #define IDB_VALUE_ICONS                 9103
 #define IDB_OBJLIST_ICONS               9104
+#define IDB_PANE_ICONS32                9105
 #define IDC_DS_TYPEBAR                  1450
 #define IDC_DS_OWNERBAR                 1451
 #define IDD_UPDATE_AVAILABLE            10010

@@ -1,4 +1,4 @@
-# Gera os bitmaps das barras de ferramentas do SQLTools a partir dos icones Tabler (MIT, estilo outline).
+﻿# Gera os bitmaps das barras de ferramentas do SQLTools a partir dos icones Tabler (MIT, estilo outline).
 #
 # Uso (PowerShell 5.1, Windows):
 #   .\GenToolbarIcons.ps1 -IconsDir <pasta com os .svg do Tabler> -OutDir ..\..\SQLTools\res
@@ -19,6 +19,7 @@ $Colors = @{
     blue  = @(47, 111, 237)
     green = @(22, 136, 84)
     red   = @(214, 69, 65)
+    amber = @(217, 138, 0)
 }
 
 # especificacao: nome[:cor][+sobreposicao][#pilha]   ex.: "search+arrow-down", "device-floppy#", "player-play:blue"
@@ -78,7 +79,12 @@ foreach ($n in $ObjTypes) { if ($n -eq 'alert-triangle') { $ObjectListBar += "${
 foreach ($n in $ObjUi) { switch ($n) { 'circle-check' { $ObjectListBar += "${n}:green" } 'circle-x' { $ObjectListBar += "${n}:red" } default { $ObjectListBar += $n } } }
 foreach ($n in $ObjUi) { switch ($n) { 'circle-check' { $ObjectListBar += "${n}:green" } 'circle-x' { $ObjectListBar += "${n}:red" } default { $ObjectListBar += "${n}:blue" } } }
 
+# --- paineis Output/Estatisticas/Plano (7): mesma ordem de res\pane_list.bmp ---
+# 0 pasta, 1 pasta aberta, 2 informacao, 3 aviso, 4 erro, 5 saida DBMS, 6 tempo
+$PaneBar = @('folder', 'folder-open', 'info-circle:blue', 'alert-circle:amber', 'circle-x:red', 'terminal-2:green', 'clock')
+
 $Bars = @(
+    @{ File = 'PaneIcons.bmp';        Size = 16; Glyph = 18; Offset = -1; Icons = $PaneBar },
     @{ File = 'ObjectListIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ObjectListBar },
     @{ File = 'ValuePanelIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ValuePanelBar },
     @{ File = 'FileToolbar.bmp';      Size = 19; Glyph = 19; Offset = 0;  Icons = $FileBar },
