@@ -156,7 +156,7 @@ namespace
 {
     const wchar_t* const SECTION = L"Appearance";
     const wchar_t* const KEY_THEME_VERSION = L"ModernThemeVersion";
-    const int THEME_VERSION = 3;
+    const int THEME_VERSION = 4;
 
     void copyIfAbsent (const wchar_t* fileName)
     {
@@ -193,6 +193,7 @@ namespace
     void applyEditorTheme ()
     {
         OpenEditor::SettingsManager& mgr = COEDocument::GetSettingsManagerForUpdate();
+        mgr.GetGlobalSettings()->SetRuler(false);   // a regua do editor sai por padrao (continua em Settings)
 
         for (int c = 0, climit = mgr.GetClassCount(); c < climit; ++c)
         {

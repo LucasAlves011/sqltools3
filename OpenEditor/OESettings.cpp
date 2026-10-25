@@ -86,7 +86,7 @@ void BaseSettings::NotifySettingsChanged ()
     CMN_IMPL_PROPERTY(GlobalSettings, CursorBeyondEOF,                  false);
     CMN_IMPL_PROPERTY(GlobalSettings, LineNumbers,                      true);
     CMN_IMPL_PROPERTY(GlobalSettings, VisibleSpaces,                    false);
-    CMN_IMPL_PROPERTY(GlobalSettings, Ruler,                            true);
+    CMN_IMPL_PROPERTY(GlobalSettings, Ruler,                            false);   // regua desligada por padrao (visual moderno)
     CMN_IMPL_PROPERTY(GlobalSettings, TimestampFormat,                  "yyyy-mm-dd hh24:mi");
     CMN_IMPL_PROPERTY(GlobalSettings, EOFMark,                          true);
     CMN_IMPL_PROPERTY(GlobalSettings, UseSmartHome,                     true);
