@@ -25,9 +25,13 @@ public:
     const CString& GetCurrent () const      { return m_current; }
     const CString& GetPicked () const       { return m_picked; }
 
-    // favoritos (guardados no perfil do usuario)
+    // conexao atual (chave dos favoritos por conexao; vazia = desconectado)
+    void SetConnection (const CString& connection);
+
+    // favoritos mostrados: os globais (Settings) e depois os da conexao (estrela)
     const std::vector<CString>& Favorites () const { return m_favorites; }
     bool IsFavorite (const CString& owner) const;
+    bool IsGlobalFavorite (const CString& owner) const;
     void ToggleFavorite (const CString& owner);
     void MoveFavorite (int from, int to);
 
@@ -45,7 +49,9 @@ protected:
     struct Cell { CRect rc; int id; };
 
     CString m_current, m_picked;
-    std::vector<CString> m_favorites;
+    std::vector<CString> m_favorites, m_globalFavs, m_connFavs;
+    CString m_connection;
+    unsigned m_globalVersion;
     CRect m_rcPill, m_rcPlus;
     std::vector<Cell> m_chips;
     Hit   m_hover;
@@ -59,7 +65,7 @@ protected:
     void Layout (int width);
     Hit  HitTest (CPoint pt) const;
     void LoadFavorites ();
-    void SaveFavorites () const;
+    void RebuildFavorites ();
     void Notify (UINT code);
 
     DECLARE_MESSAGE_MAP()

@@ -2,6 +2,17 @@ SQLTools Changelog
 ==================
 
 
+3.3.1
+-----
+  * Favorite owners now work at two levels: global favorites (Settings >
+    Favorite Owners) appear on every connection, and the star in the owners
+    panel saves favorites per connection (owner-favorites.ini in the
+    configuration folder). No owner is a favorite by default.
+  * Settings opened from the Objects List now has the modern look and dark theme.
+  * Objects List: no more color flash while switching owner, filter boxes follow
+    the theme, and Ctrl+Backspace works in the filter boxes.
+
+
 3.3.0
 -----
   * New modern look across the whole application: flat toolbars, tabs, status

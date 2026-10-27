@@ -10,7 +10,50 @@ BEGIN_MESSAGE_MAP(CModernHeader, CHeaderCtrl)
     ON_WM_ERASEBKGND()
     ON_WM_MOUSEMOVE()
     ON_WM_MOUSELEAVE()
+    ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
+
+// Ctrl+Backspace chega a caixa de edicao como o caractere DEL (0x7F), que ela mostra como quadrado:
+// apaga a palavra anterior (ou a selecao), como nos demais campos de texto
+static LRESULT CALLBACK FilterEditProc (HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR id, DWORD_PTR)
+{
+    if (msg == WM_CHAR && wParam == 0x7F)
+    {
+        DWORD s = 0, e = 0;
+        ::SendMessage(hWnd, EM_GETSEL, (WPARAM)&s, (LPARAM)&e);
+        if (s == e && s > 0)
+        {
+            int len = ::GetWindowTextLength(hWnd);
+            std::wstring text(len + 1, L'\0');
+            ::GetWindowText(hWnd, &text[0], len + 1);
+            DWORD p = s;
+            while (p > 0 && iswspace(text[p - 1])) --p;
+            while (p > 0 && !iswspace(text[p - 1])) --p;
+            ::SendMessage(hWnd, EM_SETSEL, p, e);
+        }
+        ::SendMessage(hWnd, EM_REPLACESEL, TRUE, (LPARAM)L"");
+        return 0;
+    }
+    if (msg == WM_NCDESTROY)
+        ::RemoveWindowSubclass(hWnd, FilterEditProc, id);
+    return ::DefSubclassProc(hWnd, msg, wParam, lParam);
+}
+
+// a caixa de edicao do filtro e filha do cabecalho: sem isto ela fica branca no tema escuro
+HBRUSH CModernHeader::OnCtlColor (CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+    if (nCtlColor == CTLCOLOR_EDIT)
+    {
+        if (pWnd && pWnd->GetSafeHwnd())
+            ::SetWindowSubclass(pWnd->GetSafeHwnd(), FilterEditProc, 1, 0);
+        if (!m_editBrush.GetSafeHandle())
+            m_editBrush.CreateSolidBrush(Surface);
+        pDC->SetTextColor(Text);
+        pDC->SetBkColor(Surface);
+        return (HBRUSH)m_editBrush.GetSafeHandle();
+    }
+    return CHeaderCtrl::OnCtlColor(pDC, pWnd, nCtlColor);
+}
 
 CModernHeader::CModernHeader ()
     : m_hotItem(-1), m_tracking(false)

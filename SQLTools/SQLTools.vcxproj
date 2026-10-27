@@ -786,6 +786,8 @@ echo.
     <ClInclude Include="Dlg\DBSCommonPage.h" />
     <ClInclude Include="Dlg\DBSTablePage.h" />
     <ClInclude Include="Dlg\ObjectViewerPage.h" />
+    <ClInclude Include="Dlg\FavoriteOwnersPage.h" />
+    <ClInclude Include="DbBrowser\OwnerFavorites.h" />
     <ClInclude Include="Dlg\PropGridOutputPage.h" />
     <ClInclude Include="Dlg\PropGridPage.h" />
     <ClInclude Include="Dlg\PropHistoryPage.h" />
@@ -1385,6 +1387,8 @@ makehm /h ID_,HID_,0x10000 IDM_,HIDM_,0x10000 "..\OpenEditor\OpenEditorInc.rh" &
     <ClCompile Include="Dlg\DBSCommonPage.cpp" />
     <ClCompile Include="Dlg\DBSTablePage.cpp" />
     <ClCompile Include="Dlg\ObjectViewerPage.cpp" />
+    <ClCompile Include="Dlg\FavoriteOwnersPage.cpp" />
+    <ClCompile Include="DbBrowser\OwnerFavorites.cpp" />
     <ClCompile Include="Dlg\PropGridOutputPage.cpp" />
     <ClCompile Include="Dlg\PropGridPage.cpp" />
     <ClCompile Include="Dlg\PropHistoryPage.cpp" />

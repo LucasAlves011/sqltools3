@@ -1,11 +1,11 @@
 #include "stdafx.h"
 #include "DbBrowser/OwnerBar.h"
+#include "DbBrowser/OwnerFavorites.h"
 #include <algorithm>
 
 using namespace ModernTheme;
 using namespace ModernDraw;
 
-static const wchar_t* const SECTION = L"ObjectsList";
 static const int CTRL_H   = 32;
 static const int PILL_H   = 28;
 static const int CHIP_H   = 26;
@@ -254,7 +254,8 @@ protected:
 
             // estrela
             dc.SelectObject(&UiFont());
-            dc.SetTextColor(fav ? Favorite : Dim);
+            const bool global = fav && m_bar.IsGlobalFavorite(row.name);   // global: so se remove em Settings
+            dc.SetTextColor(global ? TextMuted : (fav ? Favorite : Dim));
             dc.DrawText(fav ? L"\x2605" : L"\x2606", CRect(r.left + 12, r.top, r.left + 34, r.bottom), DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
             // nome
@@ -263,7 +264,7 @@ protected:
             dc.DrawText(row.name, CRect(r.left + 42, r.top, r.right - 44, r.bottom), DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
 
             // alca de arrastar (so favoritos)
-            if (row.kind == 1)
+            if (row.kind == 1 && !global)
             {
                 Gdiplus::SolidBrush dot(Clr(Dim));
                 float cx = (float)r.right - 24.0f, cy = (float)r.CenterPoint().y;
@@ -290,7 +291,7 @@ protected:
         dc.SelectObject(&UiFont());
         dc.SetTextColor(TextMuted);
         CRect ft(foot); ft.left += 14; ft.right -= 8;
-        dc.DrawText(m_loading ? L"Carregando owners..." : L"Digite para filtrar \x00B7 estrela favorita \x00B7 arraste para ordenar",
+        dc.DrawText(m_loading ? L"Carregando owners..." : L"Digite para filtrar \x00B7 estrela favorita (nesta conexao) \x00B7 arraste para ordenar",
                     ft, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
     }
 
@@ -361,7 +362,7 @@ protected:
         if (i >= 0 && m_rows[i].kind != 0)
         {
             const Row row = m_rows[i];
-            if (row.kind == 1 && point.x > WIDTH - 44)
+            if (row.kind == 1 && point.x > WIDTH - 44 && !m_bar.IsGlobalFavorite(row.name))
             {
                 m_dragging = true;
                 m_dragName = row.name;
@@ -428,7 +429,7 @@ BEGIN_MESSAGE_MAP(COwnerBar, CWnd)
 END_MESSAGE_MAP()
 
 COwnerBar::COwnerBar ()
-    : m_trackingMouse(false), m_layoutWidth(0), m_popup(NULL), m_popupClosedAt(0)
+    : m_trackingMouse(false), m_layoutWidth(0), m_popup(NULL), m_popupClosedAt(0), m_globalVersion(0)
 {
     m_rcPill.SetRectEmpty();
     m_rcPlus.SetRectEmpty();
@@ -475,71 +476,96 @@ void COwnerBar::OnPopupClosed ()
         Invalidate(FALSE);
 }
 
-void COwnerBar::LoadFavorites ()
+static bool ContainsNoCase (const std::vector<CString>& v, const CString& s)
 {
-    m_favorites.clear();
-    const CString sentinel(L"\x01");
-    CString s = AfxGetApp()->GetProfileString(SECTION, L"FavoriteOwners", sentinel);
-    if (s == sentinel)
-        s = L"DBAMV|MVINTEGRA";           // os dois botoes fixos de antes viram os primeiros favoritos
-
-    int pos = 0;
-    CString tok = s.Tokenize(L"|", pos);
-    while (!tok.IsEmpty())
-    {
-        tok.Trim();
-        if (!tok.IsEmpty() && !IsFavorite(tok))
-            m_favorites.push_back(tok);
-        tok = s.Tokenize(L"|", pos);
-    }
-}
-
-void COwnerBar::SaveFavorites () const
-{
-    CString s;
-    for (size_t i = 0; i < m_favorites.size(); ++i)
-    {
-        if (i) s += L"|";
-        s += m_favorites[i];
-    }
-    AfxGetApp()->WriteProfileString(SECTION, L"FavoriteOwners", s.IsEmpty() ? L" " : s);
-}
-
-bool COwnerBar::IsFavorite (const CString& owner) const
-{
-    for (size_t i = 0; i < m_favorites.size(); ++i)
-        if (m_favorites[i].CompareNoCase(owner) == 0)
+    for (size_t i = 0; i < v.size(); ++i)
+        if (v[i].CompareNoCase(s) == 0)
             return true;
     return false;
 }
 
+// favoritos mostrados = globais (Settings) + os da conexao atual (estrela), sem repetir
+void COwnerBar::RebuildFavorites ()
+{
+    m_favorites = m_globalFavs;
+    for (size_t i = 0; i < m_connFavs.size(); ++i)
+        if (!ContainsNoCase(m_favorites, m_connFavs[i]))
+            m_favorites.push_back(m_connFavs[i]);
+}
+
+void COwnerBar::LoadFavorites ()
+{
+    m_globalFavs = OwnerFavorites::LoadGlobal();
+    m_globalVersion = OwnerFavorites::GlobalVersion();
+
+    m_connFavs.clear();
+    if (!m_connection.IsEmpty() && !OwnerFavorites::LoadConnection(m_connection, m_connFavs))
+    {
+        // primeira vez desta conexao: herda a lista antiga (que era unica para todas)
+        OwnerFavorites::TakeLegacy(m_connFavs);
+        OwnerFavorites::SaveConnection(m_connection, m_connFavs);
+    }
+    RebuildFavorites();
+    if (m_hWnd)
+    {
+        Layout(m_layoutWidth);
+        Invalidate(FALSE);
+    }
+}
+
+void COwnerBar::SetConnection (const CString& connection)
+{
+    if (connection == m_connection && m_globalVersion == OwnerFavorites::GlobalVersion())
+        return;
+    m_connection = connection;
+    LoadFavorites();
+}
+
+bool COwnerBar::IsFavorite (const CString& owner) const
+{
+    return ContainsNoCase(m_favorites, owner);
+}
+
+bool COwnerBar::IsGlobalFavorite (const CString& owner) const
+{
+    return ContainsNoCase(m_globalFavs, owner);
+}
+
 void COwnerBar::ToggleFavorite (const CString& owner)
 {
-    for (size_t i = 0; i < m_favorites.size(); ++i)
-    {
-        if (m_favorites[i].CompareNoCase(owner) == 0)
+    if (m_connection.IsEmpty() || IsGlobalFavorite(owner))
+        return;                         // os globais so saem em Settings
+
+    bool removed = false;
+    for (size_t i = 0; i < m_connFavs.size(); ++i)
+        if (m_connFavs[i].CompareNoCase(owner) == 0)
         {
-            m_favorites.erase(m_favorites.begin() + i);
-            SaveFavorites();
-            Layout(m_layoutWidth);
-            Invalidate(FALSE);
-            return;
+            m_connFavs.erase(m_connFavs.begin() + i);
+            removed = true;
+            break;
         }
-    }
-    m_favorites.push_back(owner);
-    SaveFavorites();
+    if (!removed)
+        m_connFavs.push_back(owner);
+
+    OwnerFavorites::SaveConnection(m_connection, m_connFavs);
+    RebuildFavorites();
     Layout(m_layoutWidth);
     Invalidate(FALSE);
 }
 
+// indices na lista mostrada; so os favoritos da conexao podem ser reordenados (ficam depois dos globais)
 void COwnerBar::MoveFavorite (int from, int to)
 {
-    if (from < 0 || from >= (int)m_favorites.size() || to < 0 || to >= (int)m_favorites.size() || from == to)
+    const int g = (int)m_globalFavs.size();
+    from -= g;
+    to   -= g;
+    if (from < 0 || from >= (int)m_connFavs.size() || to < 0 || to >= (int)m_connFavs.size() || from == to)
         return;
-    CString item = m_favorites[from];
-    m_favorites.erase(m_favorites.begin() + from);
-    m_favorites.insert(m_favorites.begin() + to, item);
-    SaveFavorites();
+    CString item = m_connFavs[from];
+    m_connFavs.erase(m_connFavs.begin() + from);
+    m_connFavs.insert(m_connFavs.begin() + to, item);
+    OwnerFavorites::SaveConnection(m_connection, m_connFavs);
+    RebuildFavorites();
     Layout(m_layoutWidth);
     Invalidate(FALSE);
 }

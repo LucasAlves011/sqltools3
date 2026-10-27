@@ -32,6 +32,7 @@
 #include "Dlg/DBSCommonPage.h"
 #include "Dlg/DBSTablePage.h"
 #include "Dlg/ObjectViewerPage.h"
+#include "Dlg/FavoriteOwnersPage.h"
 #include "Dlg/PropHistoryPage.h"
 #include "OpenEditor/OEDocument.h"
 #include "SQLToolsSettingsXmlStreamer.h"
@@ -143,6 +144,7 @@ struct SettingsDialogCallback : COEDocument::SettingsDialogCallback
     CDBSCommonPage      m_commonPage;
     CDBSTablePage       m_tablePage;
     CObjectViewerPage   m_objViewerPage;
+    CFavoriteOwnersPage m_favOwnersPage;
     CPropGridPage1      m_gridPage1;
     CPropGridPage2      m_gridPage2;
     CPropGridOutputPage1 m_gridOutputPage1;
@@ -180,6 +182,7 @@ struct SettingsDialogCallback : COEDocument::SettingsDialogCallback
         sheet.AddPage(&m_commonPage);
         sheet.AddPage(&m_tablePage);
         sheet.AddPage(&m_objViewerPage);
+        sheet.AddPage(&m_favOwnersPage);
         sheet.AddPage(&m_gridPage1);
         sheet.AddPage(&m_gridPage2);
         sheet.AddPage(&m_gridOutputPage1);

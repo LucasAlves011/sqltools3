@@ -561,6 +561,14 @@
 #define ID_FF_DIR_FIRST                 50420
 #define ID_FF_DIR_LAST                  50429
 
+#define IDD_PROP_FAVORITE_OWNERS        10090
+#define IDC_FAVO_NAME                   1460
+#define IDC_FAVO_ADD                    1461
+#define IDC_FAVO_LIST                   1462
+#define IDC_FAVO_REMOVE                 1463
+#define IDC_FAVO_UP                     1464
+#define IDC_FAVO_DOWN                   1465
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

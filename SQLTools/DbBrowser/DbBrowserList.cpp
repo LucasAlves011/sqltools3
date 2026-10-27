@@ -51,6 +51,7 @@ DbBrowserList::DbBrowserList (Common::ListCtrlDataProvider& dataProvider, bool u
 : Common::CManagedListCtrl(dataProvider),
 m_dirty(true),
 m_busy(false),
+m_loading(false),
 m_useStateImage(useStateImage)
 {
 }
@@ -852,7 +853,24 @@ void DbBrowserList::OnPaint ()
         dc.FillSolidRect(rc, ModernTheme::Surface);
         return;
     }
+
     Default();
+}
+
+// durante o carregamento (troca de owner) a lista nao e desabilitada (o estado desabilitado a pinta em cinza de
+// sistema e piscava no tema escuro): so ignora mouse e teclado
+LRESULT DbBrowserList::WindowProc (UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (m_loading)
+    {
+        switch (message)
+        {
+        case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK: case WM_RBUTTONDOWN: case WM_RBUTTONUP: case WM_MBUTTONDOWN:
+        case WM_CONTEXTMENU: case WM_KEYDOWN: case WM_SYSKEYDOWN: case WM_CHAR:
+            return 0;
+        }
+    }
+    return CManagedListCtrl::WindowProc(message, wParam, lParam);
 }
 
 void DbBrowserList::SetBusy (bool busy)             

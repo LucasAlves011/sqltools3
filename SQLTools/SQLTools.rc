@@ -369,6 +369,22 @@ BEGIN
     GROUPBOX        " Multi-column selection ",IDC_STATIC,7,117,252,82,WS_GROUP
 END
 
+IDD_PROP_FAVORITE_OWNERS DIALOGEX 0, 0, 267, 205
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_CAPTION
+CAPTION "SQLTools::Favorite Owners"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "  Favorite Owners (all connections)  ",IDC_STATIC,7,4,251,196
+    LTEXT           "Owners listed here appear as quick buttons in the Objects List on every connection. Owners starred in the Objects List are kept per connection.",IDC_STATIC,15,17,235,24
+    LTEXT           "&Owner:",IDC_STATIC,15,47,30,8
+    EDITTEXT        IDC_FAVO_NAME,47,45,130,12,ES_UPPERCASE | ES_AUTOHSCROLL
+    PUSHBUTTON      "&Add",IDC_FAVO_ADD,183,44,66,14
+    LISTBOX         IDC_FAVO_LIST,15,64,162,128,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "&Remove",IDC_FAVO_REMOVE,183,64,66,14
+    PUSHBUTTON      "Move &Up",IDC_FAVO_UP,183,82,66,14
+    PUSHBUTTON      "Move &Down",IDC_FAVO_DOWN,183,100,66,14
+END
+
 IDD_DFP_DIRSELECT DIALOGEX 36, 24, 187, 141
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Select Directory"

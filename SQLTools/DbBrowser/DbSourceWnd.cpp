@@ -51,6 +51,7 @@
 #include "ServerBackgroundThread\TaskQueue.h"
 #include <ActivePrimeExecutionNote.h>
 #include "Dlg/ObjectViewerPage.h"
+#include "Dlg/FavoriteOwnersPage.h"
 #include <Common/PropertySheetMem.h>
 
 #ifdef _DEBUG
@@ -942,6 +943,8 @@ void CDbSourceWnd::OnIdleUpdateCmdUI ()
     if (!IsVisible())
         return;
 
+    // favoritos por conexao: a chave e o texto de conexao (usuario@alias)
+    m_wndOwnerBar.SetConnection(theApp.GetConnectOpen() ? CString(theApp.GetConnectDisplayString().c_str()) : CString());
     m_wndOwnerBar.SetCurrent(m_strSchema);
 
     int nTab = GetCurrentTabIndex();
@@ -1002,9 +1005,14 @@ void CDbSourceWnd::OnSettings()
 
     static UINT gStarPage = 0;
     Common::CPropertySheetMem sheet(L"Settings", gStarPage);
+    sheet.SetTreeViewMode(TRUE, FALSE, FALSE);   // mesmo visual do Settings principal
+    sheet.SetModernStyle(true);
+    sheet.SetTreeWidth(200);
     sheet.m_psh.dwFlags |= PSH_NOAPPLYNOW;
     sheet.m_psh.dwFlags &= ~PSH_HASHELP;
     sheet.AddPage(&page);
+    CFavoriteOwnersPage ownersPage;
+    sheet.AddPage(&ownersPage);
 
     int retVal = sheet.DoModal();
 

@@ -1076,6 +1076,9 @@ void CTreeViewer::OnSettings()
 
     static UINT gStarPage = 0;
     Common::CPropertySheetMem sheet(L"Settings", gStarPage);
+    sheet.SetTreeViewMode(TRUE, FALSE, FALSE);   // mesmo visual do Settings principal
+    sheet.SetModernStyle(true);
+    sheet.SetTreeWidth(200);
     sheet.m_psh.dwFlags |= PSH_NOAPPLYNOW;
     sheet.m_psh.dwFlags &= ~PSH_HASHELP;
     sheet.AddPage(&page);

@@ -55,7 +55,7 @@
 class DbBrowserList : public Common::CManagedListCtrl
 {
     friend struct BackgroundTask_ListSqlBatch;
-    bool m_dirty, m_useStateImage, m_busy;
+    bool m_dirty, m_useStateImage, m_busy, m_loading;
     CModernHeader m_modernHeader;
     std::string m_schema;
 	static HACCEL m_accelTable;
@@ -89,6 +89,9 @@ public:
     bool IsDirty () const                       { return m_dirty; }
     void SetDirty (bool dirty = true)           { m_dirty = dirty; }
     bool IsBusy () const                        { return m_busy; }
+    // carregando: a lista mantem o visual normal (desabilitada ela se pintaria em cinza), mas ignora o usuario
+    bool IsLoading () const                     { return m_loading; }
+    void SetLoading (bool loading)              { m_loading = loading; }
     void SetBusy (bool busy = true); 
 
     virtual void Refresh      (bool force = false)       = 0;
@@ -120,6 +123,7 @@ public:
     afx_msg void OnPaint();
     afx_msg void OnCustomDrawList(NMHDR* pNMHDR, LRESULT* pResult);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
+    virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
     afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
     afx_msg void OnNMDblclk(NMHDR *pNMHDR, LRESULT *pResult);
     afx_msg void OnLvnBegindrag(NMHDR *pNMHDR, LRESULT *pResult);
@@ -154,7 +158,7 @@ public:
             // access to m_list only in the main thread!
             m_schema   = m_list.GetSchema();
             m_monoType = m_list.GetMonoType();
-            m_list.EnableWindow(FALSE);
+            m_list.SetLoading(true);
         }
 
         //void DoInBackground (OciConnect& connect);
@@ -167,7 +171,7 @@ public:
 
             m_list.Common::CManagedListCtrl::Refresh(true);
             m_list.SetDirty(false);
-            m_list.EnableWindow(TRUE);
+            m_list.SetLoading(false);
         }
     };
 
