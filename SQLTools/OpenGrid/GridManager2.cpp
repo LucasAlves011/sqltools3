@@ -482,6 +482,14 @@ void PaintGridManager::OnChangedCols (int startCol, int endCol)
 void PaintGridManager::OnChangedRowsQuantity (int row, int quantity)
 {
     m_Rulers[edVert].OnChangedQuantity(row, quantity);
+
+    // a coluna de numeracao acompanha a quantidade de digitos das linhas: recalcula quando a largura muda
+    if (m_pSource->GetFirstFixCount(edHorz)
+    && m_Rulers[edHorz].GetFirstFixPixelSize(0) != m_pSource->GetFirstFixSize(0, edHorz) * m_Rulers[edHorz].GetCharSize() + 2 * m_Rulers[edHorz].GetCellMargin())
+    {
+        m_Rulers[edHorz].RecalcFirstFixSize();
+        RecalcRuller(edHorz, false/*adjust*/, true/*invalidate*/);
+    }
 }
 
 void PaintGridManager::OnChangedColsQuantity (int col, int quantity)

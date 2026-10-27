@@ -35,6 +35,7 @@ using namespace Gdiplus;
 #include "OCI8/EmbeddedOci.h"
 #include "Update/UpdateManager.h"
 #include "Theme/ModernTheme.h"
+#include "Theme/ModernDialog.h"
 #include "OpenEditor/OEGeneralPage.h"
 #include "CommandLineparser.h"
 #include "VersionInfo.rh"
@@ -313,6 +314,8 @@ BOOL CSQLToolsApp::InitInstance()
             return FALSE;
 
         SetRegistryKey(L"KochWare");
+
+        ModernDialog::InstallGlobalSkin();
 
         if (ModernTheme::ApplyOnce()) // fontes e cores modernas (uma unica vez, com copia de seguranca)
             SaveSettings();

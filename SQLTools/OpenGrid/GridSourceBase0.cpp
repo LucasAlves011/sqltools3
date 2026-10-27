@@ -59,6 +59,7 @@ GridSourceBase::GridSourceBase ()
 : m_ColumnInfo("GridSourceBase::m_ColumnInfo")
 {
     SetFixSize(eoVert, edHorz, 6);
+    m_AutoFixWidth = true;
     SetFixSize(eoVert, edVert, 1);
     SetFixSize(eoHorz, edHorz, 30);
     SetFixSize(eoHorz, edVert, 1);
@@ -106,6 +107,14 @@ int GridSourceBase::GetSize (int pos, eDirection dir) const
 int GridSourceBase::GetFirstFixSize (int pos, eDirection dir) const
 {
     _ASSERTE(!pos);
+    if (m_AutoFixWidth && dir == edHorz && IsTableOrientation())
+    {
+        // digitos do maior numero de linha + 1 de folga (minimo 3)
+        int digits = 1;
+        for (int n = GetCount(edVert); n >= 10; n /= 10)
+            ++digits;
+        return (std::max)(3, digits + 1);
+    }
     return GetFixSize(m_Orientation, dir);
 }
 

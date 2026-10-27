@@ -211,8 +211,8 @@ int CBooklet::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CView::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
-	if (m_toolbar.Create(WS_VISIBLE | WS_BORDER | WS_CHILD 
-            | CCS_TOP | TBSTYLE_FLAT | TBSTYLE_LIST | TBSTYLE_TOOLTIPS,
+	if (m_toolbar.Create(WS_VISIBLE | WS_CHILD 
+            | CCS_TOP | CCS_NODIVIDER | TBSTYLE_FLAT | TBSTYLE_LIST | TBSTYLE_TOOLTIPS,
 	        CRect(0,0,0,0),this, BOOKLET_TOOLBAR_ID) == -1)
         return -1;
 

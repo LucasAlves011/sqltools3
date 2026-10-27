@@ -62,7 +62,7 @@ int CustomTreeCtrl::OnCreate (LPCREATESTRUCT cs)
         return -1;
     if (m_modern)
     {
-        ::SetWindowTheme(m_hWnd, L"", L"");
+        ::SetWindowTheme(m_hWnd, L"Explorer", NULL);   // barras de rolagem finas do Windows moderno
         SetBkColor(ModernTheme::Surface);
         SetTextColor(ModernTheme::Text);
         SetIndent(10);
@@ -120,7 +120,7 @@ void CustomTreeCtrl::OnCustomDraw (NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 CPropertySheetMem::CPropertySheetMem(LPCTSTR pszCaption, UINT& selectPage, CWnd* pParentWnd)
-    : TreePropSheet::CTreePropSheet(pszCaption, pParentWnd, selectPage), m_selectPage(selectPage), m_modern(false)
+    : TreePropSheet::CTreePropSheet(pszCaption, pParentWnd, selectPage), m_selectPage(selectPage), m_modern(true)
 {
 	SetEmptyPageText(L"Please select a child item of '%s'.");
     SetTreeViewMode(/*bTreeViewMode =*/FALSE, /*bPageCaption =*/FALSE, /*bTreeImages =*/FALSE);

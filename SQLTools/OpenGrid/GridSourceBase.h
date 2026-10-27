@@ -143,7 +143,7 @@ public:
     void SetImageList (CImageList* imageList, BOOL deleteImageList);
 
     int  GetFixSize (EOrientation rot, eDirection dir) const            { return m_FixSize[rot][dir]; }
-    void SetFixSize (EOrientation rot, eDirection dir, int size)        { m_FixSize[rot][dir] = size; }
+    void SetFixSize (EOrientation rot, eDirection dir, int size)        { m_FixSize[rot][dir] = size; if (rot == eoVert && dir == edHorz) m_AutoFixWidth = false; }
     int  GetColumnCount () const                                        { return m_ColumnInfo.size(); }
     virtual bool IsTextField (int /*col*/) const                        { return false;}
 
@@ -176,6 +176,7 @@ protected:
     BOOL m_bDeleteImageList;
     
     int m_FixSize[2][2]; // the first index is Orientation, the second is Dir
+    bool m_AutoFixWidth; // largura da coluna de numeracao pela quantidade de digitos das linhas (so quando ninguem fixou o tamanho)
 
     friend class GridStringOleSource;
 };

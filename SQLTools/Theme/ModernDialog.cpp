@@ -2,6 +2,7 @@
 #include "Theme/ModernDialog.h"
 #include "Theme/ModernDraw.h"
 #include <commctrl.h>
+#include <uxtheme.h>
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -39,29 +40,39 @@ namespace
             CRect rc;
             ::GetClientRect(h, rc);
             ::FillRect((HDC)wp, rc, BrushFor(bg));
-            if (bg != Surface)
+            // contorno fino em volta de arvores, listas e caixas de lista (a borda nativa e removida)
+            for (HWND c = ::GetWindow(h, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
             {
-                // contorno fino em volta da arvore de paginas
-                for (HWND c = ::GetWindow(h, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
-                    if (ClassOf(c) == L"SysTreeView32" || ClassOf(c) == L"SysListView32")
-                    {
-                        CRect tr;
-                        ::GetWindowRect(c, tr);
-                        ::MapWindowPoints(NULL, h, (LPPOINT)(LPRECT)tr, 2);
-                        tr.InflateRect(1, 1);
-                        CBrush border(Border);
-                        ::FrameRect((HDC)wp, tr, border);
-                    }
+                if (!::IsWindowVisible(c))
+                    continue;
+                const CString cls = ClassOf(c);
+                if (cls == L"SysTreeView32" || cls == L"SysListView32" || cls == L"ListBox")
+                {
+                    CRect tr;
+                    ::GetWindowRect(c, tr);
+                    ::MapWindowPoints(NULL, h, (LPPOINT)(LPRECT)tr, 2);
+                    tr.InflateRect(1, 1);
+                    CBrush border(Border);
+                    ::FrameRect((HDC)wp, tr, border);
+                }
             }
             return 1;
         }
         case WM_CTLCOLORDLG:
         case WM_CTLCOLORSTATIC:
         case WM_CTLCOLORBTN:
+        {
+            // cores proprias do dialogo (ex.: texto de erro em vermelho) tem prioridade sobre o padrao
+            LRESULT r = ::DefSubclassProc(h, msg, wp, lp);
+            if (r != 0 && r != (LRESULT)::GetSysColorBrush(COLOR_3DFACE) && r != (LRESULT)::GetSysColorBrush(COLOR_BTNFACE) &&
+                r != (LRESULT)::GetSysColorBrush(COLOR_WINDOW))
+                return r;
             ::SetBkColor((HDC)wp, bg);
             ::SetTextColor((HDC)wp, Text);
             return (LRESULT)BrushFor(bg);
+        }
         case WM_NCDESTROY:
+            ::RemoveProp(h, L"ModernSkin");
             ::RemoveWindowSubclass(h, DialogProc, 1);
             break;
         }
@@ -85,6 +96,46 @@ namespace
                    (GetBValue(a) * pct + GetBValue(b) * (100 - pct)) / 100);
     }
 
+    // quadro de grupo: so a borda e o titulo sao pintados; o interior fica intacto porque os controles do
+    // grupo podem estar por baixo dele na ordem das janelas
+    void PaintGroup (HWND h, HDC hdc, const CRect& rc, const ButtonData& data)
+    {
+        CString text;
+        ::GetWindowText(h, text.GetBuffer(256), 256);
+        text.ReleaseBuffer();
+        text = StripMnemonic(text);
+
+        CDC dc;
+        dc.Attach(hdc);
+        HFONT font = (HFONT)::SendMessage(h, WM_GETFONT, 0, 0);
+        HGDIOBJ oldFont = font ? dc.SelectObject(font) : NULL;
+        CSize ts = dc.GetTextExtent(text);
+
+        // faixas de fundo: a borda e o titulo ficam sobre o fundo do dialogo (as faixas da borda sao finas)
+        Gdiplus::Graphics g(hdc);
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        CRect frame(rc.left, rc.top + ts.cy / 2, rc.right - 1, rc.bottom - 1);
+        const CRect title(rc.left + 10, rc.top, rc.left + 10 + ts.cx + 8, rc.top + ts.cy);
+        dc.FillSolidRect(title, data.bg);
+        // a linha da borda passa por tras do titulo: desenha a borda e depois repinta o titulo
+        {
+            Gdiplus::GraphicsPath path;
+            RoundRectPath(path, Gdiplus::RectF((float)frame.left + 0.5f, (float)frame.top + 0.5f, (float)frame.Width(), (float)frame.Height()), 6.0f);
+            Gdiplus::Region keep(Gdiplus::Rect(rc.left, rc.top, rc.Width(), rc.Height()));
+            keep.Exclude(Gdiplus::Rect(title.left, title.top, title.Width(), title.Height()));
+            g.SetClip(&keep);
+            Gdiplus::Pen pen(Clr(Border), 1.0f);
+            g.DrawPath(&pen, &path);
+            g.ResetClip();
+        }
+        dc.SetBkMode(TRANSPARENT);
+        dc.SetTextColor(TextMuted);
+        dc.DrawText(text, CRect(title.left + 4, title.top, title.right, title.bottom), DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
+        if (oldFont)
+            dc.SelectObject(oldFont);
+        dc.Detach();
+    }
+
     void PaintButton (HWND h, HDC hdc, const ButtonData& data)
     {
         CRect rc;
@@ -94,6 +145,11 @@ namespace
 
         const LONG style = ::GetWindowLong(h, GWL_STYLE);
         const LONG type = style & BS_TYPEMASK;
+        if (type == BS_GROUPBOX)
+        {
+            PaintGroup(h, hdc, rc, data);
+            return;
+        }
         const LRESULT state = ::SendMessage(h, BM_GETSTATE, 0, 0);
         const bool enabled = ::IsWindowEnabled(h) != FALSE;
         const bool pressed = (state & BST_PUSHED) != 0;
@@ -185,18 +241,6 @@ namespace
             fmt |= (style & BS_MULTILINE) ? (DT_WORDBREAK | DT_VCENTER) : (DT_SINGLELINE | DT_VCENTER);
             buf.DrawText(text, tr, fmt);
         }
-        else if (type == BS_GROUPBOX)
-        {
-            buf.SetTextColor(TextMuted);
-            text = StripMnemonic(text);
-            CSize ts = buf.GetTextExtent(text);
-            const int midY = rc.top + ts.cy / 2;
-            CRect frame(rc.left, midY, rc.right - 1, rc.bottom - 1);
-            StrokeRoundRect(g, frame, 6.0f, Border);
-            CRect label(rc.left + 10, rc.top, rc.left + 10 + ts.cx + 8, rc.top + ts.cy);
-            buf.FillSolidRect(label, data.bg);
-            buf.DrawText(text, CRect(label.left + 4, label.top, label.right, label.bottom), DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
-        }
         else
         {
             // botao de comando (ou botao de duas posicoes)
@@ -228,14 +272,17 @@ namespace
                 fore = (hot || pressed || checked) ? Accent : Text;
             }
 
-            FillRoundRect(g, br, 7.0f, fill);
-            StrokeRoundRect(g, br, 7.0f, edge, 1.0f);
+            // botoes pequenos (ex.: so uma seta) usam cantos e margens menores
+            const float radius = (float)(std::min)(7, (std::min)(br.Width(), br.Height()) / 3);
+            FillRoundRect(g, br, radius, fill);
+            StrokeRoundRect(g, br, radius, edge, 1.0f);
             if (showFocus && !isDefault)
-                StrokeRoundRect(g, CRect(br.left + 2, br.top + 2, br.right - 2, br.bottom - 2), 5.0f, AccentStrong, 1.5f);
+                StrokeRoundRect(g, CRect(br.left + 2, br.top + 2, br.right - 2, br.bottom - 2), (std::max)(1.0f, radius - 2.0f), AccentStrong, 1.5f);
 
             buf.SetTextColor(fore);
             CRect tr = br;
-            tr.DeflateRect(6, 0);
+            const int textWidth = buf.GetTextExtent(StripMnemonic(text)).cx;
+            tr.DeflateRect((std::max)(1, (std::min)(6, (br.Width() - textWidth) / 2)), 0);
             if (data.icon >= 0)
             {
                 // icone + texto, centralizados juntos
@@ -323,6 +370,7 @@ namespace
         {
         case WM_NCPAINT:
         {
+            ::DefSubclassProc(h, msg, wp, lp);      // barras de rolagem e area nao cliente padrao
             HDC hdc = ::GetWindowDC(h);
             CRect rc;
             ::GetWindowRect(h, rc);
@@ -590,6 +638,9 @@ namespace
             }
             else if (cls.CompareNoCase(L"ComboBox") == 0)
             {
+                // combos desenhados pelo proprio dialogo (owner-draw) ou do tipo "simple" ficam como estao
+                if ((style & (CBS_OWNERDRAWFIXED | CBS_OWNERDRAWVARIABLE)) || (style & 3) == CBS_SIMPLE)
+                    continue;
                 ::SetWindowSubclass(c, ComboProc, 1, (DWORD_PTR) new ComboData{ bg, false });
                 COMBOBOXINFO ci = { sizeof(ci) };
                 if (::GetComboBoxInfo(c, &ci) && ci.hwndItem)
@@ -599,9 +650,17 @@ namespace
                 }
                 ::InvalidateRect(c, NULL, TRUE);
             }
-            else if (cls.CompareNoCase(L"SysListView32") == 0)
+            else if (cls.CompareNoCase(L"SysTreeView32") == 0)
+            {
+                ::SetWindowTheme(c, L"Explorer", NULL);
+                ::SetWindowLong(c, GWL_STYLE, style & ~WS_BORDER);
+                ::SetWindowLong(c, GWL_EXSTYLE, ::GetWindowLong(c, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+                ::SetWindowPos(c, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            }
+            else if (cls.CompareNoCase(L"SysListView32") == 0 || cls.CompareNoCase(L"ListBox") == 0)
             {
                 // sem a borda preta: o contorno fino e desenhado pelo fundo do dialogo
+                ::SetWindowTheme(c, L"Explorer", NULL);     // barras de rolagem finas do Windows moderno
                 ::SetWindowLong(c, GWL_STYLE, style & ~WS_BORDER);
                 ::SetWindowLong(c, GWL_EXSTYLE, ::GetWindowLong(c, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
                 ::SetWindowPos(c, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
@@ -622,6 +681,9 @@ namespace ModernDialog
 {
     void SkinPage (HWND hPage)
     {
+        if (::GetProp(hPage, L"ModernSkin"))
+            return;
+        ::SetProp(hPage, L"ModernSkin", (HANDLE)1);
         ::SetWindowSubclass(hPage, DialogProc, 1, (DWORD_PTR)Surface);
         SkinControls(hPage, Surface);
         ::InvalidateRect(hPage, NULL, TRUE);
@@ -629,6 +691,9 @@ namespace ModernDialog
 
     void SkinDialog (HWND hDlg, const ButtonIcon* icons, int iconCount)
     {
+        if (::GetProp(hDlg, L"ModernSkin"))
+            return;
+        ::SetProp(hDlg, L"ModernSkin", (HANDLE)1);
         ::SetWindowSubclass(hDlg, DialogProc, 1, (DWORD_PTR)SurfaceAlt);
         SkinControls(hDlg, SurfaceAlt, icons, iconCount);
         ::InvalidateRect(hDlg, NULL, TRUE);
@@ -636,6 +701,9 @@ namespace ModernDialog
 
     void SkinSheet (HWND hSheet)
     {
+        if (::GetProp(hSheet, L"ModernSkin"))
+            return;
+        ::SetProp(hSheet, L"ModernSkin", (HANDLE)1);
         ::SetWindowSubclass(hSheet, DialogProc, 1, (DWORD_PTR)SurfaceAlt);
         SkinControls(hSheet, SurfaceAlt);
         ::InvalidateRect(hSheet, NULL, TRUE);
@@ -653,5 +721,55 @@ namespace ModernDialog
         CBrush border(Border);
         pDC->FrameRect(rc, &border);
         return TRUE;
+    }
+
+    namespace
+    {
+        HHOOK g_hook = NULL;
+
+        // uma folha de propriedades tem o controle de abas padrao (id 0x3020)
+        bool IsSheet (HWND h)
+        {
+            return ::GetDlgItem(h, 0x3020) != NULL;
+        }
+
+        LRESULT CALLBACK GlobalHookProc (int code, WPARAM wp, LPARAM lp)
+        {
+            if (code == HC_ACTION)
+            {
+                const CWPRETSTRUCT* cwp = reinterpret_cast<const CWPRETSTRUCT*>(lp);
+
+                // editor, grades e barras de rolagem: barras de rolagem finas do Windows moderno
+                if (cwp->message == WM_CREATE)
+                {
+                    const CString cls = ClassOf(cwp->hwnd);
+                    if (cls == L"ScrollBar" || cls.Left(15) == L"Kochware.OpenGr")
+                        ::SetWindowTheme(cwp->hwnd, L"Explorer", NULL);
+                }
+                if (cwp->message == WM_INITDIALOG && ClassOf(cwp->hwnd) == L"#32770" &&
+                    (HINSTANCE)::GetWindowLongPtr(cwp->hwnd, GWLP_HINSTANCE) == AfxGetInstanceHandle())
+                {
+                    HWND h = cwp->hwnd;
+                    if (::GetWindowLong(h, GWL_STYLE) & WS_CHILD)
+                    {
+                        // somente paginas de folhas de propriedades; paineis acoplados ja tem visual proprio
+                        HWND parent = ::GetParent(h);
+                        if (parent && IsSheet(parent))
+                            SkinPage(h);
+                    }
+                    else if (IsSheet(h))
+                        SkinSheet(h);
+                    else
+                        SkinDialog(h);
+                }
+            }
+            return ::CallNextHookEx(g_hook, code, wp, lp);
+        }
+    }
+
+    void InstallGlobalSkin ()
+    {
+        if (!g_hook)
+            g_hook = ::SetWindowsHookEx(WH_CALLWNDPROCRET, GlobalHookProc, NULL, ::GetCurrentThreadId());
     }
 }

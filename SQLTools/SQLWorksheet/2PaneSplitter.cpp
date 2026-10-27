@@ -24,6 +24,7 @@
 #include "stdafx.h"
 #include "SQLTools.h"
 #include "2PaneSplitter.h"
+#include "Theme/ModernTheme.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -46,6 +47,10 @@ END_MESSAGE_MAP()
 
 C2PaneSplitter::C2PaneSplitter()
 {
+    // visual moderno: bordas de 1 px (no lugar da moldura 3D de 2 px) e barra um pouco mais larga
+    m_cxBorder = m_cyBorder = 1;
+    m_cySplitter = m_cySplitterGap = 5;
+
     m_ititialized = false;
     m_pwndBooklet = 0;
     LowPaneHight[0] =
@@ -121,6 +126,35 @@ void C2PaneSplitter::MoveToDefault()
     GetRowInfo(1, LowPaneHight[0], LowPaneHight[1]);
 }
 
+
+void C2PaneSplitter::OnDrawSplitter (CDC* pDC, ESplitType nType, const CRect& rect)
+{
+    if (!pDC)
+    {
+        CSplitterWnd::OnDrawSplitter(pDC, nType, rect);
+        return;
+    }
+
+    switch (nType)
+    {
+    case splitBorder:
+        pDC->Draw3dRect(rect, ModernTheme::Border, ModernTheme::Border);
+        break;
+    case splitBar:
+    case splitBox:
+    case splitIntersection:
+        pDC->FillSolidRect(rect, ModernTheme::SurfaceAlt);
+        // linhas finas nas bordas da barra, para separar os paineis
+        if (nType == splitBar)
+        {
+            pDC->FillSolidRect(rect.left, rect.top, rect.Width(), 1, ModernTheme::Border);
+            pDC->FillSolidRect(rect.left, rect.bottom - 1, rect.Width(), 1, ModernTheme::Border);
+        }
+        break;
+    default:
+        CSplitterWnd::OnDrawSplitter(pDC, nType, rect);
+    }
+}
 
 void C2PaneSplitter::StopTracking (BOOL bAccept)
 {

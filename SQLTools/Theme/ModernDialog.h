@@ -23,6 +23,9 @@ namespace ModernDialog
     // opcionalmente, icones e cores nos botoes de comando
     void SkinDialog (HWND hDlg, const ButtonIcon* icons = NULL, int iconCount = 0);
 
+    // aplica o visual moderno a todo dialogo e folha de propriedades criados pela aplicacao (gancho da thread)
+    void InstallGlobalSkin ();
+
     // moldura da janela de configuracao (fundo cinza claro, botoes OK/Cancelar e contorno da arvore)
     void SkinSheet (HWND hSheet);
 

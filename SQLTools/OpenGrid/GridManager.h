@@ -179,6 +179,7 @@ namespace OG2 /* OpenGrid v2 */
         int  GetLastVisiblePos () const;
         int  GetLastFullVisiblePos () const;
         void CalcFirstFixSize ();
+        void RecalcFirstFixSize ();    // descarta o cache e recalcula (ex.: a coluna de numeracao mudou de largura)
         void CalcLastFixSize ();
 
         bool IsEmpty ()             { return m_Items.empty(); }
@@ -655,6 +656,13 @@ public:
         {
             for (int i = 0; i < m_FirstFixCount; i++)
                 m_FirstFixSize += GetFirstFixPixelSize(i) + m_LineSize;
+        }
+    inline
+    void GridRuler::RecalcFirstFixSize ()
+        {
+            m_cacheFistFixItems.clear();
+            m_FirstFixSize = 0;
+            CalcFirstFixSize();
         }
     inline
     void GridRuler::CalcLastFixSize ()

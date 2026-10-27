@@ -59,6 +59,7 @@ public:
 public:
 	virtual ~C2PaneSplitter();
     virtual void StopTracking (BOOL bAccept);
+    virtual void OnDrawSplitter (CDC* pDC, ESplitType nType, const CRect& rect);
     void SetActiveView (CView* pView);
     void SetEditorView (CView* pEditor)             { m_pwndSQLEdit = pEditor; }
     CView* GetEditorView ()                         { return m_pwndSQLEdit; }

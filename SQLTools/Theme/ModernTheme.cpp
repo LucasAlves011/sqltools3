@@ -45,6 +45,14 @@ void CModernVisualManager::OnUpdateSystemColors ()
     m_clrPaneBorder          = Border;
     m_clrMenuBorder          = BorderStrong;
     m_clrMenuItemBorder      = AccentStrong;
+
+    // linhas de separacao dos paineis, das abas e das barras (antes cinza escuro de 3D) ficam finas e claras
+    afxGlobalData.clrBtnShadow   = BorderStrong;
+    afxGlobalData.clrBtnDkShadow = BorderStrong;
+    afxGlobalData.clrBarShadow   = BorderStrong;
+    afxGlobalData.clrBarDkShadow = BorderStrong;
+    afxGlobalData.clrBarLight    = SurfaceAlt;
+    afxGlobalData.clrBarHilite   = Surface;
 }
 
 void CModernVisualManager::OnDrawTab (CDC* pDC, CRect rectTab, int iTab, BOOL bIsActive, const CMFCBaseTabCtrl* pTabWnd)
@@ -185,21 +193,19 @@ void CModernVisualManager::OnDrawCaptionButton (CDC* pDC, CMFCCaptionButton* pBu
         return;
     }
 
+    // igual ao botao de fechar das janelas do sistema: "X" fino e, ao passar o mouse, fundo vermelho com "X" branco
     CRect rc = pButton->GetRect();
-    rc.DeflateRect(1, 1);
-    bool hot = (pButton->m_bFocused || pButton->m_bPushed) && !bDisabled;
+    const bool hot = (pButton->m_bFocused || pButton->m_bPushed) && !bDisabled;
+
+    if (hot)
+        pDC->FillSolidRect(rc, pButton->m_bPushed ? RGB(176, 36, 24) : RGB(196, 43, 28));
 
     Gdiplus::Graphics g(pDC->GetSafeHdc());
-    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
-    if (hot)
-        ModernDraw::FillRoundRect(g, rc, 5.0f, pButton->m_bPushed ? AccentStrong : RGB(236, 238, 242));
-
-    float cx = rc.CenterPoint().x + 0.0f, cy = rc.CenterPoint().y + 0.0f;
-    Gdiplus::Pen pen(ModernDraw::Clr(hot ? Text : TextMuted), 1.5f);
-    pen.SetStartCap(Gdiplus::LineCapRound);
-    pen.SetEndCap(Gdiplus::LineCapRound);
-    g.DrawLine(&pen, cx - 3.5f, cy - 3.5f, cx + 3.5f, cy + 3.5f);
-    g.DrawLine(&pen, cx - 3.5f, cy + 3.5f, cx + 3.5f, cy - 3.5f);
+    g.SetSmoothingMode(Gdiplus::SmoothingModeNone);
+    Gdiplus::Pen pen(hot ? Gdiplus::Color(255, 255, 255, 255) : ModernDraw::Clr(bDisabled ? TextMuted : Text), 1.0f);
+    const int cx = rc.CenterPoint().x, cy = rc.CenterPoint().y;
+    g.DrawLine(&pen, cx - 5, cy - 5, cx + 4, cy + 4);
+    g.DrawLine(&pen, cx - 5, cy + 4, cx + 4, cy - 5);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
