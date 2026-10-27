@@ -36,6 +36,10 @@ public:
 
     virtual void OnUpdateSystemColors ();
     virtual void OnDrawTab (CDC* pDC, CRect rectTab, int iTab, BOOL bIsActive, const CMFCBaseTabCtrl* pTabWnd);
+    virtual void OnEraseTabsArea (CDC* pDC, CRect rect, const CMFCBaseTabCtrl* pTabWnd);
+    virtual void OnDrawTabCloseButton (CDC* pDC, CRect rect, const CMFCBaseTabCtrl* pTabWnd, BOOL bIsHighlighted, BOOL bIsPressed, BOOL bIsDisabled);
+    virtual void OnEraseTabsButton (CDC* pDC, CRect rect, CMFCButton* pButton, CMFCBaseTabCtrl* pWndTab);
+    virtual void OnDrawTabsButtonBorder (CDC* pDC, CRect& rect, CMFCButton* pButton, UINT uiState, CMFCBaseTabCtrl* pWndTab);
 
     // barra de status: fundo plano, separadores finos e texto discreto
     virtual void OnFillBarBackground (CDC* pDC, CBasePane* pBar, CRect rectClient, CRect rectClip, BOOL bNCArea = FALSE);

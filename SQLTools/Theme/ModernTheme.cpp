@@ -59,27 +59,127 @@ void CModernVisualManager::OnDrawTab (CDC* pDC, CRect rectTab, int iTab, BOOL bI
 {
     ASSERT_VALID(pTabWnd);
 
-    pDC->FillSolidRect(rectTab, bIsActive ? Surface : SurfaceAlt);
+    pDC->FillSolidRect(rectTab, SurfaceAlt);
 
-    // sublinhado de destaque na aba ativa (do lado de dentro, para qualquer posicao das abas)
     if (bIsActive)
     {
-        CRect line(rectTab);
-        if (pTabWnd->GetLocation() == CMFCBaseTabCtrl::LOCATION_TOP)
-        {
-            line.top = line.bottom - 2;
-        }
-        else
-        {
-            line.bottom = line.top + 2;
-        }
+        // aba ativa: cartao branco com os cantos de fora arredondados e sublinhado de destaque
+        const bool top = pTabWnd->GetLocation() == CMFCBaseTabCtrl::LOCATION_TOP;
+        const int r = 7;
+        CRect card(rectTab);
+        card.DeflateRect(2, 0);
+        CRect shape(card);
+        if (top) shape.bottom += r; else shape.top -= r;
+
+        int saved = pDC->SaveDC();
+        pDC->IntersectClipRect(rectTab);
+        Gdiplus::Graphics g(pDC->GetSafeHdc());
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        ModernDraw::FillRoundRect(g, shape, (float)r, Surface);
+        pDC->RestoreDC(saved);
+
+        CRect line(card);
+        if (top) line.top = line.bottom - 2; else line.bottom = line.top + 2;
         pDC->FillSolidRect(line, Accent);
     }
 
-    // separador discreto a direita
-    pDC->FillSolidRect(rectTab.right - 1, rectTab.top + 4, 1, rectTab.Height() - 8, Border);
-
     OnDrawTabContent(pDC, rectTab, iTab, bIsActive, pTabWnd, bIsActive ? Text : TextMuted);
+}
+
+void CModernVisualManager::OnEraseTabsArea (CDC* pDC, CRect rect, const CMFCBaseTabCtrl* pTabWnd)
+{
+    pDC->FillSolidRect(rect, SurfaceAlt);
+    // linha fina do lado do conteudo
+    if (pTabWnd && pTabWnd->GetLocation() == CMFCBaseTabCtrl::LOCATION_TOP)
+        pDC->FillSolidRect(rect.left, rect.bottom - 1, rect.Width(), 1, Border);
+    else
+        pDC->FillSolidRect(rect.left, rect.top, rect.Width(), 1, Border);
+}
+
+void CModernVisualManager::OnDrawTabCloseButton (CDC* pDC, CRect rect, const CMFCBaseTabCtrl* /*pTabWnd*/, BOOL bIsHighlighted, BOOL bIsPressed, BOOL bIsDisabled)
+{
+    // "x" fino; ao passar o mouse, fundo arredondado discreto
+    Gdiplus::Graphics g(pDC->GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    if (bIsHighlighted && !bIsDisabled)
+        ModernDraw::FillRoundRect(g, rect, 4.0f, bIsPressed ? RGB(214, 218, 226) : RGB(228, 231, 237));
+
+    Gdiplus::Pen pen(ModernDraw::Clr(bIsDisabled ? BorderStrong : (bIsHighlighted ? Text : TextMuted)), 1.4f);
+    pen.SetStartCap(Gdiplus::LineCapRound);
+    pen.SetEndCap(Gdiplus::LineCapRound);
+    const float cx = rect.CenterPoint().x + 0.0f, cy = rect.CenterPoint().y + 0.0f;
+    g.DrawLine(&pen, cx - 3.0f, cy - 3.0f, cx + 3.0f, cy + 3.0f);
+    g.DrawLine(&pen, cx - 3.0f, cy + 3.0f, cx + 3.0f, cy - 3.0f);
+}
+
+namespace
+{
+    // icone de chevron 16x16 com alfa, na cor pedida
+    HICON MakeChevronIcon (bool left, COLORREF color)
+    {
+        Gdiplus::Bitmap bmp(16, 16, PixelFormat32bppARGB);
+        {
+            Gdiplus::Graphics g(&bmp);
+            g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+            g.Clear(Gdiplus::Color(0, 0, 0, 0));
+            Gdiplus::Pen pen(ModernDraw::Clr(color), 1.7f);
+            pen.SetStartCap(Gdiplus::LineCapRound);
+            pen.SetEndCap(Gdiplus::LineCapRound);
+            pen.SetLineJoin(Gdiplus::LineJoinRound);
+            const float d = left ? -1.0f : 1.0f;
+            Gdiplus::PointF p[3] = { Gdiplus::PointF(8.0f - 1.8f * d, 4.0f), Gdiplus::PointF(8.0f + 1.8f * d, 8.0f), Gdiplus::PointF(8.0f - 1.8f * d, 12.0f) };
+            g.DrawLines(&pen, p, 3);
+        }
+        HICON icon = NULL;
+        bmp.GetHICON(&icon);
+        return icon;
+    }
+
+    bool IsLeftTabButton (CMFCButton* pButton)
+    {
+        bool left = true;
+        if (CWnd* parent = pButton->GetParent())
+        {
+            CRect pr, br;
+            parent->GetClientRect(pr);
+            pButton->GetWindowRect(br);
+            parent->ScreenToClient(br);
+            left = br.CenterPoint().x < pr.CenterPoint().x;
+        }
+        return left;
+    }
+}
+
+void CModernVisualManager::OnEraseTabsButton (CDC* pDC, CRect rect, CMFCButton* pButton, CMFCBaseTabCtrl* /*pWndTab*/)
+{
+    // troca, uma vez, o triangulo padrao por um chevron fino (o icone e desenhado pelo proprio botao)
+    // (a direcao so e conhecida depois que o botao e posicionado, entao reavalia a cada desenho)
+    static std::map<HWND, bool> direction;
+    if (pButton)
+    {
+        const bool left = IsLeftTabButton(pButton);
+        auto it = direction.find(pButton->GetSafeHwnd());
+        if (it == direction.end() || it->second != left)
+        {
+            direction[pButton->GetSafeHwnd()] = left;
+            pButton->SetImage(MakeChevronIcon(left, TextMuted), TRUE, MakeChevronIcon(left, Accent), MakeChevronIcon(left, BorderStrong), TRUE);
+        }
+    }
+
+    pDC->FillSolidRect(rect, SurfaceAlt);
+    if (pButton && pButton->IsWindowEnabled() && (pButton->IsHighlighted() || pButton->IsPushed()))
+    {
+        Gdiplus::Graphics g(pDC->GetSafeHdc());
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        CRect pad(rect);
+        pad.DeflateRect(2, 3);
+        ModernDraw::FillRoundRect(g, pad, 5.0f, pButton->IsPressed() ? RGB(214, 218, 226) : RGB(228, 231, 237));
+    }
+}
+
+void CModernVisualManager::OnDrawTabsButtonBorder (CDC* /*pDC*/, CRect& /*rect*/, CMFCButton* /*pButton*/, UINT /*uiState*/, CMFCBaseTabCtrl* /*pWndTab*/)
+{
+    // sem moldura: o destaque ao passar o mouse e o fundo arredondado desenhado ao apagar o botao
 }
 
 void CModernVisualManager::OnFillBarBackground (CDC* pDC, CBasePane* pBar, CRect rectClient, CRect rectClip, BOOL bNCArea)
