@@ -243,7 +243,8 @@ namespace
                 const int gap = 6, iconSize = 16;
                 int total = iconSize + gap + ts.cx;
                 int x = tr.left + (std::max)(0, (tr.Width() - total) / 2);
-                ModernDraw::DrawDialogIcon(buf.GetSafeHdc(), data.icon, x, br.top + (br.Height() - iconSize) / 2, !enabled);
+                const int icon = (data.icon == ModernDraw::DI_CONNECT && !isDefault) ? ModernDraw::DI_CONNECT_DARK : data.icon;
+                ModernDraw::DrawDialogIcon(buf.GetSafeHdc(), icon, x, br.top + (br.Height() - iconSize) / 2, !enabled);
                 tr.left = x + iconSize + gap;
                 buf.DrawText(text, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | prefix);
             }
@@ -528,6 +529,17 @@ namespace
         CRect rc, pc;
         ::GetWindowRect(c, rc);
         ::MapWindowPoints(NULL, hParent, (LPPOINT)(LPRECT)rc, 2);
+
+        // a caixa tem 16 px: controles mais baixos (ex.: 10 DLU) cortariam a caixa, entao cresce a altura
+        // para os dois lados, mantendo o centro
+        const int minHeight = 18;
+        if (rc.Height() < minHeight)
+        {
+            const int grow = minHeight - rc.Height();
+            rc.top -= grow / 2;
+            rc.bottom = rc.top + minHeight;
+            ::SetWindowPos(c, NULL, rc.left, rc.top, rc.Width(), minHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
         ::GetClientRect(hParent, pc);
         int width = (std::max)((int)rc.Width(), 16 + 9 + (int)ext.cx + 8);
         width = (std::min)(width, (int)pc.right - 8 - (int)rc.left);

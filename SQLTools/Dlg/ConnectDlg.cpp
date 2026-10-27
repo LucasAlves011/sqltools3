@@ -431,11 +431,11 @@ BOOL CConnectDlg::OnInitDialog()
     // visual moderno: icones e cores nos botoes, controles redesenhados e lista com cabecalho proprio
     static const ModernDialog::ButtonIcon icons[] = {
         { IDOK,          ModernDraw::DI_CONNECT,  ModernTheme::Accent },
-        { IDC_C_SAVE,    ModernDraw::DI_SAVE,     ModernTheme::Success },
-        { IDCANCEL,      ModernDraw::DI_CLOSE,    RGB(91, 101, 115) },
-        { IDC_C_TEST,    ModernDraw::DI_TEST,     RGB(217, 138, 0) },
-        { IDC_C_DELETE,  ModernDraw::DI_DELETE,   ModernTheme::Danger },
-        { IDC_C_SETTINGS,ModernDraw::DI_SETTINGS, ModernTheme::Accent }
+        { IDC_C_SAVE,    ModernDraw::DI_SAVE,     ModernTheme::TextMuted },
+        { IDCANCEL,      ModernDraw::DI_CLOSE,    ModernTheme::TextMuted },
+        { IDC_C_TEST,    ModernDraw::DI_TEST,     ModernTheme::TextMuted },
+        { IDC_C_DELETE,  ModernDraw::DI_DELETE,   ModernTheme::TextMuted },
+        { IDC_C_SETTINGS,ModernDraw::DI_SETTINGS, ModernTheme::TextMuted }
     };
     ModernDialog::SkinDialog(m_hWnd, icons, sizeof(icons) / sizeof(icons[0]));
     if (CHeaderCtrl* header = m_profiles.GetHeaderCtrl())
