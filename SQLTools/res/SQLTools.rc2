@@ -55,6 +55,9 @@ IDB_PANE_ICONS32       BITMAP                  "res\\PaneIcons.bmp"
 // icones dos botoes do dialogo Connect (gerados por tools/GenToolbarIcons)
 IDB_DIALOG_ICONS       BITMAP                  "res\\DialogIcons.bmp"
 
+// icones da janela de cursor (peek) do editor, gerados por tools/GenToolbarIcons
+IDB_PEEK_ICONS         BITMAP                  "res\\PeekIcons.bmp"
+
 #ifdef OCI_EMBED
 // Oracle Instant Client comprimido (gerado por tools/PackOci), extraido em runtime por OCI8/EmbeddedOci.cpp
 IDR_OCI_BUNDLE          RCDATA                  "..\\3dParty\\oracle\\instantclient19\\oci19.bin"

@@ -3,6 +3,7 @@
 #include "Theme/ModernDraw.h"
 #include <commctrl.h>
 #include <uxtheme.h>
+#include "Theme/ModernDark.h"
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -70,6 +71,56 @@ namespace
             ::SetBkColor((HDC)wp, bg);
             ::SetTextColor((HDC)wp, Text);
             return (LRESULT)BrushFor(bg);
+        }
+        case WM_PAINT:
+        {
+            LRESULT r = ::DefSubclassProc(h, msg, wp, lp);
+            // caixa de mensagem do sistema: a faixa clara dos botoes e pintada pelo user32; cobre com a cor do dialogo
+            if ((HINSTANCE)::GetWindowLongPtr(h, GWLP_HINSTANCE) == ::GetModuleHandleW(L"user32.dll"))
+            {
+                int top = INT_MAX;
+                for (HWND c = ::GetWindow(h, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
+                    if (ClassOf(c).CompareNoCase(L"Button") == 0)
+                    {
+                        CRect br;
+                        ::GetWindowRect(c, br);
+                        ::MapWindowPoints(NULL, h, (LPPOINT)(LPRECT)br, 2);
+                        top = (std::min)(top, (int)br.top);
+                    }
+                if (top != INT_MAX)
+                {
+                    CRect rc;
+                    ::GetClientRect(h, rc);
+                    rc.top = (std::max)(0, top - 18);
+                    HDC hdc = ::GetDC(h);
+                    ::FillRect(hdc, rc, BrushFor(bg));
+                    ::ReleaseDC(h, hdc);
+                    // os botoes ficam por cima; repinta-os
+                    for (HWND c = ::GetWindow(h, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
+                        ::RedrawWindow(c, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+                }
+            }
+            return r;
+        }
+        case WM_CTLCOLOREDIT:
+        case WM_CTLCOLORLISTBOX:
+        {
+            // campos de texto e listas: fundo e texto da paleta (so quando o dialogo nao define cores proprias)
+            LRESULT r = ::DefSubclassProc(h, msg, wp, lp);
+            if (IsDark() && (r == 0 || r == (LRESULT)::GetSysColorBrush(COLOR_WINDOW) || r == (LRESULT)::GetSysColorBrush(COLOR_3DFACE)))
+            {
+                ::SetBkColor((HDC)wp, Surface);
+                ::SetTextColor((HDC)wp, Text);
+                return (LRESULT)BrushFor(Surface);
+            }
+            return r;
+        }
+        case WM_SHOWWINDOW:
+        {
+            LRESULT r = ::DefSubclassProc(h, msg, wp, lp);
+            if (wp && !(::GetWindowLong(h, GWL_STYLE) & WS_CHILD))
+                ModernDark::StyleTitleBar(h);       // a barra de titulo escura precisa ser reaplicada ao exibir
+            return r;
         }
         case WM_NCDESTROY:
             ::RemoveProp(h, L"ModernSkin");
@@ -236,7 +287,7 @@ namespace
             }
 
             CRect tr(rc.left + box + 9, rc.top, rc.right, rc.bottom);
-            buf.SetTextColor(enabled ? Text : RGB(154, 161, 171));
+            buf.SetTextColor(enabled ? Text : TextDisabled);
             UINT fmt = DT_LEFT | DT_END_ELLIPSIS | prefix;
             fmt |= (style & BS_MULTILINE) ? (DT_WORDBREAK | DT_VCENTER) : (DT_SINGLELINE | DT_VCENTER);
             buf.DrawText(text, tr, fmt);
@@ -251,11 +302,11 @@ namespace
             COLORREF fill, edge, fore;
             if (!enabled)
             {
-                fill = SurfaceAlt; edge = Border; fore = RGB(154, 161, 171);
+                fill = SurfaceAlt; edge = Border; fore = TextDisabled;
             }
             else if (isDefault)
             {
-                fill = pressed ? RGB(35, 90, 200) : (hot ? RGB(62, 125, 245) : Accent);
+                fill = pressed ? AccentPressed : (hot ? AccentHover : Accent);
                 edge = fill; fore = RGB(255, 255, 255);
             }
             else if (data.icon >= 0)
@@ -363,6 +414,161 @@ namespace
         return ::DefSubclassProc(h, msg, wp, lp);
     }
 
+    // ---- setas de incremento (spin): duas metades com chevrons finos ----
+    struct SpinData
+    {
+        COLORREF bg;
+        int hot;            // 0 nenhuma, 1 metade de cima (ou esquerda), 2 metade de baixo (ou direita)
+        int pressed;
+    };
+
+    int SpinHalf (HWND h, POINT pt)
+    {
+        CRect rc;
+        ::GetClientRect(h, rc);
+        if (::GetWindowLong(h, GWL_STYLE) & UDS_HORZ)
+            return pt.x < rc.CenterPoint().x ? 1 : 2;
+        return pt.y < rc.CenterPoint().y ? 1 : 2;
+    }
+
+    void PaintSpin (HWND h, HDC hdc, const SpinData& data)
+    {
+        CRect rc;
+        ::GetClientRect(h, rc);
+        if (rc.IsRectEmpty())
+            return;
+
+        const bool horz = (::GetWindowLong(h, GWL_STYLE) & UDS_HORZ) != 0;
+        const bool enabled = ::IsWindowEnabled(h) != FALSE;
+
+        CDC mem;
+        mem.Attach(hdc);
+        CDC buf;
+        buf.CreateCompatibleDC(&mem);
+        CBitmap bmp;
+        bmp.CreateCompatibleBitmap(&mem, rc.Width(), rc.Height());
+        CBitmap* pOld = buf.SelectObject(&bmp);
+
+        buf.FillSolidRect(rc, enabled ? Surface : SurfaceAlt);
+        CBrush border(enabled ? BorderStrong : Border);
+        buf.FrameRect(rc, &border);
+
+        CRect halves[2] = { rc, rc };
+        if (horz)
+        {
+            halves[0].right = rc.CenterPoint().x;
+            halves[1].left = rc.CenterPoint().x;
+        }
+        else
+        {
+            halves[0].bottom = rc.CenterPoint().y;
+            halves[1].top = rc.CenterPoint().y;
+        }
+
+        Gdiplus::Graphics g(buf.GetSafeHdc());
+        g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        for (int i = 0; i < 2; ++i)
+        {
+            CRect hr = halves[i];
+            hr.DeflateRect(1, 1);
+            const bool hot = enabled && data.hot == i + 1;
+            const bool down = enabled && data.pressed == i + 1;
+            if (hot || down)
+                buf.FillSolidRect(hr, down ? Pressed : Hover);
+
+            Gdiplus::Pen pen(Clr(!enabled ? BorderStrong : (hot ? Accent : TextMuted)), 1.5f);
+            pen.SetStartCap(Gdiplus::LineCapRound);
+            pen.SetEndCap(Gdiplus::LineCapRound);
+            pen.SetLineJoin(Gdiplus::LineJoinRound);
+            const float cx = (float)hr.CenterPoint().x, cy = (float)hr.CenterPoint().y;
+            const float d = (i == 0) ? -1.0f : 1.0f;      // cima/esquerda, baixo/direita
+            Gdiplus::PointF pts[3];
+            if (horz)
+            {
+                pts[0] = Gdiplus::PointF(cx - 1.5f * d, cy - 3.0f);
+                pts[1] = Gdiplus::PointF(cx + 1.5f * d, cy);
+                pts[2] = Gdiplus::PointF(cx - 1.5f * d, cy + 3.0f);
+            }
+            else
+            {
+                pts[0] = Gdiplus::PointF(cx - 3.0f, cy - 1.2f * d);
+                pts[1] = Gdiplus::PointF(cx, cy + 1.2f * d);
+                pts[2] = Gdiplus::PointF(cx + 3.0f, cy - 1.2f * d);
+            }
+            g.DrawLines(&pen, pts, 3);
+        }
+        // divisor entre as metades
+        if (horz)
+            buf.FillSolidRect(rc.CenterPoint().x, rc.top + 1, 1, rc.Height() - 2, Border);
+        else
+            buf.FillSolidRect(rc.left + 1, rc.CenterPoint().y, rc.Width() - 2, 1, Border);
+
+        mem.BitBlt(0, 0, rc.Width(), rc.Height(), &buf, 0, 0, SRCCOPY);
+        buf.SelectObject(pOld);
+        mem.Detach();
+    }
+
+    LRESULT CALLBACK SpinProc (HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR ref)
+    {
+        SpinData* data = (SpinData*)ref;
+        switch (msg)
+        {
+        case WM_ERASEBKGND:
+            return 1;
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = ::BeginPaint(h, &ps);
+            PaintSpin(h, hdc, *data);
+            ::EndPaint(h, &ps);
+            return 0;
+        }
+        case WM_PRINTCLIENT:
+            PaintSpin(h, (HDC)wp, *data);
+            return 0;
+        case WM_MOUSEMOVE:
+        {
+            POINT pt = { (short)LOWORD(lp), (short)HIWORD(lp) };
+            const int half = SpinHalf(h, pt);
+            if (data->hot == 0)
+            {
+                TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, h, 0 };
+                ::TrackMouseEvent(&tme);
+            }
+            if (data->hot != half)
+            {
+                data->hot = half;
+                ::InvalidateRect(h, NULL, FALSE);
+            }
+            break;
+        }
+        case WM_MOUSELEAVE:
+            data->hot = 0;
+            ::InvalidateRect(h, NULL, FALSE);
+            break;
+        case WM_LBUTTONDOWN:
+        {
+            POINT pt = { (short)LOWORD(lp), (short)HIWORD(lp) };
+            data->pressed = SpinHalf(h, pt);
+            ::InvalidateRect(h, NULL, FALSE);
+            break;
+        }
+        case WM_LBUTTONUP:
+        case WM_CAPTURECHANGED:
+            data->pressed = 0;
+            ::InvalidateRect(h, NULL, FALSE);
+            break;
+        case WM_ENABLE:
+            ::InvalidateRect(h, NULL, FALSE);
+            break;
+        case WM_NCDESTROY:
+            ::RemoveWindowSubclass(h, SpinProc, 1);
+            delete data;
+            break;
+        }
+        return ::DefSubclassProc(h, msg, wp, lp);
+    }
+
     // ---- campos de texto: borda fina que muda de cor com o foco ----
     LRESULT CALLBACK EditProc (HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR)
     {
@@ -440,7 +646,7 @@ namespace
             ar = CRect(rc.right - 22, rc.top, rc.right - 1, rc.bottom);
         Gdiplus::Graphics g(buf.GetSafeHdc());
         g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
-        Gdiplus::Pen pen(Clr(enabled ? (focus ? Accent : TextMuted) : RGB(154, 161, 171)), 1.5f);
+        Gdiplus::Pen pen(Clr(enabled ? (focus ? Accent : TextMuted) : TextDisabled), 1.5f);
         pen.SetStartCap(Gdiplus::LineCapRound);
         pen.SetEndCap(Gdiplus::LineCapRound);
         pen.SetLineJoin(Gdiplus::LineJoinRound);
@@ -462,7 +668,7 @@ namespace
                 text.ReleaseBuffer();
             }
             buf.SetBkMode(TRANSPARENT);
-            buf.SetTextColor(enabled ? Text : RGB(154, 161, 171));
+            buf.SetTextColor(enabled ? Text : TextDisabled);
             CRect tr(rc.left + 6, rc.top, ar.left - 2, rc.bottom);
             buf.DrawText(text, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
             if (oldFont)
@@ -650,9 +856,21 @@ namespace
                 }
                 ::InvalidateRect(c, NULL, TRUE);
             }
+            else if (cls.CompareNoCase(L"msctls_updown32") == 0)
+            {
+                ::SetWindowSubclass(c, SpinProc, 1, (DWORD_PTR) new SpinData{ bg, 0, 0 });
+                ::InvalidateRect(c, NULL, TRUE);
+            }
+            else if (cls.CompareNoCase(L"msctls_trackbar32") == 0
+                  || cls.CompareNoCase(L"SysTabControl32") == 0 || cls.CompareNoCase(L"SysDateTimePick32") == 0)
+            {
+                ::SetWindowTheme(c, ModernDark::ControlTheme(), NULL);
+            }
             else if (cls.CompareNoCase(L"SysTreeView32") == 0)
             {
-                ::SetWindowTheme(c, L"Explorer", NULL);
+                ::SetWindowTheme(c, ModernDark::ControlTheme(), NULL);
+                TreeView_SetBkColor(c, Surface);
+                TreeView_SetTextColor(c, Text);
                 ::SetWindowLong(c, GWL_STYLE, style & ~WS_BORDER);
                 ::SetWindowLong(c, GWL_EXSTYLE, ::GetWindowLong(c, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
                 ::SetWindowPos(c, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
@@ -660,7 +878,13 @@ namespace
             else if (cls.CompareNoCase(L"SysListView32") == 0 || cls.CompareNoCase(L"ListBox") == 0)
             {
                 // sem a borda preta: o contorno fino e desenhado pelo fundo do dialogo
-                ::SetWindowTheme(c, L"Explorer", NULL);     // barras de rolagem finas do Windows moderno
+                ::SetWindowTheme(c, ModernDark::ControlTheme(), NULL);     // barras de rolagem finas do Windows moderno
+                if (cls.CompareNoCase(L"SysListView32") == 0)
+                {
+                    ListView_SetBkColor(c, Surface);
+                    ListView_SetTextBkColor(c, Surface);
+                    ListView_SetTextColor(c, Text);
+                }
                 ::SetWindowLong(c, GWL_STYLE, style & ~WS_BORDER);
                 ::SetWindowLong(c, GWL_EXSTYLE, ::GetWindowLong(c, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
                 ::SetWindowPos(c, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
@@ -743,13 +967,45 @@ namespace ModernDialog
                 if (cwp->message == WM_CREATE)
                 {
                     const CString cls = ClassOf(cwp->hwnd);
-                    if (cls == L"ScrollBar" || cls.Left(15) == L"Kochware.OpenGr")
-                        ::SetWindowTheme(cwp->hwnd, L"Explorer", NULL);
+                    if (cls == L"ScrollBar" || cls.Left(15) == L"Kochware.OpenGr" || (IsDark() && cls.Left(8) == L"RICHEDIT") || (IsDark() && cls == L"OpenEditorWindow"))
+                        ::SetWindowTheme(cwp->hwnd, ModernDark::ControlTheme(), NULL);
+
+                    // listas e arvores criadas em qualquer lugar: cores da paleta e barras de rolagem escuras
+                    if (IsDark())
+                    {
+                        if (cls == L"SysListView32")
+                        {
+                            ListView_SetBkColor(cwp->hwnd, Surface);
+                            ListView_SetTextBkColor(cwp->hwnd, Surface);
+                            ListView_SetTextColor(cwp->hwnd, Text);
+                            ::SetWindowTheme(cwp->hwnd, ModernDark::ControlTheme(), NULL);
+                        }
+                        else if (cls == L"SysTreeView32")
+                        {
+                            TreeView_SetBkColor(cwp->hwnd, Surface);
+                            TreeView_SetTextColor(cwp->hwnd, Text);
+                            ::SetWindowTheme(cwp->hwnd, ModernDark::ControlTheme(), NULL);
+                        }
+                    }
+
+                    // barra de titulo escura e menu principal escuro
+                    if (IsDark())
+                    {
+                        if (cls == L"Kochware.SQLTools.MainFrame")
+                        {
+                            ModernDark::StyleTitleBar(cwp->hwnd);
+                            ModernDark::StyleMenuBar(cwp->hwnd);
+                        }
+                    }
                 }
+                // dialogos do programa e caixas de mensagem do sistema (MessageBox, criadas pelo user32)
                 if (cwp->message == WM_INITDIALOG && ClassOf(cwp->hwnd) == L"#32770" &&
-                    (HINSTANCE)::GetWindowLongPtr(cwp->hwnd, GWLP_HINSTANCE) == AfxGetInstanceHandle())
+                    ((HINSTANCE)::GetWindowLongPtr(cwp->hwnd, GWLP_HINSTANCE) == AfxGetInstanceHandle() ||
+                     (HINSTANCE)::GetWindowLongPtr(cwp->hwnd, GWLP_HINSTANCE) == ::GetModuleHandleW(L"user32.dll")))
                 {
                     HWND h = cwp->hwnd;
+                    if (!(::GetWindowLong(h, GWL_STYLE) & WS_CHILD))
+                        ModernDark::StyleTitleBar(h);
                     if (::GetWindowLong(h, GWL_STYLE) & WS_CHILD)
                     {
                         // somente paginas de folhas de propriedades; paineis acoplados ja tem visual proprio

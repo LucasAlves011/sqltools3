@@ -38,6 +38,10 @@ namespace ModernDraw
     // icones dos botoes dos dialogos (16x16): conectar (branco), salvar, fechar, testar, excluir, configuracoes
     enum { DI_CONNECT = 0, DI_SAVE, DI_CLOSE, DI_TEST, DI_DELETE, DI_SETTINGS, DI_CONNECT_DARK };
     void DrawDialogIcon (HDC hdc, int index, int x, int y, bool disabled = false);
+
+    // icones da janela de cursor (peek) do editor (16x16)
+    enum { PI_DB = 0, PI_GO, PI_BACK, PI_COPY, PI_SAVE, PI_PIN, PI_PIN_ON, PI_CLOSE, PI_CLOSE_WHITE };
+    void DrawPeekIcon (HDC hdc, int index, int x, int y);
     void DrawImage (CDC& dc, int index, int x, int y, bool disabled = false);
     void DrawUiIcon (CDC& dc, UiIcon icon, int x, int y, bool accent, bool disabled = false);
     void DrawTypeIcon (CDC& dc, int imageIndex, int x, int y, bool accent, bool disabled = false);

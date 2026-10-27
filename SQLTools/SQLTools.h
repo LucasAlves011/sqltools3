@@ -164,6 +164,9 @@ public:
 	afx_msg void OnSqlTableTransformer();
 	afx_msg void OnSQLToolsOnTheWeb();
     afx_msg void OnAppSettingsFoder();
+    virtual int DoMessageBox (LPCTSTR lpszPrompt, UINT nType, UINT nIDPrompt);   // caixa de mensagem no visual do programa
+    afx_msg void OnViewDarkTheme();
+    afx_msg void OnUpdateViewDarkTheme(CCmdUI* pCmdUI);
 	afx_msg void OnUpdate_SqlGroup(CCmdUI* pCmdUI);
     afx_msg void OnUpdate_SqlSubstitutionVariables(CCmdUI* pCmdUI);
 	afx_msg void OnUpdate_EditIndicators (CCmdUI* pCmdUI);

@@ -33,6 +33,7 @@ TODO#2: remove shared code from NotifyDisplayTooltip  / OnRecentFilesListCtrl_No
 */
 
 #include "stdafx.h"
+#include "Theme/ModernTheme.h"
 #include "resource.h"
 #include <Shlwapi.h>
 #include <string>
@@ -425,7 +426,7 @@ void FileExplorerWnd::OnPaint()
     ScreenToClient(rectTree);
 
     rectTree.InflateRect(1, 1);
-    dc.Draw3dRect(rectTree, ::GetSysColor(COLOR_3DSHADOW), ::GetSysColor(COLOR_3DSHADOW));
+    dc.Draw3dRect(rectTree, ModernTheme::SysColor(COLOR_3DSHADOW), ModernTheme::SysColor(COLOR_3DSHADOW));
 }
 
 // move the following code to refresh command handler

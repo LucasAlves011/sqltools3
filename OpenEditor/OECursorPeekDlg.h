@@ -64,6 +64,8 @@ protected:
     afx_msg void OnKillFocus(CWnd* pNewWnd);
     afx_msg void OnClose();
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+    afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
     afx_msg void OnMouseLeave();
 
@@ -76,7 +78,6 @@ private:
     void UpdateTitle();
     void ApplySyntaxHighlighting();
     void DrawHeaderButton(CDC* pDC, const CRect& rc, int btnId);
-    void DrawDbIcon(CDC* pDC, int x, int y);
     static CSize CalculateIdealSize(const std::wstring& text, const CRect& rcWork);
 
     static void RegisterDialog(COECursorPeekDlg* pDlg);

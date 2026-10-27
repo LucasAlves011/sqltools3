@@ -4,6 +4,7 @@
 #include <COMMCTRL.H>
 #include <gdiplus.h>
 #include "Theme/ModernTheme.h"
+#include "Theme/ModernDark.h"
 #include "resource.h"
 
 namespace OG2
@@ -106,6 +107,7 @@ static CImageList& ValueIcons ()
                                             IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
         if (hBmp)
         {
+            ModernDark::RecolorBitmap(hBmp);      // tema escuro: icones claros
             s_list.Create(16, 16, ILC_COLOR32, 8, 0);
             CBitmap bmp;
             bmp.Attach(hBmp);
@@ -544,7 +546,7 @@ void CValueLineGutter::OnPaint()
             pOldFont = memDC.SelectObject(m_pFont);
 
         memDC.SetBkMode(TRANSPARENT);
-        memDC.SetTextColor(RGB(138, 146, 156));
+        memDC.SetTextColor(ModernTheme::TextMuted);
 
         int firstLine = m_pEdit->GetFirstVisibleLine();
         int lineCount = m_pEdit->GetLineCount();
@@ -807,6 +809,14 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
     m_wndEdit.SetFont(&m_fontEditor);
     m_wndEdit.LimitText(0x7FFFFFF);
     m_wndEdit.SetEventMask(m_wndEdit.GetEventMask() | ENM_SCROLL | ENM_CHANGE);
+    m_wndEdit.SetBackgroundColor(FALSE, ModernTheme::Surface);
+    {
+        CHARFORMAT2 cf = {};
+        cf.cbSize = sizeof(cf);
+        cf.dwMask = CFM_COLOR;
+        cf.crTextColor = ModernTheme::Text;
+        m_wndEdit.SetDefaultCharFormat(cf);
+    }
 
     // Gutter
     m_wndGutter.Create(this, IDC_VP_GUTTER, &m_wndEdit);
@@ -891,7 +901,7 @@ void CValuePanelWnd::OnPaint()
     Gdiplus::Graphics g(dc.GetSafeHdc());
     g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
     if (m_bHoverClose)
-        FillRoundRect(g, rcClose, 5.0f, RGB(236, 238, 242));
+        FillRoundRect(g, rcClose, 5.0f, ModernTheme::CaptionClose);
     DrawCloseGlyph(g, (float)rcClose.CenterPoint().x, (float)rcClose.CenterPoint().y, m_bHoverClose ? Text : TextMuted);
 
     dc.SelectObject(pOldFont);

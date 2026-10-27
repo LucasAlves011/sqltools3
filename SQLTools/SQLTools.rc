@@ -1231,6 +1231,8 @@ BEGIN
         MENUITEM "&History",                    ID_VIEW_HISTORY
         MENUITEM SEPARATOR
         MENUITEM "St&atus Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        MENUITEM "&Dark Theme",                 ID_VIEW_DARK_THEME
     END
     POPUP "&Search"
     BEGIN
@@ -1384,6 +1386,8 @@ BEGIN
         MENUITEM "&History",                    ID_VIEW_HISTORY
         MENUITEM SEPARATOR
         MENUITEM "St&atus Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        MENUITEM "&Dark Theme",                 ID_VIEW_DARK_THEME
     END
     POPUP "&Search"
     BEGIN

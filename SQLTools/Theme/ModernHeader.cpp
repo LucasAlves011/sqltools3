@@ -153,14 +153,14 @@ void CModernHeader::OnPaint ()
                 StrokeRoundRect(g, fr, 6.0f, active ? Accent : Border);
 
                 mem.SelectObject(&UiFont());
-                mem.SetTextColor(active ? Text : RGB(154, 161, 171));
+                mem.SetTextColor(active ? Text : TextDisabled);
                 CRect ft(fr.left + 8, fr.top, fr.right - 24, fr.bottom);
                 mem.DrawText(active ? filter : L"Filtrar...", ft, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
 
                 // funil pequeno desenhado por codigo (o icone de 16 px ficava grande para o campo)
                 {
                     float cx = (float)fr.right - 13.0f, cy = (float)fr.CenterPoint().y;
-                    Gdiplus::Pen fpen(Clr(active ? Accent : RGB(120, 128, 140)), 1.3f);
+                    Gdiplus::Pen fpen(Clr(active ? Accent : TextMuted), 1.3f);
                     fpen.SetLineJoin(Gdiplus::LineJoinRound);
                     fpen.SetStartCap(Gdiplus::LineCapRound);
                     fpen.SetEndCap(Gdiplus::LineCapRound);

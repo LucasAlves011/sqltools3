@@ -23,6 +23,8 @@
 
 #include "stdafx.h"
 #include "Booklet.h"
+#include "Theme/ModernTheme.h"
+#include "Theme/ModernDark.h"
 #include "SQLWorksheetDoc.h"
 #include <OpenGrid/GridView.h>
 #include "ExplainPlanView2.h"
@@ -198,6 +200,7 @@ BEGIN_MESSAGE_MAP(CBooklet, CView)
     ON_WM_ERASEBKGND()
     ON_MESSAGE_VOID(WM_IDLEUPDATECMDUI, OnIdleUpdateCmdUI)
     ON_NOTIFY(TBN_DROPDOWN, BOOKLET_TOOLBAR_ID, OnPlanDropDown)
+    ON_NOTIFY(NM_CUSTOMDRAW, BOOKLET_TOOLBAR_ID, OnToolbarCustomDraw)
     ON_COMMAND(ID_BOOKLET_SQL_PLAN_TEXT, OnPlanText)
     ON_COMMAND(ID_BOOKLET_SQL_PLAN_TREE, OnPlanTree)
 END_MESSAGE_MAP()
@@ -222,7 +225,18 @@ int CBooklet::OnCreate(LPCREATESTRUCT lpCreateStruct)
     m_toolbar.SetBitmapSize(CSize(16, 16));
     m_toolbar.SetIndent(4);
 
-    VERIFY(m_toolbar.AddBitmap(17, IDT_BOOKLET) != -1);
+    if (ModernTheme::IsDark())
+    {
+        // tema escuro: os icones sao recoloridos antes de entrar na barra
+        HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetResourceHandle(), MAKEINTRESOURCE(IDT_BOOKLET), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+        ModernDark::RecolorBitmap(hBmp);
+        CBitmap bmp;
+        bmp.Attach(hBmp);
+        VERIFY(m_toolbar.AddBitmap(17, &bmp) != -1);
+        bmp.Detach();       // o controle guarda o bitmap
+    }
+    else
+        VERIFY(m_toolbar.AddBitmap(17, IDT_BOOKLET) != -1);
 
     TBBUTTONINFO btnInfo;
     memset(&btnInfo, 0, sizeof(btnInfo));
@@ -414,6 +428,11 @@ LRESULT CBooklet::WindowProc (UINT message, WPARAM wParam, LPARAM lParam)
     try { return CView::WindowProc(message, wParam, lParam); }
     _DEFAULT_HANDLER_;
     return 0;
+}
+
+void CBooklet::OnToolbarCustomDraw (NMHDR* pNMHDR, LRESULT* pResult)
+{
+    *pResult = ModernDark::CustomDrawToolbar(pNMHDR);
 }
 
 void CBooklet::OnPlanDropDown (NMHDR* pNMHDR, LRESULT* lResult)

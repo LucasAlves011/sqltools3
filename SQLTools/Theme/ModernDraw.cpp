@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Theme/ModernDraw.h"
+#include "Theme/ModernDark.h"
 #include "resource.h"
 
 namespace ModernDraw
@@ -62,7 +63,8 @@ namespace ModernDraw
             {
                 list.Create(16, 16, ILC_COLOR32, 72, 0);
                 CBitmap bmp;
-                bmp.Attach(hBmp);
+                ModernDark::RecolorBitmap(hBmp);
+            bmp.Attach(hBmp);
                 list.Add(&bmp, (CBitmap*)NULL);
             }
         }
@@ -77,6 +79,7 @@ namespace ModernDraw
         {
             list.Create(16, 16, ILC_COLOR32, 7, 0);
             CBitmap bmp;
+            ModernDark::RecolorBitmap(hBmp);
             bmp.Attach(hBmp);
             list.Add(&bmp, (CBitmap*)NULL);
         }
@@ -93,7 +96,8 @@ namespace ModernDraw
             {
                 list.Create(16, 16, ILC_COLOR32, 7, 0);
                 CBitmap bmp;
-                bmp.Attach(hBmp);
+                ModernDark::RecolorBitmap(hBmp);
+            bmp.Attach(hBmp);
                 list.Add(&bmp, (CBitmap*)NULL);
             }
         }
@@ -116,6 +120,26 @@ namespace ModernDraw
             p.Frame = 90;
         }
         ImageList_DrawIndirect(&p);
+    }
+
+    void DrawPeekIcon (HDC hdc, int index, int x, int y)
+    {
+        static CImageList list;
+        if (!list.GetSafeHandle())
+        {
+            HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_PEEK_ICONS),
+                                                IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+            if (hBmp)
+            {
+                list.Create(16, 16, ILC_COLOR32, 9, 0);
+                ModernDark::RecolorBitmap(hBmp);
+                CBitmap bmp;
+                bmp.Attach(hBmp);
+                list.Add(&bmp, (CBitmap*)NULL);
+            }
+        }
+        if (list.GetSafeHandle() && index >= 0)
+            ImageList_Draw(list.GetSafeHandle(), index, hdc, x, y, ILD_TRANSPARENT);
     }
 
     void DrawImage (CDC& dc, int index, int x, int y, bool disabled)

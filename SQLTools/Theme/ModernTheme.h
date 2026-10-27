@@ -8,18 +8,52 @@
 namespace ModernTheme
 {
     // Paleta (tema claro)
-    const COLORREF Text          = RGB( 31,  35,  40);
-    const COLORREF TextMuted     = RGB( 91, 101, 115);
-    const COLORREF Surface       = RGB(255, 255, 255);
-    const COLORREF SurfaceAlt    = RGB(245, 246, 248);
-    const COLORREF Border        = RGB(226, 229, 234);
-    const COLORREF BorderStrong  = RGB(207, 213, 221);
-    const COLORREF Accent        = RGB( 47, 111, 237);
-    const COLORREF AccentTint    = RGB(230, 238, 253);
-    const COLORREF AccentStrong  = RGB(207, 224, 253);
-    const COLORREF Danger        = RGB(214,  69,  65);
-    const COLORREF Success       = RGB( 22, 136,  84);
-    const COLORREF Favorite      = RGB(240, 160,   0);
+    // (variaveis: o tema claro ou escuro e escolhido uma vez, na partida, por ApplyPalette)
+    extern COLORREF Text;
+    extern COLORREF TextMuted;
+    extern COLORREF Surface;
+    extern COLORREF SurfaceAlt;
+    extern COLORREF Border;
+    extern COLORREF BorderStrong;
+    extern COLORREF Accent;
+    extern COLORREF AccentTint;
+    extern COLORREF AccentStrong;
+    extern COLORREF Danger;
+    extern COLORREF Success;
+    extern COLORREF Favorite;
+    extern COLORREF TextDisabled;
+    extern COLORREF Hover;
+    extern COLORREF Pressed;
+    extern COLORREF RowAlt;
+    extern COLORREF SelInactive;
+    extern COLORREF GridAlt;
+    extern COLORREF GridFix;
+    extern COLORREF GridFixShadow;
+    extern COLORREF GridLine;
+    extern COLORREF Dim;
+    extern COLORREF DimStrong;
+    extern COLORREF ValidBg;
+    extern COLORREF InvalidBg;
+    extern COLORREF WarnBg;
+    extern COLORREF WarnText;
+    extern COLORREF AccentHover;
+    extern COLORREF AccentPressed;
+    extern COLORREF Scope;
+    extern COLORREF ScopeFill;
+    extern COLORREF ScopeBorder;
+    extern COLORREF CaptionClose;
+    extern COLORREF GutterText;
+
+    // escolhe a paleta (true = tema escuro); chamar antes de criar qualquer janela
+    void ApplyPalette (bool dark);
+
+    // cor de sistema (GetSysColor) ou a equivalente da paleta no tema escuro
+    COLORREF SysColor (int index);
+    bool IsDark ();
+
+    // tema escolhido pelo usuario (guardado no registro); a troca vale na proxima partida
+    bool LoadThemeSetting ();
+    void SaveThemeSetting (bool dark);
 
     // Aplica (uma unica vez, com copia de seguranca) as fontes e cores modernas ao editor e as fontes
     // das janelas do SQLTools. Retorna true se alterou as configuracoes do SQLTools (precisam ser salvas).

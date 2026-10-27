@@ -9,6 +9,8 @@
 #define IDB_OBJLIST_ICONS               9104
 #define IDB_PANE_ICONS32                9105
 #define IDB_DIALOG_ICONS                9106
+#define ID_VIEW_DARK_THEME              9107
+#define IDB_PEEK_ICONS                  9108
 #define IDC_DS_TYPEBAR                  1450
 #define IDC_DS_OWNERBAR                 1451
 #define IDD_UPDATE_AVAILABLE            10010

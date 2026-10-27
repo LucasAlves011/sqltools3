@@ -19,6 +19,7 @@
 
 
 #include "stdafx.h"
+#include "Theme/ModernTheme.h"
 #include "oetabctrl.h"
 
 #ifdef _DEBUG
@@ -361,7 +362,7 @@ void COETabCtrl::OnPaint()
     tcItem.pszText=tcItemBuf;
     tcItem.cchTextMax=255;
 
-    penDiv.CreatePen(PS_SOLID, 1, ::GetSysColor(COLOR_BTNSHADOW));
+    penDiv.CreatePen(PS_SOLID, 1, ModernTheme::SysColor(COLOR_BTNSHADOW));
     oldPen=dc.SelectObject(&penDiv);
     oldBkMode=dc.SetBkMode(TRANSPARENT);
 
@@ -373,12 +374,12 @@ void COETabCtrl::OnPaint()
 
             // selected or not
             if(i == this->GetCurSel()) {
-                drawColor=::GetSysColor(COLOR_BTNFACE);
-                dc.SetTextColor(::GetSysColor(COLOR_BTNTEXT));
+                drawColor=ModernTheme::SysColor(COLOR_BTNFACE);
+                dc.SetTextColor(ModernTheme::SysColor(COLOR_BTNTEXT));
             } else {
-                drawColor=::GetSysColor(COLOR_BTNFACE);
+                drawColor=ModernTheme::SysColor(COLOR_BTNFACE);
                 drawColor += (24+(24<<8)+(24<<16));
-                dc.SetTextColor(::GetSysColor(COLOR_GRAYTEXT));
+                dc.SetTextColor(ModernTheme::SysColor(COLOR_GRAYTEXT));
             }
             // fill rect
             dc.FillSolidRect(rectItem, drawColor);

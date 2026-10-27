@@ -752,6 +752,8 @@ echo.
     <ClInclude Include="Theme\ModernPopup.h" />
     <ClInclude Include="Theme\ModernHeader.h" />
     <ClInclude Include="Theme\ModernDialog.h" />
+    <ClInclude Include="Theme\ModernDark.h" />
+    <ClInclude Include="Theme\ModernMessageBox.h" />
     <ClInclude Include="DbBrowser\TypeBar.h" />
     <ClInclude Include="DbBrowser\OwnerBar.h" />
     <ClInclude Include="Update\UpdateChecker.h" />
@@ -1351,6 +1353,8 @@ makehm /h ID_,HID_,0x10000 IDM_,HIDM_,0x10000 "..\OpenEditor\OpenEditorInc.rh" &
     <ClCompile Include="Theme\ModernPopup.cpp" />
     <ClCompile Include="Theme\ModernHeader.cpp" />
     <ClCompile Include="Theme\ModernDialog.cpp" />
+    <ClCompile Include="Theme\ModernDark.cpp" />
+    <ClCompile Include="Theme\ModernMessageBox.cpp" />
     <ClCompile Include="DbBrowser\TypeBar.cpp" />
     <ClCompile Include="DbBrowser\OwnerBar.cpp" />
     <ClCompile Include="Update\UpdateChecker.cpp" />

@@ -2,6 +2,12 @@
 #include "OpenEditor/OECursorPeekDlg.h"
 #include "OpenEditor/OEView.h"
 #include "Common/ExceptionHelper.h"
+#include "Theme/ModernTheme.h"
+#include "Theme/ModernDraw.h"
+#include "Theme/ModernDark.h"
+#include <gdiplus.h>
+#include <dwmapi.h>
+#include <uxtheme.h>
 #include <algorithm>
 #include <cwctype>
 #include <unordered_set>
@@ -176,9 +182,22 @@ CSize COECursorPeekDlg::CalculateIdealSize(const std::wstring& text, const CRect
     if (curLineLen > maxLineLen)
         maxLineLen = curLineLen;
 
-    // Métricas aproximadas da fonte Consolas 10pt (8px largura, 17px altura por linha)
-    const int charWidth = 8;
-    const int lineHeight = 17;
+    // Métricas reais da fonte Consolas 10pt (com valores aproximados se a medição falhar)
+    int charWidth = 8;
+    int lineHeight = 17;
+    {
+        CFont font;
+        font.CreatePointFont(100, _T("Consolas"));
+        CClientDC dc(NULL);
+        CFont* pOld = dc.SelectObject(&font);
+        TEXTMETRIC tm;
+        if (dc.GetTextMetrics(&tm))
+        {
+            charWidth = tm.tmAveCharWidth;
+            lineHeight = tm.tmHeight + tm.tmExternalLeading + 1;
+        }
+        dc.SelectObject(pOld);
+    }
 
     // Largura baseada no tamanho da maior linha + margens laterais + espaço do scroll
     int idealW = maxLineLen * charWidth + 60;
@@ -296,10 +315,11 @@ COECursorPeekDlg* COECursorPeekDlg::OpenPeek(COEditorView* pEditor, const PlSqlO
     pDlg->m_pEditor = pEditor;
     pDlg->m_objectInfo = info;
 
+    static CBrush s_surface(ModernTheme::Surface);
     CString className = AfxRegisterWndClass(
         CS_HREDRAW | CS_VREDRAW,
         ::LoadCursor(NULL, IDC_ARROW),
-        (HBRUSH)(COLOR_BTNFACE + 1),
+        (HBRUSH)s_surface.GetSafeHandle(),
         NULL
     );
 
@@ -345,6 +365,8 @@ BEGIN_MESSAGE_MAP(COECursorPeekDlg, CWnd)
     ON_WM_ERASEBKGND()
     ON_WM_MOUSEMOVE()
     ON_WM_MOUSELEAVE()
+    ON_WM_NCCALCSIZE()
+    ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 int COECursorPeekDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -366,8 +388,27 @@ int COECursorPeekDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
     );
 
     m_editCtrl.SetFont(&m_font);
-    m_editCtrl.SetBackgroundColor(FALSE, RGB(255, 255, 255));
+    m_editCtrl.SetBackgroundColor(FALSE, ModernTheme::Surface);
     m_editCtrl.SetEventMask(m_editCtrl.GetEventMask() | ENM_CHANGE);
+    {
+        // texto na cor do tema e uma margem interna para o codigo nao colar na borda
+        CHARFORMAT2 cf = {};
+        cf.cbSize = sizeof(cf);
+        cf.dwMask = CFM_COLOR;
+        cf.crTextColor = ModernTheme::Text;
+        m_editCtrl.SetDefaultCharFormat(cf);
+        m_editCtrl.SendMessage(EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(10, 10));
+        ::SetWindowTheme(m_editCtrl.GetSafeHwnd(), ModernDark::ControlTheme(), NULL);    // barras de rolagem finas
+    }
+
+    // cantos arredondados (Windows 11)
+    {
+        const int corner = 2;   // DWMWCP_ROUND
+        ::DwmSetWindowAttribute(m_hWnd, 33 /*DWMWA_WINDOW_CORNER_PREFERENCE*/, &corner, sizeof(corner));
+        // sem a borda de destaque que o Windows desenha na janela ativa (a borda fina propria ja existe)
+        const COLORREF noBorder = 0xFFFFFFFE;   // DWMWA_COLOR_NONE
+        ::DwmSetWindowAttribute(m_hWnd, 34 /*DWMWA_BORDER_COLOR*/, &noBorder, sizeof(noBorder));
+    }
 
     // Inicializa tooltips para os botões do cabeçalho
     m_toolTip.Create(this, TTS_ALWAYSTIP | TTS_NOPREFIX);
@@ -393,7 +434,7 @@ void COECursorPeekDlg::LayoutControls(int cx, int cy)
 {
     if (m_editCtrl.m_hWnd && ::IsWindow(m_editCtrl.m_hWnd))
     {
-        m_editCtrl.MoveWindow(0, HEADER_HEIGHT, cx, std::max(0, cy - HEADER_HEIGHT));
+        m_editCtrl.MoveWindow(1, HEADER_HEIGHT, std::max(0, cx - 2), std::max(0, cy - HEADER_HEIGHT - 1));
     }
 
     int btnTop = (HEADER_HEIGHT - BTN_SIZE) / 2;
@@ -488,291 +529,116 @@ void COECursorPeekDlg::OnMouseLeave()
     CWnd::OnMouseLeave();
 }
 
-void COECursorPeekDlg::DrawDbIcon(CDC* pDC, int x, int y)
-{
-    // Desenha ícone de banco de dados moderno (cilindro em 3 camadas)
-    COLORREF borderCol = RGB(0, 102, 204);
-    COLORREF fillCol = RGB(224, 238, 255);
-
-    CPen pen(PS_SOLID, 1, borderCol);
-    CBrush brush(fillCol);
-    CPen* pOldPen = pDC->SelectObject(&pen);
-    CBrush* pOldBrush = pDC->SelectObject(&brush);
-
-    // Camada inferior
-    pDC->Ellipse(x, y + 9, x + 14, y + 14);
-    pDC->Rectangle(x, y + 7, x + 14, y + 12);
-
-    // Camada média
-    pDC->Ellipse(x, y + 5, x + 14, y + 10);
-    pDC->Rectangle(x, y + 3, x + 14, y + 8);
-
-    // Camada superior
-    pDC->Ellipse(x, y, x + 14, y + 5);
-
-    pDC->SelectObject(pOldBrush);
-    pDC->SelectObject(pOldPen);
-}
-
 void COECursorPeekDlg::DrawHeaderButton(CDC* pDC, const CRect& rc, int btnId)
 {
-    bool isHover = (m_hoverBtn == btnId);
+    using namespace ModernTheme;
+    const bool isHover = (m_hoverBtn == btnId);
 
-    // Desenha fundo de hover
+    Gdiplus::Graphics g(pDC->GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    CRect r(rc);
+    r.DeflateRect(1, 1);
+
     if (btnId == BTN_CLOSE && isHover)
-    {
-        pDC->FillSolidRect(&rc, RGB(232, 17, 35));
-    }
+        ModernDraw::FillRoundRect(g, r, 6.0f, Danger);
     else if (btnId == BTN_PIN && m_bPinned)
-    {
-        pDC->FillSolidRect(&rc, isHover ? RGB(205, 225, 250) : RGB(220, 235, 252));
-        pDC->Draw3dRect(&rc, RGB(160, 195, 235), RGB(160, 195, 235));
-    }
+        ModernDraw::FillRoundRect(g, r, 6.0f, isHover ? AccentStrong : AccentTint);
     else if (isHover)
-    {
-        pDC->FillSolidRect(&rc, RGB(225, 230, 238));
-        pDC->Draw3dRect(&rc, RGB(205, 212, 222), RGB(205, 212, 222));
-    }
+        ModernDraw::FillRoundRect(g, r, 6.0f, Hover);
 
-    CPoint c = rc.CenterPoint();
-    COLORREF iconCol = (btnId == BTN_CLOSE && isHover) ? RGB(255, 255, 255) : RGB(65, 72, 82);
-
+    int icon = ModernDraw::PI_CLOSE;
     switch (btnId)
     {
-    case BTN_BACK:
-        {
-            // Ícone 'Voltar': folha de código à direita + seta à esquerda (retornar)
-            CPen pen(PS_SOLID, 1, iconCol);
-            CPen* pOldPen = pDC->SelectObject(&pen);
+    case BTN_BACK:  icon = ModernDraw::PI_BACK; break;
+    case BTN_GO:    icon = ModernDraw::PI_GO; break;
+    case BTN_COPY:  icon = ModernDraw::PI_COPY; break;
+    case BTN_SYNC:  icon = ModernDraw::PI_SAVE; break;
+    case BTN_PIN:   icon = m_bPinned ? ModernDraw::PI_PIN_ON : ModernDraw::PI_PIN; break;
+    case BTN_CLOSE: icon = isHover ? ModernDraw::PI_CLOSE_WHITE : ModernDraw::PI_CLOSE; break;
+    }
+    CPoint c = rc.CenterPoint();
+    ModernDraw::DrawPeekIcon(pDC->GetSafeHdc(), icon, c.x - 8, c.y - 8);
 
-            // Retângulo do arquivo/editor à direita
-            pDC->MoveTo(c.x + 1, c.y - 6);
-            pDC->LineTo(c.x + 7, c.y - 6);
-            pDC->LineTo(c.x + 7, c.y + 6);
-            pDC->LineTo(c.x + 1, c.y + 6);
-            pDC->LineTo(c.x + 1, c.y - 6);
-
-            // Linhas internas de texto no arquivo
-            pDC->MoveTo(c.x + 3, c.y - 3);
-            pDC->LineTo(c.x + 5, c.y - 3);
-            pDC->MoveTo(c.x + 3, c.y);
-            pDC->LineTo(c.x + 5, c.y);
-
-            // Seta em azul para a esquerda
-            COLORREF arrowCol = isHover ? RGB(0, 90, 180) : RGB(0, 120, 215);
-            CPen penArrow(PS_SOLID, 2, arrowCol);
-            pDC->SelectObject(&penArrow);
-
-            pDC->MoveTo(c.x + 1, c.y);
-            pDC->LineTo(c.x - 4, c.y);
-            pDC->MoveTo(c.x - 2, c.y - 3);
-            pDC->LineTo(c.x - 5, c.y);
-            pDC->LineTo(c.x - 2, c.y + 3);
-
-            pDC->SelectObject(pOldPen);
-        }
-        break;
-
-    case BTN_GO:
-        {
-            // Ícone 'Ir': folha de código + seta à direita
-            CPen pen(PS_SOLID, 1, iconCol);
-            CPen* pOldPen = pDC->SelectObject(&pen);
-
-            // Retângulo do arquivo/editor à esquerda
-            pDC->MoveTo(c.x - 7, c.y - 6);
-            pDC->LineTo(c.x - 1, c.y - 6);
-            pDC->LineTo(c.x - 1, c.y + 6);
-            pDC->LineTo(c.x - 7, c.y + 6);
-            pDC->LineTo(c.x - 7, c.y - 6);
-
-            // Linhas internas de texto no arquivo
-            pDC->MoveTo(c.x - 5, c.y - 3);
-            pDC->LineTo(c.x - 2, c.y - 3);
-            pDC->MoveTo(c.x - 5, c.y);
-            pDC->LineTo(c.x - 2, c.y);
-
-            // Seta em azul para a direita
-            COLORREF arrowCol = isHover ? RGB(0, 90, 180) : RGB(0, 120, 215);
-            CPen penArrow(PS_SOLID, 2, arrowCol);
-            pDC->SelectObject(&penArrow);
-
-            pDC->MoveTo(c.x + 1, c.y);
-            pDC->LineTo(c.x + 6, c.y);
-            pDC->MoveTo(c.x + 4, c.y - 3);
-            pDC->LineTo(c.x + 7, c.y);
-            pDC->LineTo(c.x + 4, c.y + 3);
-
-            pDC->SelectObject(pOldPen);
-        }
-        break;
-
-    case BTN_COPY:
-        {
-            // Ícone 'Copiar': duas folhas sobrepostas
-            CPen pen(PS_SOLID, 1, iconCol);
-            CPen* pOldPen = pDC->SelectObject(&pen);
-
-            // Folha de trás
-            pDC->MoveTo(c.x - 2, c.y - 5);
-            pDC->LineTo(c.x + 5, c.y - 5);
-            pDC->LineTo(c.x + 5, c.y + 2);
-            pDC->MoveTo(c.x - 2, c.y - 5);
-            pDC->LineTo(c.x - 5, c.y - 5);
-            pDC->LineTo(c.x - 5, c.y + 2);
-
-            // Folha da frente (com fundo preenchido)
-            CRect rcFront(c.x - 3, c.y - 2, c.x + 4, c.y + 6);
-            COLORREF bgFront = (isHover ? RGB(225, 230, 238) : RGB(243, 245, 248));
-            pDC->FillSolidRect(&rcFront, bgFront);
-            pDC->Draw3dRect(&rcFront, iconCol, iconCol);
-
-            pDC->SelectObject(pOldPen);
-        }
-        break;
-
-    case BTN_SYNC:
-        {
-            // Ícone 'Salvar': disquete clássico
-            CPen pen(PS_SOLID, 1, iconCol);
-            CPen* pOldPen = pDC->SelectObject(&pen);
-
-            // Corpo do disquete
-            pDC->MoveTo(c.x - 5, c.y - 5);
-            pDC->LineTo(c.x + 3, c.y - 5);
-            pDC->LineTo(c.x + 5, c.y - 3);
-            pDC->LineTo(c.x + 5, c.y + 5);
-            pDC->LineTo(c.x - 5, c.y + 5);
-            pDC->LineTo(c.x - 5, c.y - 5);
-
-            // Janela do obturador em cima
-            pDC->MoveTo(c.x - 3, c.y - 5);
-            pDC->LineTo(c.x - 3, c.y - 2);
-            pDC->LineTo(c.x + 1, c.y - 2);
-            pDC->LineTo(c.x + 1, c.y - 5);
-
-            // Etiqueta embaixo
-            pDC->MoveTo(c.x - 3, c.y + 1);
-            pDC->LineTo(c.x + 3, c.y + 1);
-            pDC->LineTo(c.x + 3, c.y + 5);
-            pDC->LineTo(c.x - 3, c.y + 5);
-            pDC->LineTo(c.x - 3, c.y + 1);
-
-            pDC->SelectObject(pOldPen);
-
-            // Se modificado, desenha ponto âmbar/alaranjado no canto do botão
-            if (m_bModified)
-            {
-                CBrush brushMod(RGB(245, 130, 10));
-                CPen penMod(PS_SOLID, 1, RGB(200, 100, 0));
-                CBrush* pOldB = pDC->SelectObject(&brushMod);
-                CPen* pOldP = pDC->SelectObject(&penMod);
-                pDC->Ellipse(c.x + 3, c.y - 7, c.x + 8, c.y - 2);
-                pDC->SelectObject(pOldB);
-                pDC->SelectObject(pOldP);
-            }
-        }
-        break;
-
-    case BTN_PIN:
-        {
-            // Ícone 'Fixar': alfinete/pushpin
-            COLORREF pinCol = m_bPinned ? RGB(0, 102, 204) : iconCol;
-            CPen pen(PS_SOLID, 1, pinCol);
-            CPen* pOldPen = pDC->SelectObject(&pen);
-
-            // Cabeça superior
-            pDC->MoveTo(c.x - 3, c.y - 5);
-            pDC->LineTo(c.x + 3, c.y - 5);
-
-            // Corpo do alfinete
-            pDC->MoveTo(c.x, c.y - 5);
-            pDC->LineTo(c.x, c.y - 2);
-            pDC->MoveTo(c.x - 4, c.y - 2);
-            pDC->LineTo(c.x + 4, c.y - 2);
-            pDC->LineTo(c.x + 2, c.y + 1);
-            pDC->LineTo(c.x - 2, c.y + 1);
-            pDC->LineTo(c.x - 4, c.y - 2);
-
-            // Ponta da agulha
-            pDC->MoveTo(c.x, c.y + 1);
-            pDC->LineTo(c.x, c.y + 6);
-
-            pDC->SelectObject(pOldPen);
-        }
-        break;
-
-    case BTN_CLOSE:
-        {
-            // Ícone 'Fechar': 'X' minimalista
-            CPen pen(PS_SOLID, 1, iconCol);
-            CPen* pOldPen = pDC->SelectObject(&pen);
-
-            pDC->MoveTo(c.x - 4, c.y - 4);
-            pDC->LineTo(c.x + 4, c.y + 4);
-            pDC->MoveTo(c.x - 3, c.y - 4);
-            pDC->LineTo(c.x + 5, c.y + 4);
-
-            pDC->MoveTo(c.x + 3, c.y - 4);
-            pDC->LineTo(c.x - 5, c.y + 4);
-            pDC->MoveTo(c.x + 4, c.y - 4);
-            pDC->LineTo(c.x - 4, c.y + 4);
-
-            pDC->SelectObject(pOldPen);
-        }
-        break;
+    // ponto ambar no botao de salvar quando ha alteracoes ainda nao enviadas ao editor
+    if (btnId == BTN_SYNC && m_bModified)
+    {
+        Gdiplus::SolidBrush dot(ModernDraw::Clr(Favorite));
+        g.FillEllipse(&dot, (Gdiplus::REAL)(rc.right - 10), (Gdiplus::REAL)(rc.top + 3), 6.0f, 6.0f);
     }
 }
 
 void COECursorPeekDlg::OnPaint()
 {
+    using namespace ModernTheme;
     CPaintDC dc(this);
     CRect rcClient;
     GetClientRect(&rcClient);
 
     CRect rcHeader(0, 0, rcClient.Width(), HEADER_HEIGHT);
+    dc.FillSolidRect(&rcHeader, SurfaceAlt);
+    dc.FillSolidRect(0, HEADER_HEIGHT - 1, rcClient.Width(), 1, Border);
 
-    COLORREF headerBg   = RGB(243, 245, 248);
-    COLORREF headerLine = RGB(218, 224, 233);
-    COLORREF textColor  = RGB(33, 37, 41);
+    // icone do banco de dados
+    ModernDraw::DrawPeekIcon(dc.GetSafeHdc(), ModernDraw::PI_DB, 10, (HEADER_HEIGHT - 16) / 2);
 
-    // Preenche cabeçalho claro e moderno
-    dc.FillSolidRect(&rcHeader, headerBg);
-    dc.FillSolidRect(0, HEADER_HEIGHT - 1, rcClient.Width(), 1, headerLine);
-
-    // Ícone de banco de dados
-    DrawDbIcon(&dc, 8, (HEADER_HEIGHT - 14) / 2);
-
-    // Título do objeto
-    CFont* pOldFont = dc.SelectObject(&m_uiFont);
+    // titulo: nome em destaque e a linha da declaracao em tom discreto
     dc.SetBkMode(TRANSPARENT);
-    dc.SetTextColor(textColor);
-
-    CString strTitle;
-    strTitle.Format(_T("%s  (Linha %d)%s"), 
-        m_objectInfo.title.c_str(), 
-        m_objectInfo.declLineStart + 1,
-        m_bModified ? _T(" *") : _T(""));
+    CString strName = m_objectInfo.title.c_str();
+    CString strLine;
+    strLine.Format(_T("  (Linha %d)%s"), m_objectInfo.declLineStart + 1, m_bModified ? _T("  \u2022 alterado") : _T(""));
 
     int titleRight = (m_hasPrevPos && !m_rcBackBtn.IsRectEmpty()) ? m_rcBackBtn.left - 6 : m_rcGoBtn.left - 6;
-    CRect rcTitle(28, 0, titleRight, HEADER_HEIGHT);
-    dc.DrawText(strTitle, &rcTitle, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+    CRect rcName(34, 0, titleRight, HEADER_HEIGHT);
+
+    CFont* pOldFont = dc.SelectObject(&ModernDraw::UiFontBold());
+    dc.SetTextColor(Text);
+    CRect rcCalc(rcName);
+    dc.DrawText(strName, &rcCalc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_CALCRECT);
+    dc.DrawText(strName, &rcName, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+    CRect rcLine(rcName.left + rcCalc.Width(), 0, titleRight, HEADER_HEIGHT);
+    if (rcLine.Width() > 10)
+    {
+        dc.SelectObject(&ModernDraw::UiFont());
+        dc.SetTextColor(m_bModified ? Favorite : TextMuted);
+        dc.DrawText(strLine, &rcLine, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+    }
     dc.SelectObject(pOldFont);
 
-    // Botões com ícones vetoriais modernos
+    // botoes
     if (m_hasPrevPos && !m_rcBackBtn.IsRectEmpty())
-    {
         DrawHeaderButton(&dc, m_rcBackBtn, BTN_BACK);
-    }
     DrawHeaderButton(&dc, m_rcGoBtn, BTN_GO);
     DrawHeaderButton(&dc, m_rcCopyBtn, BTN_COPY);
     DrawHeaderButton(&dc, m_rcSyncBtn, BTN_SYNC);
     DrawHeaderButton(&dc, m_rcPinBtn, BTN_PIN);
     DrawHeaderButton(&dc, m_rcCloseBtn, BTN_CLOSE);
+
+    // borda fina em volta da janela (a janela nao tem moldura do sistema)
+    CBrush border(BorderStrong);
+    dc.FrameRect(&rcClient, &border);
 }
 
 LRESULT COECursorPeekDlg::OnNcHitTest(CPoint point)
 {
+    // sem moldura do sistema: as bordas redimensionam a janela
+    if (!IsZoomed())
+    {
+        CRect wr;
+        GetWindowRect(&wr);
+        const int grip = 6;
+        const bool left = point.x < wr.left + grip, right = point.x >= wr.right - grip;
+        const bool top = point.y < wr.top + grip, bottom = point.y >= wr.bottom - grip;
+        if (top && left) return HTTOPLEFT;
+        if (top && right) return HTTOPRIGHT;
+        if (bottom && left) return HTBOTTOMLEFT;
+        if (bottom && right) return HTBOTTOMRIGHT;
+        if (left) return HTLEFT;
+        if (right) return HTRIGHT;
+        if (top) return HTTOP;
+        if (bottom) return HTBOTTOM;
+    }
+
     CPoint ptClient = point;
     ScreenToClient(&ptClient);
 
@@ -887,6 +753,30 @@ void COECursorPeekDlg::OnEditChange()
 
     m_bModified = true;
     InvalidateRect(CRect(0, 0, 10000, HEADER_HEIGHT), FALSE);
+
+    // refaz as cores do texto digitado (com atraso, para nao pesar a digitacao)
+    SetTimer(1, 350, NULL);
+}
+
+void COECursorPeekDlg::OnTimer(UINT_PTR nIDEvent)
+{
+    if (nIDEvent == 1)
+    {
+        KillTimer(1);
+        // formatar o texto tambem dispara EN_CHANGE: nao conta como edicao do usuario
+        const bool wasSyncing = m_bSyncing;
+        m_bSyncing = true;
+        ApplySyntaxHighlighting();
+        m_bSyncing = wasSyncing;
+        return;
+    }
+    CWnd::OnTimer(nIDEvent);
+}
+
+void COECursorPeekDlg::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* /*lpncsp*/)
+{
+    // sem moldura do sistema: a area cliente e a janela inteira (a borda fina e desenhada em OnPaint);
+    // o redimensionamento continua por OnNcHitTest e a sombra do sistema continua pelo estilo WS_THICKFRAME
 }
 
 void COECursorPeekDlg::SyncToEditor()
@@ -1064,7 +954,7 @@ void COECursorPeekDlg::ApplySyntaxHighlighting()
     ZeroMemory(&cfDefault, sizeof(cfDefault));
     cfDefault.cbSize = sizeof(cfDefault);
     cfDefault.dwMask = CFM_COLOR | CFM_BOLD | CFM_ITALIC;
-    cfDefault.crTextColor = RGB(0, 0, 0);
+    cfDefault.crTextColor = ModernTheme::Text;
     cfDefault.dwEffects = 0;
 
     m_editCtrl.SetSel(0, -1);
@@ -1084,13 +974,27 @@ void COECursorPeekDlg::ApplySyntaxHighlighting()
         L"LOWER", L"TRIM", L"RTRIM", L"LTRIM", L"SYSDATE", L"ROWNUM", L"ROWID",
         L"VARCHAR2", L"NUMBER", L"DATE", L"BOOLEAN", L"CHAR", L"CLOB", L"BLOB",
         L"INTEGER", L"TIMESTAMP", L"TYPE", L"ROWTYPE", L"RECORD", L"TABLE", L"OF",
-        L"INDEX", L"BINARY_INTEGER", L"PLS_INTEGER", L"TRUE", L"FALSE", L"DEFAULT"
+        L"INDEX", L"BINARY_INTEGER", L"PLS_INTEGER", L"TRUE", L"FALSE", L"DEFAULT",
+        L"WITH", L"CONNECT", L"START", L"PRIOR", L"LEVEL", L"OVER", L"PARTITION", L"ROWS", L"UNBOUNDED", L"PRECEDING",
+        L"FOLLOWING", L"CURRENT", L"ROW", L"FOR", L"UPDATE", L"NOWAIT", L"SKIP", L"LOCKED", L"MERGE", L"USING", L"MATCHED",
+        L"ASC", L"DESC", L"NULLS", L"FIRST", L"LAST", L"ANY", L"SOME", L"ESCAPE", L"OFFSET", L"FETCH", L"NEXT", L"ONLY"
     };
 
-    COLORREF colKeyword = RGB(0, 70, 215);       // Azul elegante
-    COLORREF colString  = RGB(163, 21, 21);     // Marrom/vermelho escuro
-    COLORREF colComment = RGB(0, 128, 0);       // Verde escuro
-    COLORREF colNumber  = RGB(9, 134, 88);      // Verde petróleo
+    // funcoes internas (colorizadas a parte das palavras-chave)
+    static const std::unordered_set<std::wstring> s_functions = {
+        L"COUNT", L"SUM", L"AVG", L"MIN", L"MAX", L"NVL", L"NVL2", L"COALESCE", L"DECODE", L"SUBSTR", L"INSTR",
+        L"TO_CHAR", L"TO_DATE", L"TO_NUMBER", L"UPPER", L"LOWER", L"TRIM", L"RTRIM", L"LTRIM", L"LENGTH", L"REPLACE",
+        L"TRUNC", L"ROUND", L"NULLIF", L"LISTAGG", L"ROW_NUMBER", L"RANK", L"DENSE_RANK", L"LAG", L"LEAD",
+        L"ADD_MONTHS", L"MONTHS_BETWEEN", L"LAST_DAY", L"SYSDATE", L"SYSTIMESTAMP", L"CURRENT_DATE"
+    };
+
+    // mesmas cores do editor (claras e escuras)
+    const bool dark = ModernTheme::IsDark();
+    COLORREF colKeyword  = dark ? RGB(198, 140, 255) : RGB(122,  63, 181);
+    COLORREF colFunction = dark ? RGB(110, 170, 240) : RGB( 27, 110, 194);
+    COLORREF colString   = dark ? RGB(120, 205, 150) : RGB( 10, 125,  79);
+    COLORREF colComment  = dark ? RGB(120, 128, 140) : RGB(138, 146, 156);
+    COLORREF colNumber   = dark ? RGB(240, 165,  95) : RGB(180,  83,   9);
 
     auto applyFormat = [&](int start, int end, COLORREF color, bool bold) {
         if (start < end && start >= 0)
@@ -1232,10 +1136,10 @@ void COECursorPeekDlg::ApplySyntaxHighlighting()
                     ++i;
                 }
 
-                if (s_keywords.find(word) != s_keywords.end())
-                {
-                    applyFormat(lineStart + start, lineStart + i, colKeyword, true);
-                }
+                if (s_functions.find(word) != s_functions.end())
+                    applyFormat(lineStart + start, lineStart + i, colFunction, false);
+                else if (s_keywords.find(word) != s_keywords.end())
+                    applyFormat(lineStart + start, lineStart + i, colKeyword, false);
                 continue;
             }
             // Número

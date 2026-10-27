@@ -20,6 +20,7 @@
 #include "OpenEditor/OEHighlighter.h"
 #include "OpenEditor/OEViewPaintAccessories.h"
 #include "Common/MyUtf.h"
+#include "Theme/ModernTheme.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -193,13 +194,13 @@ void COEViewPaintAccessories::OnSettingsChanged (CWnd* pwnd, const VisualAttribu
 
 // ruler
     // visual moderno: regua e margem em tons suaves (somente cores)
-    m_COLOR_BTNHIGHLIGHT  = RGB(255, 255, 255);
-    m_COLOR_BTNFACE = RGB(246, 247, 249);
-    m_COLOR_BTNTEXT = RGB(138, 146, 156);
-    m_COLOR_BTNSHADOW = RGB(205, 210, 218);
+    m_COLOR_BTNHIGHLIGHT  = ModernTheme::Surface;
+    m_COLOR_BTNFACE = ModernTheme::SurfaceAlt;
+    m_COLOR_BTNTEXT = ModernTheme::GutterText;
+    m_COLOR_BTNSHADOW = ModernTheme::BorderStrong;
 
     m_RulerPen.DeleteObject();
-    m_RulerPen.CreatePen(PS_SOLID, 1, m_COLOR_BTNFACE);
+    m_RulerPen.CreatePen(PS_SOLID, 1, ModernTheme::IsDark() ? ModernTheme::Border : m_COLOR_BTNFACE);
 
     m_IndentGuidelinePen.DeleteObject();
 

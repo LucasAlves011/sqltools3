@@ -2,6 +2,23 @@ SQLTools Changelog
 ==================
 
 
+3.3.0
+-----
+  * New modern look across the whole application: flat toolbars, tabs, status
+    bar, panels and grid, with a refreshed set of vector icons.
+  * New Objects List (Alt+3): type bar, favorite owners, filters, status badges
+    and a configuration button.
+  * Redesigned Connect dialog, Settings, DDL preferences and all other dialogs
+    and message boxes, with modern checkboxes, buttons, combos and spin buttons.
+  * Dark theme: View > Dark Theme (takes effect the next time SQLTools starts).
+    It covers the editor, grids, panels, dialogs, menus and icons.
+  * Cursor peek: modern look, dark theme, syntax colors while typing and more
+    SQL keywords and functions.
+  * Editor: continuous change bar in the margin, spaced execution arrow, ruler
+    off by default. Value panel and Output icons modernized.
+  * The row number column of the grid adjusts its width to the number of rows.
+
+
 3.2.0
 -----
   * Release used to validate the update flow (no functional changes).

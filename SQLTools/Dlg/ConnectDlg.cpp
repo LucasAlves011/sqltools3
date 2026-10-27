@@ -533,8 +533,8 @@ void CConnectDlg::OnCustomDraw_Profiles (NMHDR* pNMHDR, LRESULT* pResult)
         const int item = (int)cd->nmcd.dwItemSpec;
         const bool selected = (m_profiles.GetItemState(item, LVIS_SELECTED) & LVIS_SELECTED) != 0;
         cd->clrText   = Text;
-        cd->clrTextBk = selected ? ((::GetFocus() == m_profiles.m_hWnd) ? AccentTint : RGB(238, 240, 244))
-                                 : ((item & 1) ? RGB(250, 251, 252) : Surface);
+        cd->clrTextBk = selected ? ((::GetFocus() == m_profiles.m_hWnd) ? AccentTint : SelInactive)
+                                 : ((item & 1) ? RowAlt : Surface);
         cd->nmcd.uItemState &= ~(CDIS_SELECTED | CDIS_FOCUS);
         *pResult = CDRF_NEWFONT;
         break;

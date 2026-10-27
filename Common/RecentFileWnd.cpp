@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "Theme/ModernTheme.h"
 #include "Resource.h"
 #include "RecentFileWnd.h"
 #include  "FileExplorerWnd.h"
@@ -129,7 +130,7 @@ void RecentFileWnd::OnPaint()
     ScreenToClient(rectTree);
 
     rectTree.InflateRect(1, 1);
-    dc.Draw3dRect(rectTree, ::GetSysColor(COLOR_3DSHADOW), ::GetSysColor(COLOR_3DSHADOW));
+    dc.Draw3dRect(rectTree, ModernTheme::SysColor(COLOR_3DSHADOW), ModernTheme::SysColor(COLOR_3DSHADOW));
 }
 
 void RecentFileWnd::OnSetFocus(CWnd* pOldWnd)

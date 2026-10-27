@@ -36,6 +36,7 @@ using namespace MyMemDC;
 
 #include "OpenEditor/OEDocument.h"
 #include "OpenEditor/OEView.h"
+#include "Theme/ModernTheme.h"
 #include "OpenEditor/OEHighlighter.h"
 
 #ifdef _DEBUG
@@ -75,7 +76,7 @@ void COEditorView::DrawLineNumber (CDC& dc, RECT rc, int line)
     if (IsBookmarked(line, eBmkGroup1))
         numberColor = RGB(255, 255, 255);
     else if (GetPosition().line == line)
-        numberColor = RGB(31, 35, 40);
+        numberColor = ModernTheme::Text;
     dc.SetTextColor(numberColor);
 
     CFont* pOrgFont = m_paintAccessories->SelectFontEx(dc, 0);
@@ -518,7 +519,7 @@ void COEditorView::OnPaint ()
         memDc.SetViewportOrg(-rcLine.left, 0);
 
         CPen* pOrgdMemDcPen = memDc.SelectObject(&m_paintAccessories->m_RulerPen);
-        memDc.SetROP2(R2_NOTXORPEN);
+        memDc.SetROP2(ModernTheme::IsDark() ? R2_COPYPEN : R2_NOTXORPEN);   // no tema escuro o XOR daria uma linha clara
 
         bool columnMarkers = settings.GetColumnMarkers();
         const vector<int>& columnMarkersSet = settings.GetColumnMarkersSet();
@@ -578,7 +579,7 @@ void COEditorView::OnPaint ()
                     int guideX = m_Rulers[0].InxToPix(m_braceHighlighting.offset[0] - m_Rulers[0].m_Topmost);
                     if (guideX >= (int)m_Rulers[0].m_Indent)
                     {
-                        COLORREF scopeLineCol = RGB(0, 160, 230);
+                        COLORREF scopeLineCol = ModernTheme::Scope;
                         if (actualLine == m_braceHighlighting.line[0])
                         {
                             CRect rcGuide(guideX, rcLine.top + rcLine.Height() / 2, guideX + 2, rcLine.bottom);
@@ -613,8 +614,8 @@ void COEditorView::OnPaint ()
                     rcBar.right  = m_Rulers[0].InxToPix(m_braceHighlighting.offset[j] - m_Rulers[0].m_Topmost + m_braceHighlighting.length[j]);
                     if (!m_braceHighlighting.broken)
                     {
-                        memDc.FillSolidRect(&rcBar, RGB(220, 235, 252));
-                        memDc.Draw3dRect(&rcBar, RGB(0, 120, 215), RGB(0, 120, 215));
+                        memDc.FillSolidRect(&rcBar, ModernTheme::ScopeFill);
+                        memDc.Draw3dRect(&rcBar, ModernTheme::ScopeBorder, ModernTheme::ScopeBorder);
                     }
                     else
                         memDc.FillSolidRect(&rcBar, m_paintAccessories->m_ErrorHighlightingBackground);
@@ -630,8 +631,8 @@ void COEditorView::OnPaint ()
                 rcExprBox.bottom = rcLine.bottom;
                 rcExprBox.left   = m_Rulers[0].InxToPix(m_braceHighlighting.exprOffset - m_Rulers[0].m_Topmost);
                 rcExprBox.right  = m_Rulers[0].InxToPix(m_braceHighlighting.exprOffset - m_Rulers[0].m_Topmost + m_braceHighlighting.exprLength);
-                memDc.FillSolidRect(&rcExprBox, RGB(220, 235, 252));
-                memDc.Draw3dRect(&rcExprBox, RGB(0, 120, 215), RGB(0, 120, 215));
+                memDc.FillSolidRect(&rcExprBox, ModernTheme::ScopeFill);
+                memDc.Draw3dRect(&rcExprBox, ModernTheme::ScopeBorder, ModernTheme::ScopeBorder);
             }
 
             // Sublinhado da expressão (ex: IF/FOR até THEN/LOOP)
@@ -667,7 +668,7 @@ void COEditorView::OnPaint ()
                     startX = max(startX, (int)m_Rulers[0].m_Indent);
                     if (endX > startX)
                     {
-                        COLORREF scopeLineCol = RGB(0, 160, 230);
+                        COLORREF scopeLineCol = ModernTheme::Scope;
                         CRect rcExprLine(startX, rcLine.bottom - 2, endX, rcLine.bottom);
                         memDc.FillSolidRect(&rcExprLine, scopeLineCol);
                     }

@@ -116,6 +116,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+    afx_msg void OnPaint();
     afx_msg void OnCustomDrawList(NMHDR* pNMHDR, LRESULT* pResult);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
     afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);

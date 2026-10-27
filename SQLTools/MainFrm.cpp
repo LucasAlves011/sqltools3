@@ -24,6 +24,7 @@
 #include "SQLTools.h"
 #include "Update/UpdateManager.h"
 #include "Theme/ModernTheme.h"
+#include "Theme/ModernDark.h"
 #include "MainFrm.h"
 #include "Tools/Grep/GrepDlg.h"
 #include "ConnectionTasks.h"
@@ -259,6 +260,8 @@ int CMDIMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     //DockPane(&m_wndConnectionBar);
     DockPane(&m_wndSqlToolBar);
     DockPaneLeftOf(&m_wndConnectionBar, &m_wndSqlToolBar);
+
+    ModernDark::RecolorBitmap(CMFCToolBar::GetImages()->GetImageWell(), true);   // icones das barras no tema escuro
 
 
     if (!m_wndObjectViewerFrame.Create(lpszQuickViewer, this, CSize(200, 300), TRUE, IDC_MF_DBTREE_BAR)

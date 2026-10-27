@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include <sstream>
 #include "GridManager.h"
+#include "Theme/ModernTheme.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -55,16 +56,16 @@ PaintGridManager::PaintGridManager (CWnd* client, AGridSource* source, bool shou
 void PaintGridManager::InitColors ()
 {
     // visual moderno: paleta suave, cabecalho plano e linhas finas (somente cores)
-    m_Dcc.m_TextColor           = RGB( 31,  35,  40);
-    m_Dcc.m_BkColor[0]          = RGB(255, 255, 255);
-    m_Dcc.m_BkColor[1]          = RGB(248, 250, 252);
-    m_Dcc.m_FixTextColor        = RGB( 91, 101, 115);
-    m_Dcc.m_FixBkColor          = RGB(243, 245, 248);
-    m_Dcc.m_FixShdColor         = RGB(217, 222, 229);
-    m_Dcc.m_LightColor          = RGB(255, 255, 255);
-    m_Dcc.m_UnusedColor         = RGB(255, 255, 255);
-    m_Dcc.m_HightLightColor     = RGB(207, 224, 253);
-    m_Dcc.m_HightLightTextColor = RGB( 31,  35,  40);
+    m_Dcc.m_TextColor           = ModernTheme::Text;
+    m_Dcc.m_BkColor[0]          = ModernTheme::Surface;
+    m_Dcc.m_BkColor[1]          = ModernTheme::GridAlt;
+    m_Dcc.m_FixTextColor        = ModernTheme::TextMuted;
+    m_Dcc.m_FixBkColor          = ModernTheme::GridFix;
+    m_Dcc.m_FixShdColor         = ModernTheme::GridFixShadow;
+    m_Dcc.m_LightColor          = ModernTheme::Surface;
+    m_Dcc.m_UnusedColor         = ModernTheme::Surface;
+    m_Dcc.m_HightLightColor     = ModernTheme::AccentStrong;
+    m_Dcc.m_HightLightTextColor = ModernTheme::Text;
 
     m_Dcc.m_BkBrush[0].DeleteObject();
     m_Dcc.m_BkBrush[0].CreateSolidBrush(m_Dcc.m_BkColor[0]);
@@ -325,8 +326,8 @@ void PaintGridManager::Paint (CDC& dc, bool erase_flag, const CRect& rect)
     int lim[4];
     m_Rulers[edHorz].GetDataLoc(lim);
     m_Rulers[edVert].GetDataLoc(lim+2);
-    drawLines(edHorz, dc, lim, RGB(236, 239, 243));
-    drawLines(edVert, dc, lim, RGB(236, 239, 243));
+    drawLines(edHorz, dc, lim, ModernTheme::GridLine);
+    drawLines(edVert, dc, lim, ModernTheme::GridLine);
 
     if (m_Rulers[edVert].GetFirstFixCount())
     {
@@ -368,14 +369,14 @@ void PaintGridManager::Paint (CDC& dc, bool erase_flag, const CRect& rect)
     } catch (const out_of_range& x) {
         CRect rc;
         m_pClientWnd->GetClientRect(rc);
-        dc.FillSolidRect(rect, RGB(255,255,255));
+        dc.FillSolidRect(rect, ModernTheme::Surface);
         ostringstream o;
         o << "Unexpected exception \"" << x.what() << "\" is being caught in PaintGridManager::Paint.\n\n"
              "Due to this problem, I recommend save the file and open it in a new window.\n"
              "Please make a post about this problem in <http://www.sqltools.net/cgi-bin/yabb2/YaBB.pl>."
              "Thank you\n";
         string text = o.str();
-        dc.SetBkColor(RGB(255,255,255));
+        dc.SetBkColor(ModernTheme::Surface);
         dc.SetTextColor(RGB(255,0,0));
         ::DrawTextA(dc.m_hDC, text.data(), text.length(), rc, DT_LEFT|DT_TOP);
     }

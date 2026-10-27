@@ -20,6 +20,7 @@
 #include "Common/PropertySheetMem.h"
 #include "Theme/ModernDialog.h"
 #include "Theme/ModernDraw.h"
+#include "Theme/ModernDark.h"
 #include <uxtheme.h>
 
 #pragma comment(lib, "uxtheme.lib")
@@ -62,7 +63,7 @@ int CustomTreeCtrl::OnCreate (LPCREATESTRUCT cs)
         return -1;
     if (m_modern)
     {
-        ::SetWindowTheme(m_hWnd, L"Explorer", NULL);   // barras de rolagem finas do Windows moderno
+        ::SetWindowTheme(m_hWnd, ModernDark::ControlTheme(), NULL);   // barras de rolagem finas do Windows moderno
         SetBkColor(ModernTheme::Surface);
         SetTextColor(ModernTheme::Text);
         SetIndent(10);

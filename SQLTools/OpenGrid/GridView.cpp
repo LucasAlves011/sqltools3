@@ -46,6 +46,7 @@
 
 // the following section is included only for OnGridSettings
 #include "COMMON/VisualAttributesPage.h"
+#include "Theme/ModernTheme.h"
 #include "Dlg/PropGridPage.h"
 #include "Dlg/PropGridOutputPage.h"
 #include "Dlg/PropHistoryPage.h"
@@ -453,8 +454,10 @@ HBRUSH GridView::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
     if (nCtlColor == CTLCOLOR_EDIT
     || nCtlColor == CTLCOLOR_STATIC)
     {
-        pDC->SetBkColor(RGB(255,255,255));
-        return (HBRUSH)::GetStockObject(WHITE_BRUSH);
+        static CBrush surface(ModernTheme::Surface);
+        pDC->SetBkColor(ModernTheme::Surface);
+        pDC->SetTextColor(ModernTheme::Text);
+        return (HBRUSH)surface.GetSafeHandle();
     }
     else
         return CView::OnCtlColor(pDC, pWnd, nCtlColor);

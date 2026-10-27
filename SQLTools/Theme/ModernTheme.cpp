@@ -28,8 +28,135 @@ CModernVisualManager::CModernVisualManager ()
     m_bFadeInactiveImage      = FALSE;
 }
 
+namespace ModernTheme
+{
+    COLORREF Text = RGB( 31,  35,  40);
+    COLORREF TextMuted = RGB( 91, 101, 115);
+    COLORREF Surface = RGB(255, 255, 255);
+    COLORREF SurfaceAlt = RGB(245, 246, 248);
+    COLORREF Border = RGB(226, 229, 234);
+    COLORREF BorderStrong = RGB(207, 213, 221);
+    COLORREF Accent = RGB( 47, 111, 237);
+    COLORREF AccentTint = RGB(230, 238, 253);
+    COLORREF AccentStrong = RGB(207, 224, 253);
+    COLORREF Danger = RGB(214,  69,  65);
+    COLORREF Success = RGB( 22, 136,  84);
+    COLORREF Favorite = RGB(240, 160,   0);
+    COLORREF TextDisabled = RGB(154, 161, 171);
+    COLORREF Hover = RGB(228, 231, 237);
+    COLORREF Pressed = RGB(214, 218, 226);
+    COLORREF RowAlt = RGB(250, 251, 252);
+    COLORREF SelInactive = RGB(238, 240, 244);
+    COLORREF GridAlt = RGB(248, 250, 252);
+    COLORREF GridFix = RGB(243, 245, 248);
+    COLORREF GridFixShadow = RGB(217, 222, 229);
+    COLORREF GridLine = RGB(236, 239, 243);
+    COLORREF Dim = RGB(190, 196, 205);
+    COLORREF DimStrong = RGB(201, 206, 214);
+    COLORREF ValidBg = RGB(225, 245, 236);
+    COLORREF InvalidBg = RGB(253, 232, 232);
+    COLORREF WarnBg = RGB(254, 243, 214);
+    COLORREF WarnText = RGB(168, 104,   0);
+    COLORREF AccentHover = RGB( 62, 125, 245);
+    COLORREF AccentPressed = RGB( 35,  90, 200);
+    COLORREF Scope = RGB(  0, 160, 230);
+    COLORREF ScopeFill = RGB(220, 235, 252);
+    COLORREF ScopeBorder = RGB(  0, 120, 215);
+    COLORREF CaptionClose = RGB(236, 238, 242);
+    COLORREF GutterText = RGB(138, 146, 156);
+
+    static bool g_dark = false;
+
+    bool IsDark ()
+    {
+        return g_dark;
+    }
+
+    void ApplyPalette (bool dark)
+    {
+        g_dark = dark;
+    Text = dark ? RGB(230, 233, 238) : RGB( 31,  35,  40);
+    TextMuted = dark ? RGB(150, 158, 170) : RGB( 91, 101, 115);
+    Surface = dark ? RGB( 30,  32,  36) : RGB(255, 255, 255);
+    SurfaceAlt = dark ? RGB( 38,  41,  47) : RGB(245, 246, 248);
+    Border = dark ? RGB( 54,  58,  66) : RGB(226, 229, 234);
+    BorderStrong = dark ? RGB( 74,  79,  90) : RGB(207, 213, 221);
+    Accent = dark ? RGB( 96, 152, 255) : RGB( 47, 111, 237);
+    AccentTint = dark ? RGB( 36,  52,  84) : RGB(230, 238, 253);
+    AccentStrong = dark ? RGB( 48,  72, 120) : RGB(207, 224, 253);
+    Danger = dark ? RGB(240,  98,  92) : RGB(214,  69,  65);
+    Success = dark ? RGB( 56, 189, 126) : RGB( 22, 136,  84);
+    Favorite = dark ? RGB(240, 170,  40) : RGB(240, 160,   0);
+    TextDisabled = dark ? RGB(112, 118, 130) : RGB(154, 161, 171);
+    Hover = dark ? RGB( 54,  59,  68) : RGB(228, 231, 237);
+    Pressed = dark ? RGB( 66,  72,  84) : RGB(214, 218, 226);
+    RowAlt = dark ? RGB( 34,  36,  41) : RGB(250, 251, 252);
+    SelInactive = dark ? RGB( 48,  52,  60) : RGB(238, 240, 244);
+    GridAlt = dark ? RGB( 34,  36,  41) : RGB(248, 250, 252);
+    GridFix = dark ? RGB( 41,  44,  50) : RGB(243, 245, 248);
+    GridFixShadow = dark ? RGB( 60,  65,  74) : RGB(217, 222, 229);
+    GridLine = dark ? RGB( 48,  52,  60) : RGB(236, 239, 243);
+    Dim = dark ? RGB(100, 106, 118) : RGB(190, 196, 205);
+    DimStrong = dark ? RGB( 84,  90, 102) : RGB(201, 206, 214);
+    ValidBg = dark ? RGB( 28,  58,  46) : RGB(225, 245, 236);
+    InvalidBg = dark ? RGB( 70,  36,  38) : RGB(253, 232, 232);
+    WarnBg = dark ? RGB( 72,  58,  26) : RGB(254, 243, 214);
+    WarnText = dark ? RGB(232, 184,  76) : RGB(168, 104,   0);
+    AccentHover = dark ? RGB(122, 172, 255) : RGB( 62, 125, 245);
+    AccentPressed = dark ? RGB( 72, 124, 226) : RGB( 35,  90, 200);
+    Scope = dark ? RGB( 70, 180, 240) : RGB(  0, 160, 230);
+    ScopeFill = dark ? RGB( 36,  54,  84) : RGB(220, 235, 252);
+    ScopeBorder = dark ? RGB( 70, 140, 230) : RGB(  0, 120, 215);
+    CaptionClose = dark ? RGB( 60,  65,  74) : RGB(236, 238, 242);
+    GutterText = dark ? RGB(120, 128, 140) : RGB(138, 146, 156);
+    }
+
+    COLORREF SysColor (int index)
+    {
+        if (g_dark)
+        {
+            switch (index)
+            {
+            case COLOR_WINDOW:        return Surface;
+            case COLOR_WINDOWTEXT:
+            case COLOR_BTNTEXT:
+            case COLOR_HIGHLIGHTTEXT: return Text;
+            case COLOR_BTNFACE:       return SurfaceAlt;
+            case COLOR_HIGHLIGHT:     return AccentStrong;
+            case COLOR_GRAYTEXT:      return TextMuted;
+            case COLOR_BTNSHADOW:     return BorderStrong;   // = COLOR_3DSHADOW
+            }
+        }
+        return ::GetSysColor(index);
+    }
+
+    bool LoadThemeSetting ()
+    {
+        return AfxGetApp()->GetProfileInt(L"Appearance", L"DarkTheme", 0) != 0;
+    }
+
+    void SaveThemeSetting (bool dark)
+    {
+        AfxGetApp()->WriteProfileInt(L"Appearance", L"DarkTheme", dark ? 1 : 0);
+    }
+}
+
 void CModernVisualManager::OnUpdateSystemColors ()
 {
+    if (IsDark())
+    {
+        // tema escuro: as cores de sistema usadas pelo MFC (barras, menus, textos) passam a ser as da paleta
+        afxGlobalData.clrBtnFace = afxGlobalData.clrBarFace = SurfaceAlt;
+        afxGlobalData.clrBtnText = afxGlobalData.clrBarText = afxGlobalData.clrWindowText = Text;
+        afxGlobalData.clrWindow = Surface;
+        afxGlobalData.clrBtnLight = Border;
+        afxGlobalData.clrBtnHilite = BorderStrong;
+        afxGlobalData.clrGrayedText = TextDisabled;
+        afxGlobalData.brBtnFace.DeleteObject();  afxGlobalData.brBtnFace.CreateSolidBrush(SurfaceAlt);
+        afxGlobalData.brBarFace.DeleteObject();  afxGlobalData.brBarFace.CreateSolidBrush(SurfaceAlt);
+        afxGlobalData.brWindow.DeleteObject();   afxGlobalData.brWindow.CreateSolidBrush(Surface);
+    }
+
     CMFCVisualManagerOfficeXP::OnUpdateSystemColors();
 
     m_clrBarBkgnd            = Surface;
@@ -102,7 +229,7 @@ void CModernVisualManager::OnDrawTabCloseButton (CDC* pDC, CRect rect, const CMF
     Gdiplus::Graphics g(pDC->GetSafeHdc());
     g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
     if (bIsHighlighted && !bIsDisabled)
-        ModernDraw::FillRoundRect(g, rect, 4.0f, bIsPressed ? RGB(214, 218, 226) : RGB(228, 231, 237));
+        ModernDraw::FillRoundRect(g, rect, 4.0f, bIsPressed ? Pressed : Hover);
 
     Gdiplus::Pen pen(ModernDraw::Clr(bIsDisabled ? BorderStrong : (bIsHighlighted ? Text : TextMuted)), 1.4f);
     pen.SetStartCap(Gdiplus::LineCapRound);
@@ -173,7 +300,7 @@ void CModernVisualManager::OnEraseTabsButton (CDC* pDC, CRect rect, CMFCButton* 
         g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
         CRect pad(rect);
         pad.DeflateRect(2, 3);
-        ModernDraw::FillRoundRect(g, pad, 5.0f, pButton->IsPressed() ? RGB(214, 218, 226) : RGB(228, 231, 237));
+        ModernDraw::FillRoundRect(g, pad, 5.0f, pButton->IsPressed() ? Pressed : Hover);
     }
 }
 
@@ -268,7 +395,7 @@ namespace
 COLORREF CModernVisualManager::OnFillMiniFrameCaption (CDC* pDC, CRect rectCaption, CPaneFrameWnd* pFrameWnd, BOOL /*bActive*/)
 {
     if (pFrameWnd)
-        EnsureWindowShadow(pFrameWnd->GetSafeHwnd());
+        if (!IsDark()) EnsureWindowShadow(pFrameWnd->GetSafeHwnd());
     pDC->FillSolidRect(rectCaption, Surface);
     pDC->FillSolidRect(rectCaption.left, rectCaption.bottom - 1, rectCaption.Width(), 1, Border);
     return Text;
@@ -316,7 +443,8 @@ namespace
 {
     const wchar_t* const SECTION = L"Appearance";
     const wchar_t* const KEY_THEME_VERSION = L"ModernThemeVersion";
-    const int THEME_VERSION = 4;
+    const int THEME_VERSION = 5;
+    const wchar_t* const KEY_APPLIED_DARK = L"AppliedDark";
 
     void copyIfAbsent (const wchar_t* fileName)
     {
@@ -328,6 +456,27 @@ namespace
     }
 
     struct EditorStyle { const char* name; COLORREF fg; bool bold, italic, underline; };
+
+    // Editor, tema escuro
+    const EditorStyle EDITOR_STYLES_DARK[] =
+    {
+        { "SQL Keywords",     RGB(198, 140, 255), false, false, false },
+        { "SQL Functions",    RGB(110, 170, 240), false, false, false },
+        { "PL/SQL Keywords",  RGB(198, 140, 255), false, false, false },
+        { "SYS Packages",     RGB( 80, 200, 215), false, false, false },
+        { "Operators",        RGB(210, 214, 222), false, false, false },
+        { "String",           RGB(120, 205, 150), false, false, false },
+        { "Number",           RGB(240, 165,  95), false, false, false },
+        { "Comment",          RGB(120, 128, 140), false, true,  false },
+        { "Line Comment",     RGB(120, 128, 140), false, true,  false },
+        { "Bind Variable",    RGB(245, 140,  90), false, false, false },
+        { "Substitution",     RGB(245, 140,  90), false, false, false },
+        { "File name (@ & @@)", RGB( 80, 200, 215), false, false, false },
+        { "Other Keywords",   RGB(198, 140, 255), false, false, false },
+        { "User Objects",     RGB( 80, 200, 215), false, false, false },
+        { "Keywords",         RGB(198, 140, 255), false, false, false },
+        { "End of File",      RGB(100, 106, 118), false, false, false },
+    };
 
     // Editor: apenas cores e estilo de fonte dos atributos que ja existem
     const EditorStyle EDITOR_STYLES[] =
@@ -378,7 +527,7 @@ namespace
                 }
                 else if (name == "Current Line")
                 {
-                    attr.m_Background = RGB(246, 248, 252);
+                    attr.m_Background = IsDark() ? RGB(36, 39, 46) : RGB(246, 248, 252);
                 }
                 else if (name == "Bookmark")
                 {
@@ -391,22 +540,23 @@ namespace
                 }
                 else if (name == "Highlighting")
                 {
-                    attr.m_Background = RGB(236, 243, 254);
+                    attr.m_Background = IsDark() ? RGB(36, 52, 84) : RGB(236, 243, 254);
                 }
                 else if (name == "Error Highlighting")
                 {
-                    attr.m_Background = RGB(253, 226, 226);
+                    attr.m_Background = IsDark() ? RGB(88, 40, 44) : RGB(253, 226, 226);
                 }
                 else
                 {
+                    const EditorStyle* styles = IsDark() ? EDITOR_STYLES_DARK : EDITOR_STYLES;
                     for (size_t k = 0; k < sizeof(EDITOR_STYLES) / sizeof(EDITOR_STYLES[0]); ++k)
                     {
-                        if (name == EDITOR_STYLES[k].name)
+                        if (name == styles[k].name)
                         {
-                            attr.m_Foreground = EDITOR_STYLES[k].fg;
-                            attr.m_FontBold = EDITOR_STYLES[k].bold;
-                            attr.m_FontItalic = EDITOR_STYLES[k].italic;
-                            attr.m_FontUnderline = EDITOR_STYLES[k].underline;
+                            attr.m_Foreground = styles[k].fg;
+                            attr.m_FontBold = styles[k].bold;
+                            attr.m_FontItalic = styles[k].italic;
+                            attr.m_FontUnderline = styles[k].underline;
                             break;
                         }
                     }
@@ -444,6 +594,8 @@ namespace
                     {
                         attr.m_FontName = FONTS[f].font;
                         attr.m_FontSize = FONTS[f].size;
+                        attr.m_Foreground = Text;
+                        attr.m_Background = Surface;
                         changed = true;
                     }
                 }
@@ -459,7 +611,9 @@ bool ModernTheme::ApplyOnce ()
 
     try
     {
-        if (app->GetProfileInt(SECTION, KEY_THEME_VERSION, 0) >= THEME_VERSION)
+        // reaplica quando a versao do tema muda ou quando o usuario troca entre claro e escuro
+        if (app->GetProfileInt(SECTION, KEY_THEME_VERSION, 0) >= THEME_VERSION
+        && app->GetProfileInt(SECTION, KEY_APPLIED_DARK, 0) == (IsDark() ? 1 : 0))
             return false;
 
         // copia de seguranca das configuracoes de aparencia (so na primeira vez)
@@ -470,6 +624,7 @@ bool ModernTheme::ApplyOnce ()
         bool changed = applyWindowFonts();
 
         app->WriteProfileInt(SECTION, KEY_THEME_VERSION, THEME_VERSION);
+        app->WriteProfileInt(SECTION, KEY_APPLIED_DARK, IsDark() ? 1 : 0);
         return changed;
     }
     catch (...)

@@ -254,7 +254,7 @@ protected:
 
             // estrela
             dc.SelectObject(&UiFont());
-            dc.SetTextColor(fav ? Favorite : RGB(195, 200, 208));
+            dc.SetTextColor(fav ? Favorite : Dim);
             dc.DrawText(fav ? L"\x2605" : L"\x2606", CRect(r.left + 12, r.top, r.left + 34, r.bottom), DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
             // nome
@@ -265,7 +265,7 @@ protected:
             // alca de arrastar (so favoritos)
             if (row.kind == 1)
             {
-                Gdiplus::SolidBrush dot(Clr(RGB(190, 196, 205)));
+                Gdiplus::SolidBrush dot(Clr(Dim));
                 float cx = (float)r.right - 24.0f, cy = (float)r.CenterPoint().y;
                 for (int a = 0; a < 2; ++a)
                     for (int b = -1; b <= 1; ++b)
@@ -280,7 +280,7 @@ protected:
             float ratio = (float)m_listH / (float)m_contentH;
             int h = (std::max)(24, (int)(m_listH * ratio));
             int y = lr.top + (int)((float)(m_listH - h) * (float)m_scroll / (float)(m_contentH - m_listH));
-            FillRoundRect(g, CRect(WIDTH - 8, y + 2, WIDTH - 4, y + h - 2), 2.0f, RGB(200, 205, 213));
+            FillRoundRect(g, CRect(WIDTH - 8, y + 2, WIDTH - 4, y + h - 2), 2.0f, DimStrong);
         }
 
         // rodape

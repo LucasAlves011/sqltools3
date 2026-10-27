@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "ValueFormatters.h"
+#include "Theme/ModernTheme.h"
 #include <sstream>
 #include <iomanip>
 #include <cctype>
@@ -625,18 +626,34 @@ std::wstring ValueFormatters::ProcessValue(
     }
 }
 
-static const char* s_rtfHeader =
-    "{\\rtf1\\ansi\\ansicpg1252\\deff0"
-    "{\\fonttbl{\\f0\\fnil\\fcharset0 Consolas;}}"
-    "{\\colortbl ;"
-    "\\red107\\green114\\blue128;" // cf1: delimiters < > / = { } [ ] , :
-    "\\red122\\green63\\blue181;"  // cf2: tag names / json keys
-    "\\red180\\green83\\blue9;"    // cf3: attr names / numbers / booleans
-    "\\red10\\green125\\blue79;"   // cf4: attr values / string values
-    "\\red138\\green146\\blue156;" // cf5: comments / offsets
-    "\\red156\\green163\\blue175;" // cf6: declaration <?xml ... ?>
-    "}"
-    "\\viewkind4\\uc1\\pard\\f0\\fs19 ";
+// cabecalho RTF com a tabela de cores do tema (claro ou escuro)
+static std::string RtfHeader ()
+{
+    struct C { int r, g, b; };
+    static const C light[] = { {107,114,128}, {122,63,181}, {180,83,9}, {10,125,79}, {138,146,156}, {156,163,175} };
+    static const C dark[]  = { {150,158,170}, {198,140,255}, {240,165,95}, {120,205,150}, {120,128,140}, {100,106,118} };
+    const C* colors = ModernTheme::IsDark() ? dark : light;
+
+    // cf1: delimitadores < > / = { } [ ] , :   cf2: nomes de tags / chaves JSON   cf3: nomes de atributos / numeros / booleanos
+    // cf4: valores de atributos / strings   cf5: comentarios / offsets   cf6: declaracao <?xml ... ?>
+    std::string out = "{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fnil\\fcharset0 Consolas;}}{\\colortbl ";
+    if (ModernTheme::IsDark())
+    {
+        // cor 0 explicita (texto comum) no tema escuro: a cor automatica seria preta
+        char buf[64];
+        sprintf_s(buf, "\\red%d\\green%d\\blue%d", GetRValue(ModernTheme::Text), GetGValue(ModernTheme::Text), GetBValue(ModernTheme::Text));
+        out += buf;
+    }
+    out += ";";
+    for (int i = 0; i < 6; ++i)
+    {
+        char buf[64];
+        sprintf_s(buf, "\\red%d\\green%d\\blue%d;", colors[i].r, colors[i].g, colors[i].b);
+        out += buf;
+    }
+    out += "}\\viewkind4\\uc1\\pard\\f0\\fs19 ";
+    return out;
+}
 
 static inline void AppendRtfChar(std::string& out, wchar_t c)
 {
@@ -667,7 +684,7 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
     if (wtext.empty())
         return "";
 
-    std::string out = s_rtfHeader;
+    std::string out = RtfHeader();
     size_t i = 0;
     const size_t len = wtext.size();
 
@@ -824,7 +841,7 @@ std::string ValueFormatters::FormatJsonRtf(const std::string& text, bool autoFor
     if (wtext.empty())
         return "";
 
-    std::string out = s_rtfHeader;
+    std::string out = RtfHeader();
     size_t i = 0;
     const size_t len = wtext.size();
 
@@ -918,7 +935,7 @@ std::string ValueFormatters::FormatBinaryRtf(const std::vector<uint8_t>& bytes)
     if (wtext.empty())
         return "";
 
-    std::string out = s_rtfHeader;
+    std::string out = RtfHeader();
     std::wistringstream in(wtext);
     std::wstring line;
 
@@ -971,7 +988,7 @@ std::string ValueFormatters::FormatTextRtf(const std::string& text, bool compact
     if (wtext.empty())
         return "";
 
-    std::string out = s_rtfHeader;
+    std::string out = RtfHeader();
     out += "\\cf0 ";
     AppendRtfString(out, wtext);
     out += "\r\n}";

@@ -87,7 +87,11 @@ $PaneBar = @('folder', 'folder-open', 'info-circle:blue', 'alert-circle:amber', 
 # --- botoes do dialogo Connect (7; o ultimo e o plugue em cinza, para quando o botao nao e o padrao): conectar (branco, sobre fundo azul), salvar, fechar, testar, excluir, configuracoes ---
 $DialogBar = @('plug-connected:white', 'device-floppy', 'x', 'bolt', 'trash', 'settings', 'plug-connected')
 
+# --- janela de cursor (peek) (9): banco, ir, voltar, copiar, salvar, fixar, fixado, fechar, fechar (branco) ---
+$PeekBar = @('database:blue', 'arrow-bar-to-right:blue', 'arrow-back-up:blue', 'copy', 'device-floppy', 'pin', 'pin:blue', 'x', 'x:white')
+
 $Bars = @(
+    @{ File = 'PeekIcons.bmp';        Size = 16; Glyph = 18; Offset = -1; Icons = $PeekBar },
     @{ File = 'DialogIcons.bmp';      Size = 16; Glyph = 18; Offset = -1; Icons = $DialogBar },
     @{ File = 'PaneIcons.bmp';        Size = 16; Glyph = 18; Offset = -1; Icons = $PaneBar },
     @{ File = 'ObjectListIcons.bmp';  Size = 16; Glyph = 18; Offset = -1; Icons = $ObjectListBar },

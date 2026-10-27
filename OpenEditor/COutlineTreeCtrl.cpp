@@ -18,6 +18,7 @@
 */
 
 #include "stdafx.h"
+#include "Theme/ModernTheme.h"
 #include "COutlineTreeCtrl.h"
 
 BEGIN_MESSAGE_MAP(COutlineTreeCtrl, CTreeCtrl)
@@ -58,11 +59,11 @@ void COutlineTreeCtrl::OnNMCustomdraw (NMHDR* pNMHDR, LRESULT* pResult)
             HTREEITEM hItem = (HTREEITEM)(pNMTVCD->nmcd.dwItemSpec);
 
             if (isSeleted)
-                ::SetBkColor(pNMTVCD->nmcd.hdc, ::GetSysColor(hasFocus ? COLOR_HIGHLIGHT : COLOR_BTNFACE));
+                ::SetBkColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(hasFocus ? COLOR_HIGHLIGHT : COLOR_BTNFACE));
             else
-                ::SetBkColor(pNMTVCD->nmcd.hdc, ::GetSysColor(COLOR_WINDOW));
+                ::SetBkColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_WINDOW));
 
-            ::SetTextColor(pNMTVCD->nmcd.hdc, ::GetSysColor(COLOR_GRAYTEXT));
+            ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_GRAYTEXT));
 
             CString text = GetItemText(hItem);
             int tabPos = text.Find('\t');
@@ -96,7 +97,7 @@ void COutlineTreeCtrl::OnNMCustomdraw (NMHDR* pNMHDR, LRESULT* pResult)
             GetItemRect(hItem, &rc, TRUE);
 
             if (isSeleted && hasFocus)
-                ::SetTextColor(pNMTVCD->nmcd.hdc, ::GetSysColor(COLOR_HIGHLIGHTTEXT));
+                ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_HIGHLIGHTTEXT));
 
             //LONG extentXY = 
             ::TabbedTextOut(pNMTVCD->nmcd.hdc, rc.left + 2, rc.top + 1, text, text.GetLength(),
@@ -110,9 +111,9 @@ void COutlineTreeCtrl::OnNMCustomdraw (NMHDR* pNMHDR, LRESULT* pResult)
             }
 
             if (isSeleted)
-                ::SetTextColor(pNMTVCD->nmcd.hdc, ::GetSysColor(hasFocus ? COLOR_HIGHLIGHTTEXT : COLOR_BTNTEXT));
+                ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(hasFocus ? COLOR_HIGHLIGHTTEXT : COLOR_BTNTEXT));
             else
-                ::SetTextColor(pNMTVCD->nmcd.hdc, ::GetSysColor(COLOR_WINDOWTEXT));
+                ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_WINDOWTEXT));
 
             ::TabbedTextOut(pNMTVCD->nmcd.hdc, rc.left + 2, rc.top + 1, text, text.GetLength(),
                 sizeof(nTabStopPositions) / sizeof(nTabStopPositions[0]), nTabStopPositions, rc.left + datatypeOffset);

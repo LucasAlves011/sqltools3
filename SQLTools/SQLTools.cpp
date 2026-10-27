@@ -36,6 +36,8 @@ using namespace Gdiplus;
 #include "Update/UpdateManager.h"
 #include "Theme/ModernTheme.h"
 #include "Theme/ModernDialog.h"
+#include "Theme/ModernDark.h"
+#include "Theme/ModernMessageBox.h"
 #include "OpenEditor/OEGeneralPage.h"
 #include "CommandLineparser.h"
 #include "VersionInfo.rh"
@@ -102,6 +104,8 @@ BEGIN_MESSAGE_MAP(CSQLToolsApp, CWinAppEx)
     ON_COMMAND(ID_SQL_TABLE_TRANSFORMER, OnSqlTableTransformer)
     ON_COMMAND(ID_SQLTOOLS_ON_THE_WEB, OnSQLToolsOnTheWeb)
     ON_COMMAND(ID_APP_SETTINGS_FOLDER, OnAppSettingsFoder)
+    ON_COMMAND(ID_VIEW_DARK_THEME, OnViewDarkTheme)
+    ON_UPDATE_COMMAND_UI(ID_VIEW_DARK_THEME, OnUpdateViewDarkTheme)
     ON_UPDATE_COMMAND_UI_RANGE(ID_SQL_CONNECT, ID_SQL_TABLE_TRANSFORMER, OnUpdate_SqlGroup)
     ON_UPDATE_COMMAND_UI(ID_INDICATOR_OCIGRID, OnUpdate_EditIndicators)
     // Standard file based document commands
@@ -315,6 +319,9 @@ BOOL CSQLToolsApp::InitInstance()
 
         SetRegistryKey(L"KochWare");
 
+        ModernTheme::ApplyPalette(ModernTheme::LoadThemeSetting());   // claro ou escuro, escolhido uma vez por execucao
+        if (ModernTheme::IsDark())
+            ModernDark::InitApp();
         ModernDialog::InstallGlobalSkin();
 
         if (ModernTheme::ApplyOnce()) // fontes e cores modernas (uma unica vez, com copia de seguranca)
@@ -530,6 +537,25 @@ void CSQLToolsApp::OnSQLToolsOnTheWeb()
         MessageBeep((UINT)-1);
         AfxMessageBox(L"Cannot open a default browser.", MB_OK|MB_ICONSTOP);
     }
+}
+
+int CSQLToolsApp::DoMessageBox (LPCTSTR lpszPrompt, UINT nType, UINT /*nIDPrompt*/)
+{
+    return ModernMessageBox::Show(NULL, lpszPrompt, m_pszAppName, nType);
+}
+
+void CSQLToolsApp::OnViewDarkTheme()
+{
+    // a paleta e escolhida uma vez por execucao: a troca vale na proxima partida
+    const bool dark = !ModernTheme::LoadThemeSetting();
+    ModernTheme::SaveThemeSetting(dark);
+    AfxMessageBox(dark ? L"The dark theme will be used the next time SQLTools starts."
+                       : L"The light theme will be used the next time SQLTools starts.", MB_OK | MB_ICONINFORMATION);
+}
+
+void CSQLToolsApp::OnUpdateViewDarkTheme(CCmdUI* pCmdUI)
+{
+    pCmdUI->SetCheck(ModernTheme::LoadThemeSetting() ? 1 : 0);
 }
 
 void CSQLToolsApp::OnAppSettingsFoder()

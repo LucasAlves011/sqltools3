@@ -356,6 +356,8 @@ void DbBrowserList::DoShowInObjectView (const string& schema, const string& name
 
 BEGIN_MESSAGE_MAP(DbBrowserList, Common::CManagedListCtrl)
     ON_WM_CREATE()
+    ON_WM_ERASEBKGND()
+    ON_WM_PAINT()
     ON_WM_CONTEXTMENU()
     ON_NOTIFY_REFLECT(NM_DBLCLK, OnNMDblclk)
     ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnCustomDrawList)
@@ -400,11 +402,11 @@ namespace
         if (isStatusColumn(column))
         {
             if (up == L"VALID" || up == L"ENABLED" || up == L"VALIDATED")
-            { out.bg = RGB(225, 245, 236); out.fg = ModernTheme::Success; return true; }
+            { out.bg = ModernTheme::ValidBg; out.fg = ModernTheme::Success; return true; }
             if (up == L"INVALID" || up == L"ERROR")
-            { out.bg = RGB(253, 232, 232); out.fg = ModernTheme::Danger; return true; }
+            { out.bg = ModernTheme::InvalidBg; out.fg = ModernTheme::Danger; return true; }
             if (up == L"DISABLED" || up == L"UNUSABLE" || up == L"NOT VALIDATED")
-            { out.bg = RGB(254, 243, 214); out.fg = RGB(168, 104, 0); return true; }
+            { out.bg = ModernTheme::WarnBg; out.fg = ModernTheme::WarnText; return true; }
             return false;
         }
 
@@ -432,8 +434,8 @@ void DbBrowserList::OnCustomDrawList (NMHDR* pNMHDR, LRESULT* pResult)
     auto rowColor = [this](int item, bool selected) -> COLORREF
     {
         if (selected)
-            return (::GetFocus() == m_hWnd) ? AccentTint : RGB(238, 240, 244);
-        return (item & 1) ? RGB(250, 251, 252) : Surface;
+            return (::GetFocus() == m_hWnd) ? AccentTint : SelInactive;
+        return (item & 1) ? RowAlt : Surface;
     };
 
     switch (cd->nmcd.dwDrawStage)
@@ -821,6 +823,36 @@ void DbBrowserList::OnTabTitles ()
 {
     if (CWnd* parent = GetParent())
         parent->SendMessage(WM_COMMAND, ID_DS_TAB_TITLES);
+}
+
+// a lista fica desabilitada durante o carregamento; o fundo continua o da paleta (o do sistema seria cinza claro)
+BOOL DbBrowserList::OnEraseBkgnd (CDC* pDC)
+{
+    CRect rc;
+    GetClientRect(rc);
+    pDC->FillSolidRect(rc, ModernTheme::Surface);
+    return TRUE;
+}
+
+// lista vazia e desabilitada (sem conexao ou carregando): o Windows pinta o cinza do sistema; aqui fica o fundo da paleta
+void DbBrowserList::OnPaint ()
+{
+    if (!IsWindowEnabled() && GetItemCount() == 0)
+    {
+        CPaintDC dc(this);
+        CRect rc;
+        GetClientRect(rc);
+        if (CHeaderCtrl* header = GetHeaderCtrl())
+        {
+            CRect hr;
+            header->GetWindowRect(hr);
+            ScreenToClient(hr);
+            rc.top = (std::max)((int)rc.top, (int)hr.bottom);
+        }
+        dc.FillSolidRect(rc, ModernTheme::Surface);
+        return;
+    }
+    Default();
 }
 
 void DbBrowserList::SetBusy (bool busy)             

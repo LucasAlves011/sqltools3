@@ -142,7 +142,7 @@ protected:
 
     static void DrawSwitch (Gdiplus::Graphics& g, const CRect& rc, bool on)
     {
-        FillRoundRect(g, rc, rc.Height() / 2.0f, on ? Accent : RGB(201, 206, 214));
+        FillRoundRect(g, rc, rc.Height() / 2.0f, on ? Accent : DimStrong);
         int d = rc.Height() - 4;
         int x = on ? rc.right - 2 - d : rc.left + 2;
         Gdiplus::SolidBrush white(Gdiplus::Color(255, 255, 255, 255));

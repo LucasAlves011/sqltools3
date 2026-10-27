@@ -64,6 +64,7 @@ protected:
     afx_msg void OnPin        ();
     afx_msg void OnGridCommand (UINT nID);
     afx_msg void OnPlanDropDown (NMHDR*, LRESULT*);
+    afx_msg void OnToolbarCustomDraw (NMHDR*, LRESULT*);
     afx_msg void OnPlanText ();
     afx_msg void OnPlanTree ();
 	//}}AFX_MSG
