@@ -2,6 +2,23 @@ SQLTools Changelog
 ==================
 
 
+Unreleased
+----------
+Date: 2026-10-28
+  * Copy As > SQL Inserts now generates INSERT INTO owner.table when the result
+    comes from a single table (joins, sub-queries and WITH queries still use
+    &table).
+  * Dragging an object from the Objects List into the editor no longer repeats an
+    owner that is already typed: "owner." receives only the name, "owner"
+    receives ".name" and, if the owner is different, what was typed is kept and
+    owner.name is dropped.
+  * The "Error happened while running the script" box now follows the theme.
+  * No more white flashes when SQLTools starts (main window background, dialog
+    animation and the floating Objects List).
+  * What's New: English and Portuguese (Brazil) changelogs, chosen with the flags
+    at the top of the window.
+
+
 3.3.2
 -----
 Date: 2026-10-27

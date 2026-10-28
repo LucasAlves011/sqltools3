@@ -30,18 +30,25 @@ BEGIN
     PUSHBUTTON      "Remind Me &Later",IDCANCEL,255,196,65,14
 END
 
-IDD_CHANGELOG DIALOGEX 0, 0, 360, 254
+IDD_CHANGELOG DIALOGEX 0, 0, 360, 270
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "What's New"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    EDITTEXT        IDC_CHL_TEXT,10,10,340,214,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Check for updates when SQLTools starts",IDC_CHL_AUTOCHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,234,170,10
-    PUSHBUTTON      "Check for &Updates",IDC_CHL_CHECK,205,231,75,14
-    DEFPUSHBUTTON   "&Close",IDOK,285,231,65,14
+    PUSHBUTTON      "English",IDC_CHL_FLAG_EN,294,5,26,16,BS_OWNERDRAW | WS_TABSTOP
+    PUSHBUTTON      "Portugues (Brasil)",IDC_CHL_FLAG_PT,324,5,26,16,BS_OWNERDRAW | WS_TABSTOP
+    EDITTEXT        IDC_CHL_TEXT,10,26,340,198,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Check for updates when SQLTools starts",IDC_CHL_AUTOCHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,250,170,10
+    PUSHBUTTON      "Check for &Updates",IDC_CHL_CHECK,205,247,75,14
+    DEFPUSHBUTTON   "&Close",IDOK,285,247,65,14
 END
 
 IDR_CHANGELOG           RCDATA                  "..\\CHANGELOG.md"
+// historico em portugues (Brasil): a ferramenta continua em ingles, so o What's New tem os dois idiomas
+IDR_CHANGELOG_PT        RCDATA                  "..\\CHANGELOG.pt-BR.md"
+// icones das bandeiras do What's New (flag-icons, licenca MIT: res\flags\LICENSE-flag-icons.txt)
+IDR_FLAG_US             RCDATA                  "res\\flags\\us.png"
+IDR_FLAG_BR             RCDATA                  "res\\flags\\br.png"
 
 // icones dos botoes do painel Valor (gerados por tools/GenToolbarIcons)
 IDB_VALUE_ICONS         BITMAP                  "res\\ValuePanelIcons.bmp"

@@ -17,3 +17,9 @@ used under the Oracle Free Use Terms and Conditions
 
 Other bundled libraries (Boost, TinyXML, TextEncodingDetect, etc.) keep their own
 licenses in their folders under `3dParty/`.
+
+## Flag icons (What's New window)
+
+The US and Brazil flag images in `SQLTools/res/flags/` are used in the What's New window. They come
+from the flag-icons project (MIT License, Copyright (c) 2013 Panayiotis Lipiridis); the license text
+is in `SQLTools/res/flags/LICENSE-flag-icons.txt`.

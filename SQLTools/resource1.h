@@ -6,6 +6,9 @@
 #define IDR_OCI_BUNDLE                  9100
 #define IDR_OCI_LICENSE                 9102
 #define IDR_CHANGELOG                   9101
+#define IDR_CHANGELOG_PT                9110
+#define IDR_FLAG_US                     9111
+#define IDR_FLAG_BR                     9112
 #define IDB_VALUE_ICONS                 9103
 #define IDB_OBJLIST_ICONS               9104
 #define IDB_PANE_ICONS32                9105
@@ -22,6 +25,8 @@
 #define IDC_CHL_TEXT                    1443
 #define IDC_CHL_CHECK                   1444
 #define IDC_CHL_AUTOCHECK               1445
+#define IDC_CHL_FLAG_EN                 1446
+#define IDC_CHL_FLAG_PT                 1447
 #define ID_APP_CHECK_UPDATES            38270
 #define ID_APP_CHANGELOG                38271
 #define IDD_PROP_GRID1                  101

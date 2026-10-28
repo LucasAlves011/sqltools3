@@ -2,8 +2,12 @@
 #include "Update/UpdateManager.h"
 #include "Update/UpdateChecker.h"
 #include "resource.h"
+#include "Theme/ModernTheme.h"
+#include <shlwapi.h>
 #include <memory>
 #include <time.h>
+
+#pragma comment(lib, "shlwapi.lib")
 
 namespace UpdateManager
 {
@@ -145,9 +149,23 @@ namespace UpdateManager
         }
 
         // ---- dialogo: changelog -----------------------------------------------------------------------
-        std::wstring embeddedChangelog ()
+        // idiomas do What's New (so ele tem os dois; o resto da ferramenta e em ingles)
+        enum ChangelogLang { LANG_EN = 0, LANG_PT = 1 };
+
+        const wchar_t* const KEY_CHANGELOG_LANG = L"ChangelogLanguage";
+
+        // idioma escolhido antes; sem escolha, portugues para quem usa o Windows em portugues
+        ChangelogLang savedChangelogLang ()
         {
-            HRSRC hRes = FindResourceW(0, MAKEINTRESOURCEW(IDR_CHANGELOG), RT_RCDATA);
+            int saved = AfxGetApp()->GetProfileInt(SECTION, KEY_CHANGELOG_LANG, -1);
+            if (saved == LANG_EN || saved == LANG_PT)
+                return (ChangelogLang)saved;
+            return PRIMARYLANGID(::GetUserDefaultUILanguage()) == LANG_PORTUGUESE ? LANG_PT : LANG_EN;
+        }
+
+        std::wstring embeddedChangelog (ChangelogLang lang)
+        {
+            HRSRC hRes = FindResourceW(0, MAKEINTRESOURCEW(lang == LANG_PT ? IDR_CHANGELOG_PT : IDR_CHANGELOG), RT_RCDATA);
             HGLOBAL hMem = hRes ? LoadResource(0, hRes) : 0;
             const char* data = hMem ? (const char*)LockResource(hMem) : 0;
             DWORD size = hRes ? SizeofResource(0, hRes) : 0;
@@ -175,17 +193,134 @@ namespace UpdateManager
         class CChangelogDlg : public CDialog
         {
         public:
-            CChangelogDlg (CWnd* parent) : CDialog(IDD_CHANGELOG, parent) {}
+            CChangelogDlg (CWnd* parent) : CDialog(IDD_CHANGELOG, parent), m_lang(LANG_EN) {}
 
         protected:
+            ChangelogLang m_lang;
+
+            void showChangelog ()
+            {
+                CEdit* edit = (CEdit*)GetDlgItem(IDC_CHL_TEXT);
+                SetDlgItemText(IDC_CHL_TEXT, embeddedChangelog(m_lang).c_str());
+                edit->SetSel(0, 0);
+                edit->LineScroll(-edit->GetFirstVisibleLine());
+                GetDlgItem(IDC_CHL_FLAG_EN)->Invalidate();
+                GetDlgItem(IDC_CHL_FLAG_PT)->Invalidate();
+            }
+
+            // icones das bandeiras (PNG embutidos); copiados para a memoria para nao depender do fluxo de origem
+            static Gdiplus::Bitmap* loadFlag (UINT resId)
+            {
+                HRSRC hRes = FindResourceW(0, MAKEINTRESOURCEW(resId), RT_RCDATA);
+                HGLOBAL hMem = hRes ? LoadResource(0, hRes) : 0;
+                const void* data = hMem ? LockResource(hMem) : 0;
+                DWORD size = hRes ? SizeofResource(0, hRes) : 0;
+                if (!data || !size)
+                    return 0;
+
+                IStream* stream = SHCreateMemStream((const BYTE*)data, size);
+                if (!stream)
+                    return 0;
+
+                Gdiplus::Bitmap* copy = 0;
+                if (Gdiplus::Bitmap* src = Gdiplus::Bitmap::FromStream(stream))
+                {
+                    if (src->GetLastStatus() == Gdiplus::Ok)
+                        copy = src->Clone(0, 0, src->GetWidth(), src->GetHeight(), PixelFormat32bppPARGB);
+                    delete src;
+                }
+                stream->Release();
+                return copy;
+            }
+
+            static Gdiplus::RectF drawFlag (Gdiplus::Graphics& g, bool brazil, const Gdiplus::RectF& box)
+            {
+                static Gdiplus::Bitmap* flags[2] = { loadFlag(IDR_FLAG_US), loadFlag(IDR_FLAG_BR) };
+                Gdiplus::Bitmap* img = flags[brazil ? 1 : 0];
+                if (!img)
+                    return box;
+
+                // cada bandeira mantem a proporcao oficial, ocupando o maximo da caixa
+                const float ratio = (float)img->GetWidth() / img->GetHeight();
+                const float w = (std::min)(box.Width, box.Height * ratio), h = w / ratio;
+                const Gdiplus::RectF r(box.X + (box.Width - w) / 2, box.Y + (box.Height - h) / 2, w, h);
+
+                // cantos arredondados
+                const float rad = 3.0f;
+                Gdiplus::GraphicsPath path;
+                path.AddArc(r.X, r.Y, rad * 2, rad * 2, 180, 90);
+                path.AddArc(r.GetRight() - rad * 2, r.Y, rad * 2, rad * 2, 270, 90);
+                path.AddArc(r.GetRight() - rad * 2, r.GetBottom() - rad * 2, rad * 2, rad * 2, 0, 90);
+                path.AddArc(r.X, r.GetBottom() - rad * 2, rad * 2, rad * 2, 90, 90);
+                path.CloseFigure();
+
+                g.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+                g.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
+                g.SetClip(&path);
+                g.DrawImage(img, r);
+                g.ResetClip();
+                return r;
+            }
+
+            afx_msg void OnDrawItem (int id, LPDRAWITEMSTRUCT dis)
+            {
+                if (id != IDC_CHL_FLAG_EN && id != IDC_CHL_FLAG_PT)
+                {
+                    CDialog::OnDrawItem(id, dis);
+                    return;
+                }
+
+                const bool brazil = (id == IDC_CHL_FLAG_PT);
+                const bool selected = (m_lang == (brazil ? LANG_PT : LANG_EN));
+                CRect rc(dis->rcItem);
+                CDC* dc = CDC::FromHandle(dis->hDC);
+                dc->FillSolidRect(rc, ModernTheme::SurfaceAlt);
+
+                Gdiplus::Graphics g(dis->hDC);
+                g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+                const Gdiplus::RectF box((float)rc.left + 3, (float)rc.top + 3, (float)rc.Width() - 6, (float)rc.Height() - 6);
+                const Gdiplus::RectF flag = drawFlag(g, brazil, box);
+
+                if (!selected) // idioma que nao esta em uso: esmaecido
+                {
+                    Gdiplus::SolidBrush veil(Gdiplus::Color(140, GetRValue(ModernTheme::SurfaceAlt), GetGValue(ModernTheme::SurfaceAlt), GetBValue(ModernTheme::SurfaceAlt)));
+                    g.FillRectangle(&veil, flag);
+                }
+                else // idioma em uso: contorno de destaque
+                {
+                    Gdiplus::Pen ring(Gdiplus::Color(GetRValue(ModernTheme::Accent), GetGValue(ModernTheme::Accent), GetBValue(ModernTheme::Accent)), 2.0f);
+                    g.DrawRectangle(&ring, flag.X - 1.5f, flag.Y - 1.5f, flag.Width + 3.0f, flag.Height + 3.0f);
+                }
+            }
+
+            afx_msg BOOL OnSetCursor (CWnd* wnd, UINT hit, UINT msg)
+            {
+                if (wnd && (wnd->GetDlgCtrlID() == IDC_CHL_FLAG_EN || wnd->GetDlgCtrlID() == IDC_CHL_FLAG_PT))
+                {
+                    ::SetCursor(::LoadCursor(NULL, IDC_HAND));
+                    return TRUE;
+                }
+                return CDialog::OnSetCursor(wnd, hit, msg);
+            }
+
+            void chooseLang (ChangelogLang lang)
+            {
+                m_lang = lang;
+                AfxGetApp()->WriteProfileInt(SECTION, KEY_CHANGELOG_LANG, (int)lang);
+                showChangelog();
+            }
+
+            afx_msg void OnFlagEn () { chooseLang(LANG_EN); }
+            afx_msg void OnFlagPt () { chooseLang(LANG_PT); }
+
             virtual BOOL OnInitDialog ()
             {
                 CDialog::OnInitDialog();
                 SetWindowText((L"What's New - SQLTools " + Update::CurrentVersion().ToString()).c_str());
                 CEdit* edit = (CEdit*)GetDlgItem(IDC_CHL_TEXT);
                 edit->SetLimitText(0);
-                SetDlgItemText(IDC_CHL_TEXT, embeddedChangelog().c_str());
-                edit->SetSel(0, 0);
+                m_lang = savedChangelogLang();
+                showChangelog();
                 CheckDlgButton(IDC_CHL_AUTOCHECK, autoCheckEnabled() ? BST_CHECKED : BST_UNCHECKED);
                 GetDlgItem(IDOK)->SetFocus(); // evita o texto do changelog iniciar selecionado
                 return FALSE;
@@ -206,6 +341,10 @@ namespace UpdateManager
 
         BEGIN_MESSAGE_MAP(CChangelogDlg, CDialog)
             ON_BN_CLICKED(IDC_CHL_CHECK, OnCheck)
+            ON_BN_CLICKED(IDC_CHL_FLAG_EN, OnFlagEn)
+            ON_BN_CLICKED(IDC_CHL_FLAG_PT, OnFlagPt)
+            ON_WM_DRAWITEM()
+            ON_WM_SETCURSOR()
         END_MESSAGE_MAP()
     }
 
