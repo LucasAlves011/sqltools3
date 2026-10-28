@@ -2,9 +2,15 @@ SQLTools Changelog
 ==================
 
 
-Unreleased
-----------
+3.3.2
+-----
 Date: 2026-10-27
+  * Fixed visual glitches (black areas and leftover arrows) when dragging the
+    Value panel splitter.
+  * The embedded Oracle Instant Client now ships its license (ORACLE_LICENSE.txt)
+    next to the extracted DLLs, as required by the Oracle Free Use Terms.
+  * Added LICENSE (GPLv3) and THIRD-PARTY-NOTICES.md to the repository, and the
+    modernization contributor to the credits.
   * Value panel: the text zoom (Ctrl + wheel) is kept when moving to another cell,
     until SQLTools is closed.
   * Value panel: new "Format CDATA" option. JSON or XML inside a CDATA section is
