@@ -55,6 +55,7 @@ public:
     using Statement::Close;
 	
     using Statement::Prepare;
+    using Statement::GetText;
     void Execute ();
     bool Fetch ();
 	void Bind (Variable*, const string&);

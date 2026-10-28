@@ -55,6 +55,7 @@ public:
     ~Statement ();
 
 	void Prepare (const char* sttm);
+    const string& GetText () const { return m_text; }
     void Execute (ub4 iters = 0, bool guaranteedSafe = false);
 
     bool Fetch (sword* pstatus = 0);

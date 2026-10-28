@@ -446,7 +446,8 @@ void PlainTextStreamer::writeCell (std::ostream& of, int row, int col) const
         {
             if (m_IsTableOrientation)
             {
-                of << "define table = " << endl;
+                if (m_source.GetInsertTableName().empty())
+                    of << "define table = " << endl;
             }
         }
         void writeFooter (std::ostream& of) const
@@ -469,7 +470,8 @@ void PlainTextStreamer::writeCell (std::ostream& of, int row, int col) const
         {
             if (m_IsTableOrientation)
             {
-                of << "INSERT INTO &table (";
+                const string tableName = m_source.GetInsertTableName();
+                of << "INSERT INTO " << (tableName.empty() ? "&table" : tableName.c_str()) << " (";
                 for (int col = m_startColumn; col < m_startColumn + m_colCount; col++) 
                 {
                     if (col != m_startColumn) of << ',' << ' ';

@@ -302,7 +302,7 @@ int CMDIMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     m_wndDbSourceFrame.SetClient(&m_wndDbSourceWnd);
     m_wndDbSourceFrame.EnableDocking(CBRS_ALIGN_ANY);
     AddPane(&m_wndDbSourceFrame); // TEST if that is enough 
-    m_wndDbSourceFrame.FloatPane(CRect(CPoint(100, 100), CSize(680, 400)));
+    m_wndDbSourceFrame.FloatPane(CRect(CPoint(100, 100), CSize(680, 400)), DM_UNKNOWN, false); // not shown: it is hidden right below
     m_wndDbSourceFrame.ShowPane(FALSE, FALSE, TRUE); // hidden by default
     m_wndDbSourceFrame.SetCanBeTabbedDocument(TRUE);
     if (AfxGetApp()->GetProfileInt(m_cszProfileName, L"IsObjectListTabbed", FALSE))

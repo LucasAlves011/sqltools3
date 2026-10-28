@@ -42,6 +42,7 @@ public:
     virtual int  ExportText (std::ostream&, int row, int nrows, int col, int ncols, int format) const;
     virtual void GetCellStrForExport (std::string&, int line, int col, int subformat) const;
     bool IsTextField (int col) const; 
+    virtual std::string GetInsertTableName () const;
 
     void Fetch (OciGridView&, int rowsToFetch);
     void FetchAll (); // will wait until it is done

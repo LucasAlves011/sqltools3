@@ -198,6 +198,8 @@ public:
 
     virtual int  ExportText (std::ostream&, int row = -1, int nrows = -1, int col = -1, int ncols = -1, int format = -1) const;
     virtual void GetCellStrForExport (std::string&, int line, int col, int subformat = 0) const;
+    // owner.table the rows came from (used by "SQL Inserts"); empty when it is unknown
+    virtual std::string GetInsertTableName () const                     { return std::string(); }
 
     // GridStringSource extended data source interfaces
     // Data manipulation

@@ -502,6 +502,186 @@ void OciGridSource::AppendFetched (std::vector<std::string>& result, bool allRow
 }
 
 //TODO#2: re-implement this w/o a modal dialog
+    namespace
+    {
+        bool isIdentChar (char c)
+        {
+            return isalnum((unsigned char)c) || c == '_' || c == '$' || c == '#';
+        }
+
+        // reads [owner.]name (each part bare or "quoted") starting at pos; bare parts are upper-cased
+        bool readQualifiedName (const string& s, size_t& pos, string& owner, string& name)
+        {
+            string parts[2];
+            int n = 0;
+            for (;;)
+            {
+                string part;
+                if (pos < s.size() && s[pos] == '"')
+                {
+                    size_t end = s.find('"', pos + 1);
+                    if (end == string::npos) return false;
+                    part = s.substr(pos, end - pos + 1);
+                    pos = end + 1;
+                }
+                else
+                {
+                    size_t start = pos;
+                    while (pos < s.size() && isIdentChar(s[pos])) pos++;
+                    if (pos == start) return false;
+                    part = s.substr(start, pos - start);
+                    for (size_t i = 0; i < part.size(); i++) part[i] = (char)toupper((unsigned char)part[i]);
+                }
+                parts[n++] = part;
+                if (n < 2 && pos < s.size() && s[pos] == '.') { pos++; continue; }
+                break;
+            }
+            if (pos < s.size() && s[pos] == '@') return false; // database link
+            if (n == 2) { owner = parts[0]; name = parts[1]; }
+            else        { owner.clear();    name = parts[0]; }
+            return true;
+        }
+
+        void skipSpaces (const string& s, size_t& pos)
+        {
+            while (pos < s.size() && isspace((unsigned char)s[pos])) pos++;
+        }
+
+        // reads a bare word (upper-cased); pos is left after it
+        string readWord (const string& s, size_t& pos)
+        {
+            size_t start = pos;
+            while (pos < s.size() && isIdentChar(s[pos])) pos++;
+            string w = s.substr(start, pos - start);
+            for (size_t i = 0; i < w.size(); i++) w[i] = (char)toupper((unsigned char)w[i]);
+            return w;
+        }
+
+        bool isJoinOrSetWord (const string& w)
+        {
+            return w == "JOIN" || w == "INNER" || w == "LEFT" || w == "RIGHT" || w == "FULL" || w == "CROSS"
+                || w == "NATURAL" || w == "UNION" || w == "MINUS" || w == "INTERSECT";
+        }
+
+        bool isClauseWord (const string& w)
+        {
+            return w == "WHERE" || w == "GROUP" || w == "ORDER" || w == "HAVING" || w == "CONNECT" || w == "START"
+                || w == "FETCH" || w == "OFFSET" || w == "FOR" || w == "MODEL" || isJoinOrSetWord(w);
+        }
+
+        // blanks out comments and string literals, keeping the offsets
+        string stripCommentsAndStrings (const string& sql)
+        {
+            string s = sql;
+            size_t i = 0;
+            while (i < s.size())
+            {
+                if (s[i] == '-' && i + 1 < s.size() && s[i+1] == '-')
+                {
+                    while (i < s.size() && s[i] != '\n') s[i++] = ' ';
+                }
+                else if (s[i] == '/' && i + 1 < s.size() && s[i+1] == '*')
+                {
+                    size_t end = s.find("*/", i + 2);
+                    end = (end == string::npos) ? s.size() : end + 2;
+                    while (i < end) s[i++] = ' ';
+                }
+                else if (s[i] == '\'')
+                {
+                    s[i++] = ' ';
+                    while (i < s.size())
+                    {
+                        if (s[i] == '\'')
+                        {
+                            if (i + 1 < s.size() && s[i+1] == '\'') { s[i++] = ' '; s[i++] = ' '; continue; }
+                            s[i++] = ' ';
+                            break;
+                        }
+                        s[i++] = ' ';
+                    }
+                }
+                else
+                    i++;
+            }
+            return s;
+        }
+
+        // finds the single table of a plain "SELECT ... FROM [owner.]table [alias] ..." query;
+        // returns false for joins, sub-queries, set operations and WITH queries
+        bool findSingleTable (const string& sql, string& owner, string& name)
+        {
+            const string s = stripCommentsAndStrings(sql);
+
+            size_t pos = 0;
+            skipSpaces(s, pos);
+            if (readWord(s, pos) != "SELECT")
+                return false;
+
+            int depth = 0;
+            while (pos < s.size())
+            {
+                char c = s[pos];
+                if (c == '"')
+                {
+                    size_t end = s.find('"', pos + 1);
+                    if (end == string::npos) return false;
+                    pos = end + 1;
+                }
+                else if (c == '(') { depth++; pos++; }
+                else if (c == ')') { depth--; pos++; }
+                else if (isIdentChar(c))
+                {
+                    string w = readWord(s, pos);
+                    if (depth != 0) continue;
+                    if (w == "UNION" || w == "MINUS" || w == "INTERSECT")
+                        return false;
+                    if (w != "FROM") continue;
+
+                    skipSpaces(s, pos);
+                    if (!readQualifiedName(s, pos, owner, name)) // also rejects "FROM (sub-query)"
+                        return false;
+
+                    // optional alias, then nothing that turns it into a join
+                    skipSpaces(s, pos);
+                    size_t after = pos;
+                    string next = readWord(s, after);
+                    if (next == "AS") { skipSpaces(s, after); next = readWord(s, after); }
+                    if (!next.empty() && !isClauseWord(next))
+                    {
+                        skipSpaces(s, after); // alias consumed
+                        size_t p2 = after;
+                        next = readWord(s, p2);
+                        after = p2;
+                    }
+                    if (isJoinOrSetWord(next))
+                        return false;
+                    skipSpaces(s, after);
+                    return !(next.empty() && after < s.size() && s[after] == ',');
+                }
+                else
+                    pos++;
+            }
+            return false;
+        }
+    }
+
+std::string OciGridSource::GetInsertTableName () const
+{
+    if (!m_cursor.get())
+        return std::string();
+
+    string owner, name;
+    if (!findSingleTable(m_cursor->GetText(), owner, name))
+        return std::string();
+
+    if (owner.empty())
+        owner = theApp.GetCurrentSchema();
+    if (owner.empty())
+        owner = theApp.GetUser();
+
+    return owner.empty() ? name : owner + "." + name;
+}
+
 int OciGridSource::ExportText (std::ostream& of, int row, int nrows, int col, int ncols, int format) const
 {
     try

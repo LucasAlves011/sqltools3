@@ -23,6 +23,7 @@
 #include <OCI8/Statement.h>
 #include <COMMON/InputDlg.h>
 #include <ActivePrimeExecutionNote.h>
+#include "Theme/ModernMessageBox.h"
 
     DocumentProxy::document_destroyed::document_destroyed ()
         : std::exception("The execution failed because the documnet was closed!")
@@ -503,14 +504,30 @@ void DocumentProxy::GetLine (int line, std::wstring& buffer)
         virtual void Deliver () { m_doc.ShowLastError(); }
     };
 
+    // the script runs in a worker thread; the message box has to be shown by the UI thread to get the app theme
+    struct AskStopOnErrorNote : public ThreadCommunication::Note
+    {
+        bool m_stop;
+
+        AskStopOnErrorNote () : m_stop(false) {}
+
+        virtual void Deliver ()
+        {
+            m_stop = (ModernMessageBox::Show(AfxGetMainWnd(),
+                L"Error happened while running the script.\n\nDo you want to stop execution?",
+                AfxGetAppName(), MB_YESNO|MB_ICONSTOP) == IDYES);
+        }
+    };
+
 bool DocumentProxy::AskIfUserWantToStopOnError ()
 {
     send(SetTaskbarProgressStateNote(CSQLToolsApp::ERROR_STATE));
     send(ActivateRunningNote(m_doc));
     send(ShowLastErrorNote(m_doc));
 
-    bool retVal = (AfxMessageBox(L"Error happened while running the script."
-        L"\n\nDo you want to stop execution?", MB_YESNO|MB_ICONSTOP) == IDYES);
+    AskStopOnErrorNote ask;
+    send(ask);
+    bool retVal = ask.m_stop;
 
     send(SetTaskbarProgressStateNote(CSQLToolsApp::WORKING_STATE));
 
