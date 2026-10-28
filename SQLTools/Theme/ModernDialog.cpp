@@ -3,7 +3,10 @@
 #include "Theme/ModernDraw.h"
 #include <commctrl.h>
 #include <uxtheme.h>
+#include <dwmapi.h>
 #include "Theme/ModernDark.h"
+
+#pragma comment(lib, "dwmapi.lib")
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -967,6 +970,14 @@ namespace ModernDialog
                 if (cwp->message == WM_CREATE)
                 {
                     const CString cls = ClassOf(cwp->hwnd);
+
+                    // janelas do MFC e a area MDI nascem com o pincel de fundo do sistema (branco/cinza) e so ficam
+                    // na cor da paleta depois de pintadas: troca o pincel da classe para nao piscar na partida
+                    if (cls == L"MDIClient" || cls.Left(3) == L"Afx")
+                    {
+                        static HBRUSH s_surface = ::CreateSolidBrush(Surface);
+                        ::SetClassLongPtr(cwp->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)s_surface);
+                    }
                     if (cls == L"ScrollBar" || cls.Left(15) == L"Kochware.OpenGr" || (IsDark() && cls.Left(8) == L"RICHEDIT") || (IsDark() && cls == L"OpenEditorWindow"))
                         ::SetWindowTheme(cwp->hwnd, ModernDark::ControlTheme(), NULL);
 
@@ -1005,7 +1016,13 @@ namespace ModernDialog
                 {
                     HWND h = cwp->hwnd;
                     if (!(::GetWindowLong(h, GWL_STYLE) & WS_CHILD))
+                    {
                         ModernDark::StyleTitleBar(h);
+                        // sem a animacao de aparecer (fade): enquanto ela roda, o dialogo escuro fica translucido
+                        // e parece claro sobre o fundo da janela
+                        const BOOL off = TRUE;
+                        ::DwmSetWindowAttribute(h, 3 /*DWMWA_TRANSITIONS_FORCEDISABLED*/, &off, sizeof(off));
+                    }
                     if (::GetWindowLong(h, GWL_STYLE) & WS_CHILD)
                     {
                         // somente paginas de folhas de propriedades; paineis acoplados ja tem visual proprio
