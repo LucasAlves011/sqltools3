@@ -2,9 +2,13 @@ SQLTools Changelog
 ==================
 
 
-Unreleased
-----------
+3.4.0
+-----
 Date: 2026-10-28
+  * Object Viewer: modern look. New icons, theme font and colors, full-row
+    selection and a combo box in the dark theme. Behavior is unchanged.
+  * What's New: scroll bar follows the dark theme (also in other multi-line text
+    boxes).
   * Copy As > SQL Inserts now generates INSERT INTO owner.table when the result
     comes from a single table (joins, sub-queries and WITH queries still use
     &table).

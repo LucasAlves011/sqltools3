@@ -2,9 +2,13 @@ SQLTools - Histórico de alterações
 =================================
 
 
-Não lançado
------------
+3.4.0
+-----
 Data: 2026-10-28
+  * Object Viewer: visual moderno. Ícones novos, fonte e cores do tema, seleção
+    em linha inteira e combo no tema escuro. O comportamento não muda.
+  * What's New: a barra de rolagem segue o tema escuro (também em outros campos
+    de texto multilinha).
   * Copiar como > SQL Inserts agora gera INSERT INTO owner.tabela quando o
     resultado vem de uma única tabela (joins, subselects e consultas WITH
     continuam usando &table).
