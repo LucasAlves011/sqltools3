@@ -39,6 +39,9 @@ namespace ModernDraw
     enum { DI_CONNECT = 0, DI_SAVE, DI_CLOSE, DI_TEST, DI_DELETE, DI_SETTINGS, DI_CONNECT_DARK };
     void DrawDialogIcon (HDC hdc, int index, int x, int y, bool disabled = false);
 
+    // icones da arvore do Object Viewer: 35 posicoes de 16x16, na ordem de IDII_* (ObjectTree_Builder.h)
+    void CreateObjectTreeImageList (CImageList& list);
+
     // icones da janela de cursor (peek) do editor (16x16)
     enum { PI_DB = 0, PI_GO, PI_BACK, PI_COPY, PI_SAVE, PI_PIN, PI_PIN_ON, PI_CLOSE, PI_CLOSE_WHITE };
     void DrawPeekIcon (HDC hdc, int index, int x, int y);

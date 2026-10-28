@@ -28,6 +28,8 @@
 #include <COMMON/DlgDataExt.h>
 #include "COMMON\StrHelpers.h"
 #include "DbBrowser\ObjectViewerWnd.h"
+#include "Theme/ModernDialog.h"
+#include "Theme/ModernDraw.h"
 #include "SQLWorksheet/PlsSqlParser.h"
 #include "ObjectTree_Builder.h"
 #include "COMMON/GUICommandDictionary.h"
@@ -87,7 +89,7 @@ BOOL CObjectViewerWnd::Create (CWnd* pParentWnd)
 	    m_tooltip.AddTool(&m_treeViewer);
         m_tooltip.SetDirection(PPTOOLTIP_TOPEDGE_LEFT);
 
-        LoadAndSetImageList(IDB_SQL_GENERAL_LIST);
+        m_treeViewer.SetModernImageList();
     }
 
     return retVal;
@@ -117,6 +119,8 @@ BOOL CObjectViewerWnd::OnInitDialog()
 {
     CDialog::OnInitDialog();
 
+    ModernDialog::SkinPage(m_hWnd); // fundo, combo e demais controles no visual do tema (e nao os brancos do sistema)
+    m_inputBox.SetFont(&ModernDraw::UiFont());
     m_treeViewer.OnInit();
     //m_Images.Create(IDB_SQL_GENERAL_LIST, 16, 64, RGB(0,255,0));
 

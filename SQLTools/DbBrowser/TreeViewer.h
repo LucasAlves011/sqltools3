@@ -56,6 +56,8 @@ public:
 
     void SetClassicTreeLook (bool);
     void LoadAndSetImageList (UINT nResId);
+    void SetModernImageList ();
+    void ApplyModernLook ();
 
     void OnInit ();
     string GetTooltipText (HTREEITEM);

@@ -24,6 +24,9 @@
 */
 #include "stdafx.h"
 #include "Theme/ModernTheme.h"
+#include "Theme/ModernDraw.h"
+#include "Theme/ModernDark.h"
+#include <uxtheme.h>
 #include "SQLTools.h"
 #include "TreeViewer.h"
 #include <COMMON\AppUtilities.h>
@@ -91,11 +94,36 @@ void CTreeViewer::SetClassicTreeLook (bool classicTreeLook)
     m_classicTreeLook = classicTreeLook;
     if (m_hWnd)
     {
-        if (m_classicTreeLook)
-            ModifyStyle(TVS_FULLROWSELECT, TVS_HASLINES);
-        else
-            ModifyStyle(TVS_HASLINES, TVS_FULLROWSELECT);
+        // "classic" so decide o texto da linha (nome e tipo na mesma cor, sem colunas); as linhas pontilhadas nao
+        // aparecem com o tema do Windows e TVS_HASLINES desliga a selecao de linha inteira, entao saem nos dois modos
+        ModifyStyle(TVS_HASLINES, TVS_FULLROWSELECT);
+
+        ApplyModernLook();
     }
+}
+
+// aparencia moderna: sem borda, fonte e cores do tema, linhas mais altas, setas do tema do Windows (chevrons),
+// selecao e passagem do mouse em linha inteira; so aparencia, o comportamento da arvore nao muda
+void CTreeViewer::ApplyModernLook ()
+{
+    ModifyStyle(WS_BORDER, 0);
+    ModifyStyleEx(WS_EX_CLIENTEDGE, 0);
+
+    SetFont(&ModernDraw::UiFont());
+    TreeView_SetBkColor(m_hWnd, ModernTheme::Surface);
+    TreeView_SetTextColor(m_hWnd, ModernTheme::Text);
+    TreeView_SetExtendedStyle(m_hWnd, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
+    ::SetWindowTheme(m_hWnd, ModernDark::ControlTheme(), NULL);
+    SetItemHeight(22);
+    SetIndent(18);
+
+    SetWindowPos(NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+}
+
+void CTreeViewer::SetModernImageList ()
+{
+    ModernDraw::CreateObjectTreeImageList(m_Images);
+    SetImageList(&m_Images, TVSIL_NORMAL);
 }
 
 void CTreeViewer::LoadAndSetImageList (UINT nResId)
@@ -934,11 +962,11 @@ void CTreeViewer::OnRButtonDown(UINT /*nFlags*/, CPoint point)
 void CTreeViewer::OnNMCustomdraw (NMHDR *pNMHDR, LRESULT *pResult)
 {
     *pResult = CDRF_DODEFAULT;
-    
+
     if (m_classicTreeLook) return;
 
     try { EXCEPTION_FRAME;
-        
+
         LPNMTVCUSTOMDRAW pNMTVCD = reinterpret_cast<LPNMTVCUSTOMDRAW>(pNMHDR);
 
         switch (pNMTVCD->nmcd.dwDrawStage)
@@ -956,6 +984,7 @@ void CTreeViewer::OnNMCustomdraw (NMHDR *pNMHDR, LRESULT *pResult)
                     CString text = GetItemText(hItem);
                     if (text.Find('\t') != -1)
                     {
+                        // o texto padrao (com tabulacao) e apagado e redesenhado abaixo, em duas cores
                         pNMTVCD->clrText = pNMTVCD->clrTextBk;
                         *pResult = CDRF_NOTIFYPOSTPAINT;
                     }
@@ -968,39 +997,33 @@ void CTreeViewer::OnNMCustomdraw (NMHDR *pNMHDR, LRESULT *pResult)
 
                 if (node)
                 {
-                    bool hasFocus = (::GetFocus() == m_hWnd) ? true : false;
-                    bool isSeleted = pNMTVCD->nmcd.uItemState & CDIS_SELECTED ? true: false;
                     HTREEITEM hItem = (HTREEITEM)(pNMTVCD->nmcd.dwItemSpec);
-                        
-                    if (isSeleted)
-                        ::SetBkColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(hasFocus ? COLOR_HIGHLIGHT : COLOR_BTNFACE));
-                    else
-                        ::SetBkColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_WINDOW));
-
-                    ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_GRAYTEXT));
+                    HDC hdc = pNMTVCD->nmcd.hdc;
 
                     CString text = GetItemText(hItem);
                     int tabPos = text.Find('\t');
 
                     int datatypeOffset;
                     INT nTabStopPositions[3];
-                        
+                    int textHeight = 16;
+
                     TEXTMETRIC tm = { 0 };
 
-                    if (GetTextMetrics(pNMTVCD->nmcd.hdc, &tm))
+                    if (GetTextMetrics(hdc, &tm))
                     {
                         int length = 0;
-                        
+
                         if (Object* parent = dynamic_cast<Object*>(node->GetParent()))
                             length = parent->GetChildFirstTabPos();
 
-                        if (!length) 
+                        if (!length)
                             length = tabPos != -1 ? tabPos : text.GetLength();
 
                         datatypeOffset = tm.tmAveCharWidth * (((length/3)*3) + 1);
                         nTabStopPositions[0] = tm.tmAveCharWidth * 3;
                         nTabStopPositions[1] = tm.tmAveCharWidth * 6;
                         nTabStopPositions[2] = tm.tmAveCharWidth * 9;
+                        textHeight = tm.tmHeight;
                     }
                     else
                     {
@@ -1012,23 +1035,36 @@ void CTreeViewer::OnNMCustomdraw (NMHDR *pNMHDR, LRESULT *pResult)
 
                     RECT rc;
                     GetItemRect(hItem, &rc, TRUE);
+                    const int y = rc.top + ((rc.bottom - rc.top) - textHeight) / 2;
 
-                    ::TabbedTextOut(pNMTVCD->nmcd.hdc, rc.left + 2, rc.top + 1, text,  text.GetLength(),
-                        sizeof(nTabStopPositions)/sizeof(nTabStopPositions[0]), nTabStopPositions, rc.left + datatypeOffset);
+                    // apaga o texto padrao com a cor que o tema usa em volta do rotulo (fundo, passagem do mouse ou selecao)
+                    CRect client;
+                    GetClientRect(client);
+                    const int sampleX = (std::min)((int)rc.right + 3, (int)client.right - 3);
+                    COLORREF around = ::GetPixel(hdc, sampleX, rc.top + 2);
+                    if (around == CLR_INVALID)
+                        around = ModernTheme::Surface;
+                    ::FillRect(hdc, &rc, CBrush(around));
 
-                    if (tabPos != -1) 
+                    ::SetBkMode(hdc, TRANSPARENT);
+
+                    // linha inteira (nome, tipo, nulo...) em cinza e, por cima, so o nome na cor do texto
+                    if (tabPos != -1)
+                    {
+                        ::SetTextColor(hdc, ModernTheme::TextMuted);
+                        ::TabbedTextOut(hdc, rc.left + 2, y, text, text.GetLength(),
+                            sizeof(nTabStopPositions)/sizeof(nTabStopPositions[0]), nTabStopPositions, rc.left + datatypeOffset);
+                    }
+
+                    if (tabPos != -1)
                     {
                         LPWSTR buff = text.GetBuffer();
                         buff[tabPos] = 0;
                         text.ReleaseBuffer();
                     }
 
-                    if (isSeleted)
-                        ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(hasFocus ? COLOR_HIGHLIGHTTEXT : COLOR_BTNTEXT));
-                    else
-                        ::SetTextColor(pNMTVCD->nmcd.hdc, ModernTheme::SysColor(COLOR_WINDOWTEXT));
-
-                    ::TabbedTextOut(pNMTVCD->nmcd.hdc, rc.left + 2, rc.top + 1, text,  text.GetLength(),
+                    ::SetTextColor(hdc, ModernTheme::Text);
+                    ::TabbedTextOut(hdc, rc.left + 2, y, text, text.GetLength(),
                         sizeof(nTabStopPositions)/sizeof(nTabStopPositions[0]), nTabStopPositions, rc.left + datatypeOffset);
                 }
             }
