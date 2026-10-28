@@ -898,6 +898,9 @@ namespace
                 ::SetWindowLong(c, GWL_STYLE, style | WS_BORDER);
                 ::SetWindowSubclass(c, EditProc, 1, 0);
                 ::SendMessage(c, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(5, 5));
+                // campos com barra de rolagem (multilinha): a barra segue o tema, em vez da branca do sistema
+                if (style & (WS_VSCROLL | WS_HSCROLL))
+                    ::SetWindowTheme(c, ModernDark::ControlTheme(), NULL);
                 ::SetWindowPos(c, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
             }
         }
