@@ -29,10 +29,18 @@ static char THIS_FILE[] = __FILE__;
 namespace Common
 {
 
-SimpleDragDataSource::SimpleDragDataSource (const wchar_t* str)
+CLIPFORMAT SimpleDragDataSource::GetDbObjectNameFormat ()
+{
+    static const CLIPFORMAT format = (CLIPFORMAT)::RegisterClipboardFormat(L"SQLTools.DbObjectName");
+    return format;
+}
+
+SimpleDragDataSource::SimpleDragDataSource (const wchar_t* str, bool dbObjectName)
 {
     m_strBuffer = str;
     DelayRenderData(CF_UNICODETEXT);
+    if (dbObjectName)
+        DelayRenderData(GetDbObjectNameFormat());
 }
 
 SimpleDragDataSource::SimpleDragDataSource (const char* str)
@@ -43,6 +51,15 @@ SimpleDragDataSource::SimpleDragDataSource (const char* str)
 
 BOOL SimpleDragDataSource::OnRenderGlobalData (LPFORMATETC lpFormatEtc, HGLOBAL* phGlobal)
 {
+    if (lpFormatEtc->cfFormat == GetDbObjectNameFormat())
+    {
+        // only the presence of the format matters
+        HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE, 1);
+        if (!hGlobal) return FALSE;
+        *phGlobal = hGlobal;
+        return TRUE;
+    }
+
     if (lpFormatEtc->cfFormat == CF_UNICODETEXT)
     {
         bool bShift   = 0xFF00 & GetKeyState(VK_SHIFT) ? true : false;

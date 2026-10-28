@@ -28,9 +28,12 @@ namespace Common
     {
         CString m_strBuffer;
     public:
-        SimpleDragDataSource (const wchar_t*);
+        SimpleDragDataSource (const wchar_t*, bool dbObjectName = false);
         SimpleDragDataSource (const char*);
         virtual BOOL OnRenderGlobalData (LPFORMATETC lpFormatEtc, HGLOBAL* phGlobal);
+
+        // marks the dragged text as "owner.name" of a database object, so the editor can avoid repeating the owner
+        static CLIPFORMAT GetDbObjectNameFormat ();
     };
 
     //class SimpleDragDataSourceExt : public SimpleDragDataSource

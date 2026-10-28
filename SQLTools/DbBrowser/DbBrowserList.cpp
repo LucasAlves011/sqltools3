@@ -664,7 +664,7 @@ void DbBrowserList::OnLvnBegindrag (NMHDR* /*pNMHDR*/, LRESULT *pResult)
 {
 	CString test;
     GetListSelectionAsText(test);
-	Common::SimpleDragDataSource(test).DoDragDrop(DROPEFFECT_COPY);
+	Common::SimpleDragDataSource(test, true).DoDragDrop(DROPEFFECT_COPY);
 
     *pResult = 0;
 }

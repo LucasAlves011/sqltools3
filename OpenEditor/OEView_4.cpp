@@ -29,6 +29,8 @@
 #include "OpenEditor/OEView.h"
 #include "Common/AppUtilities.h"
 #include <COMMON/AppGlobal.h>
+#include <COMMON/SimpleDragDataSource.h>
+#include <algorithm>
 
 
 #ifdef _DEBUG
@@ -42,6 +44,53 @@ static char THIS_FILE[] = __FILE__;
 using namespace OpenEditor;
 
 COEditorView::CDragAndDropData COEditorView::m_DragAndDropData;
+
+namespace
+{
+    bool isIdentChar (wchar_t c)
+    {
+        return iswalnum(c) || c == L'_' || c == L'$' || c == L'#' || c == L'"';
+    }
+
+    std::wstring stripQuotes (std::wstring s)
+    {
+        s.erase(std::remove(s.begin(), s.end(), L'"'), s.end());
+        return s;
+    }
+
+    // The text dragged from the objects list is "owner.name" (maybe followed by ", " or a new line).
+    // Looks at what is already typed just before the drop position:
+    //   "owner."  -> drops only "name";  "owner" -> drops only ".name";
+    // a different owner (or anything else) leaves the dropped text untouched.
+    bool avoidRepeatedOwner (std::wstring& text, const std::wstring& typedBefore)
+    {
+        size_t coreEnd = text.find_last_not_of(L", \r\n");
+        if (coreEnd == std::wstring::npos) return false;
+        const std::wstring suffix = text.substr(coreEnd + 1);
+        const std::wstring core = text.substr(0, coreEnd + 1);
+
+        size_t dot = core.find(L'.');
+        if (dot == std::wstring::npos || dot == 0 || dot + 1 >= core.size() || core.find(L'.', dot + 1) != std::wstring::npos)
+            return false;
+        for (size_t i = 0; i < core.size(); i++)
+            if (iswspace(core[i]) || core[i] == L',') return false; // several objects
+        const std::wstring owner = core.substr(0, dot), name = core.substr(dot + 1);
+
+        size_t end = typedBefore.size();
+        bool hasDot = end > 0 && typedBefore[end - 1] == L'.';
+        if (hasDot) end--;
+
+        size_t start = end;
+        while (start > 0 && isIdentChar(typedBefore[start - 1])) start--;
+        if (start == end) return false;
+
+        if (_wcsicmp(stripQuotes(typedBefore.substr(start, end - start)).c_str(), stripQuotes(owner).c_str()) != 0)
+            return false;
+
+        text = (hasDot ? name : L"." + name) + suffix;
+        return true;
+    }
+}
 
 void COEditorView::PositionToPoint (OpenEditor::Position pos, CPoint& point) const
 {
@@ -418,6 +467,30 @@ BOOL COEditorView::OnDrop (COleDataObject* pDataObject, DROPEFFECT dropEffect, C
 
                 if (info == "{code}")
                     AlignCodeFragment(text.c_str(), text);
+
+                if (pDataObject->IsDataAvailable(Common::SimpleDragDataSource::GetDbObjectNameFormat()))
+                {
+                    Position caret = GetPosition();
+                    Common::OEStringW lineText;
+                    GetLineW(caret.line, lineText);
+                    const int len = (int)lineText.length();
+                    const int endCol = inx2pos(caret.line, len);
+                    const bool afterLineEnd = caret.column > endCol; // dropped on the empty space after the text
+                    int inx = afterLineEnd ? len : pos2inx(caret.line, caret.column);
+                    if (inx > 0 && inx <= len)
+                    {
+                        std::wstring typedBefore;
+                        for (int i = 0; i < inx; i++)
+                            typedBefore += lineText.at(i);
+                        if (avoidRepeatedOwner(text, typedBefore) && afterLineEnd)
+                        {
+                            // keep the object glued to the "owner" that is already typed instead of padding with spaces
+                            Position endPos = caret;
+                            endPos.column = endCol;
+                            MoveTo(endPos);
+                        }
+                    }
+                }
 
                 InsertBlock(text.c_str(), !GetBlockKeepMarkingAfterDragAndDrop()/*hideSelection*/);
             }
