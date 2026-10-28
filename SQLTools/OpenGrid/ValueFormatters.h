@@ -39,6 +39,10 @@ public:
     static std::wstring FormatBinary(const std::vector<uint8_t>& bytes);
     static std::wstring FormatText(const std::string& text, bool compact);
 
+    // "Formatar CDATA": o conteudo JSON/XML de um CDATA recebe formatacao e cores proprias
+    static void SetFormatCdata(bool on);
+    static bool GetFormatCdata();
+
     static std::string FormatXmlRtf(const std::string& text, bool autoFormat, bool compact);
     static std::string FormatJsonRtf(const std::string& text, bool autoFormat, bool compact);
     static std::string FormatBinaryRtf(const std::vector<uint8_t>& bytes);

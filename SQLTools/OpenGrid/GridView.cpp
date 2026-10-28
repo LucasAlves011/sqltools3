@@ -31,6 +31,7 @@
 // 2017-11-28 added 3 new export formats
 
 #include "stdafx.h"
+#include "ValuePanelWnd.h"
 #include <list>
 #include <fstream>
 #include <sstream>
@@ -928,6 +929,9 @@ void GridView::DoFileSave (const SQLToolsSettings& settings, int _format, bool s
 
 BOOL GridView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
+    if (OG2::ForwardWheelToValuePanel(WM_MOUSEWHEEL, nFlags, zDelta, pt))
+        return TRUE;
+
     // 1. Shift + Wheel: Horizontal scroll
     if ((nFlags & MK_SHIFT) || (::GetKeyState(VK_SHIFT) & 0x8000))
     {
@@ -994,6 +998,9 @@ BOOL GridView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 void GridView::OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt)
 {
+    if (OG2::ForwardWheelToValuePanel(0x020E /*WM_MOUSEHWHEEL*/, nFlags, zDelta, pt))
+        return;
+
     if (!m_uWheelScrollChars)
     {
         if (!::SystemParametersInfo(SPI_GETWHEELSCROLLCHARS, 0, &m_uWheelScrollChars, 0) || !m_uWheelScrollChars)

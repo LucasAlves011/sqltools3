@@ -120,11 +120,16 @@ protected:
     afx_msg void OnContextMenu(CWnd* pWnd, CPoint pos);
     afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
     afx_msg UINT OnGetDlgCode();
+    afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+    afx_msg LRESULT OnMouseHWheel(WPARAM wParam, LPARAM lParam);
 };
 
 /////////////////////////////////////////////////////////////////////////////
 // CValuePanelWnd - Painel de exibição e formatação de valores da célula
 /////////////////////////////////////////////////////////////////////////////
+// repassa WM_MOUSEWHEEL / WM_MOUSEHWHEEL ao texto do painel Valor se o ponteiro estiver sobre ele
+bool ForwardWheelToValuePanel (UINT msg, UINT nFlags, short zDelta, CPoint pt);
+
 class CValuePanelWnd : public CWnd
 {
 public:
@@ -147,6 +152,9 @@ public:
 
     void SetCompact(bool bCompact);
     bool GetCompact() const { return m_bCompact; }
+
+    void SetFormatCdata(bool on);
+    bool GetFormatCdata() const { return m_bFormatCdata; }
 
     void SetEncoding(EValueEncoding enc);
     EValueEncoding GetEncoding() const { return m_encoding; }
@@ -203,6 +211,7 @@ private:
     bool                 m_bAutoFormat;
     bool                 m_bWordWrap;
     bool                 m_bCompact;
+    bool                 m_bFormatCdata;
     EValueEncoding       m_encoding;
 };
 

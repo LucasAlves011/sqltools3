@@ -630,8 +630,11 @@ std::wstring ValueFormatters::ProcessValue(
 static std::string RtfHeader ()
 {
     struct C { int r, g, b; };
-    static const C light[] = { {107,114,128}, {122,63,181}, {180,83,9}, {10,125,79}, {138,146,156}, {156,163,175} };
-    static const C dark[]  = { {150,158,170}, {198,140,255}, {240,165,95}, {120,205,150}, {120,128,140}, {100,106,118} };
+    // 1..6: documento; 7..10: conteudo de CDATA formatado (delimitadores, nomes, atributos/numeros, valores/textos)
+    static const C light[] = { {107,114,128}, {122,63,181}, {180,83,9}, {10,125,79}, {138,146,156}, {156,163,175},
+                               {37,99,235}, {29,78,216}, {13,148,136}, {190,24,93} };
+    static const C dark[]  = { {150,158,170}, {198,140,255}, {240,165,95}, {120,205,150}, {120,128,140}, {100,106,118},
+                               {96,165,250}, {147,197,253}, {94,234,212}, {244,114,182} };
     const C* colors = ModernTheme::IsDark() ? dark : light;
 
     // cf1: delimitadores < > / = { } [ ] , :   cf2: nomes de tags / chaves JSON   cf3: nomes de atributos / numeros / booleanos
@@ -645,7 +648,7 @@ static std::string RtfHeader ()
         out += buf;
     }
     out += ";";
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < (int)(sizeof(light) / sizeof(light[0])); ++i)
     {
         char buf[64];
         sprintf_s(buf, "\\red%d\\green%d\\blue%d;", colors[i].r, colors[i].g, colors[i].b);
@@ -678,13 +681,20 @@ static inline void AppendRtfString(std::string& out, const std::wstring& str)
         AppendRtfChar(out, c);
 }
 
-std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoFormat, bool compact)
-{
-    std::wstring wtext = FormatXml(text, autoFormat, compact);
-    if (wtext.empty())
-        return "";
+static const int kDocPal[7]   = { 0, 1, 2, 3, 4, 5, 6 };
+static const int kCdataPal[7] = { 0, 7, 8, 9, 10, 5, 6 };
 
-    std::string out = RtfHeader();
+static std::string CF (const int* pal, int n)
+{
+    char buf[16];
+    sprintf_s(buf, "\\cf%d ", pal[n]);
+    return buf;
+}
+
+static bool AppendCdataContent (std::string& out, const std::wstring& inner, bool autoFormat);
+
+static void AppendXmlRtf (std::string& out, const std::wstring& wtext, const int* pal, bool autoFormat, bool formatCdata)
+{
     size_t i = 0;
     const size_t len = wtext.size();
 
@@ -699,7 +709,7 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
                 if (endDecl != std::wstring::npos) endDecl += 2;
                 else endDecl = (wtext.find(L'>', i) != std::wstring::npos) ? (wtext.find(L'>', i) + 1) : len;
 
-                out += "\\cf6 ";
+                out += CF(pal, 6) + "";
                 AppendRtfString(out, wtext.substr(i, endDecl - i));
                 i = endDecl;
                 continue;
@@ -712,30 +722,36 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
                 if (endComment != std::wstring::npos) endComment += 3;
                 else endComment = (wtext.find(L'>', i) != std::wstring::npos) ? (wtext.find(L'>', i) + 1) : len;
 
-                out += "\\cf5 ";
+                out += CF(pal, 5) + "";
                 AppendRtfString(out, wtext.substr(i, endComment - i));
                 i = endComment;
                 continue;
             }
 
             // Check for <![CDATA[ ... ]]>
-            if (i + 8 < len && wtext.substr(i, 9) == L"<![CDATA[")
+            if (i + 8 < len && wtext.compare(i, 9, L"<![CDATA[") == 0)
             {
                 size_t endCdata = wtext.find(L"]]>", i);
-                if (endCdata != std::wstring::npos) endCdata += 3;
-                else endCdata = len;
+                const bool terminated = (endCdata != std::wstring::npos);
+                size_t contentEnd = terminated ? endCdata : len;
+                size_t next = terminated ? endCdata + 3 : len;
 
-                out += "\\cf6 <![CDATA[\\cf0 ";
-                size_t contentStart = i + 9;
-                size_t contentEnd = (endCdata >= 3) ? (endCdata - 3) : contentStart;
-                AppendRtfString(out, wtext.substr(contentStart, contentEnd - contentStart));
-                out += "\\cf6 ]]>\\cf0 ";
-                i = endCdata;
+                std::wstring inner = wtext.substr(i + 9, contentEnd - (i + 9));
+                out += CF(pal, 6) + "<![CDATA[";
+                if (!(formatCdata && AppendCdataContent(out, inner, autoFormat)))
+                {
+                    out += CF(pal, 0) + "";
+                    AppendRtfString(out, inner);
+                }
+                if (terminated)
+                    out += CF(pal, 6) + "]]>";
+                out += CF(pal, 0) + "";
+                i = next;
                 continue;
             }
 
             // Regular tag: <tag ... > or </tag> or <tag ... />
-            out += "\\cf1 <";
+            out += CF(pal, 1) + "<";
             ++i;
             if (i < len && wtext[i] == L'/')
             {
@@ -749,7 +765,7 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
                 ++i;
             if (i > tagStart)
             {
-                out += "\\cf2 ";
+                out += CF(pal, 2) + "";
                 AppendRtfString(out, wtext.substr(tagStart, i - tagStart));
             }
 
@@ -758,7 +774,7 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
             {
                 if (wtext[i] == L'/' && i + 1 < len && wtext[i + 1] == L'>')
                 {
-                    out += "\\cf1 />";
+                    out += CF(pal, 1) + "/>";
                     i += 2;
                     break;
                 }
@@ -776,7 +792,7 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
                     ++i;
                 if (i > attrStart)
                 {
-                    out += "\\cf3 ";
+                    out += CF(pal, 3) + "";
                     AppendRtfString(out, wtext.substr(attrStart, i - attrStart));
                 }
 
@@ -789,7 +805,7 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
 
                 if (i < len && wtext[i] == L'=')
                 {
-                    out += "\\cf1 =";
+                    out += CF(pal, 1) + "=";
                     ++i;
                 }
 
@@ -811,37 +827,30 @@ std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoForm
                     if (i < len && wtext[i] == quote)
                         ++i;
 
-                    out += "\\cf4 ";
+                    out += CF(pal, 4) + "";
                     AppendRtfString(out, wtext.substr(valStart, i - valStart));
                 }
             }
 
             if (i < len && wtext[i] == L'>')
             {
-                out += "\\cf1 >";
+                out += CF(pal, 1) + ">";
                 ++i;
             }
         }
         else
         {
             // Content between tags
-            out += "\\cf0 ";
+            out += CF(pal, 0) + "";
             AppendRtfChar(out, wtext[i]);
             ++i;
         }
     }
 
-    out += "\r\n}";
-    return out;
 }
 
-std::string ValueFormatters::FormatJsonRtf(const std::string& text, bool autoFormat, bool compact)
+static void AppendJsonRtf (std::string& out, const std::wstring& wtext, const int* pal)
 {
-    std::wstring wtext = FormatJson(text, autoFormat, compact);
-    if (wtext.empty())
-        return "";
-
-    std::string out = RtfHeader();
     size_t i = 0;
     const size_t len = wtext.size();
 
@@ -879,25 +888,25 @@ std::string ValueFormatters::FormatJsonRtf(const std::string& text, bool autoFor
 
             if (next < len && wtext[next] == L':')
             {
-                out += "\\cf2 ";
+                out += CF(pal, 2) + "";
                 AppendRtfString(out, strLit);
                 while (i < next)
                 {
                     AppendRtfChar(out, wtext[i]);
                     ++i;
                 }
-                out += "\\cf1 :";
+                out += CF(pal, 1) + ":";
                 i = next + 1;
             }
             else
             {
-                out += "\\cf4 ";
+                out += CF(pal, 4) + "";
                 AppendRtfString(out, strLit);
             }
         }
         else if (c == L'{' || c == L'}' || c == L'[' || c == L']' || c == L',' || c == L':')
         {
-            out += "\\cf1 ";
+            out += CF(pal, 1) + "";
             AppendRtfChar(out, c);
             ++i;
         }
@@ -906,7 +915,7 @@ std::string ValueFormatters::FormatJsonRtf(const std::string& text, bool autoFor
             size_t numStart = i;
             while (i < len && ((wtext[i] >= L'0' && wtext[i] <= L'9') || wtext[i] == L'.' || wtext[i] == L'e' || wtext[i] == L'E' || wtext[i] == L'+' || wtext[i] == L'-'))
                 ++i;
-            out += "\\cf3 ";
+            out += CF(pal, 3) + "";
             AppendRtfString(out, wtext.substr(numStart, i - numStart));
         }
         else if (iswalpha(c))
@@ -914,17 +923,86 @@ std::string ValueFormatters::FormatJsonRtf(const std::string& text, bool autoFor
             size_t wordStart = i;
             while (i < len && iswalpha(wtext[i]))
                 ++i;
-            out += "\\cf3 ";
+            out += CF(pal, 3) + "";
             AppendRtfString(out, wtext.substr(wordStart, i - wordStart));
         }
         else
         {
-            out += "\\cf0 ";
+            out += CF(pal, 0) + "";
             AppendRtfChar(out, c);
             ++i;
         }
     }
 
+}
+
+static std::string WideToUtf8 (const std::wstring& w)
+{
+    if (w.empty()) return std::string();
+    int n = ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), NULL, 0, NULL, NULL);
+    std::string s(n, '\0');
+    ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), &s[0], n, NULL, NULL);
+    return s;
+}
+
+// conteudo de um CDATA: se for JSON ou XML, formata e usa a paleta propria; false = deixa como texto
+static bool AppendCdataContent (std::string& out, const std::wstring& inner, bool autoFormat)
+{
+    static const wchar_t* const ws = L" \t\r\n";
+    size_t a = inner.find_first_not_of(ws);
+    if (a == std::wstring::npos)
+        return false;
+    size_t b = inner.find_last_not_of(ws);
+    std::wstring core = inner.substr(a, b - a + 1);
+
+    const bool xml  = core[0] == L'<';
+    const bool json = core[0] == L'{' || core[0] == L'[';
+    if (!xml && !json)
+        return false;
+
+    std::string utf8 = WideToUtf8(core);
+    std::wstring fmt = xml ? ValueFormatters::FormatXml(utf8, autoFormat, false)
+                           : ValueFormatters::FormatJson(utf8, autoFormat, false);
+    if (fmt.empty())
+        fmt = core;
+    size_t e = fmt.find_last_not_of(ws);
+    fmt.erase(e == std::wstring::npos ? 0 : e + 1);
+
+    const bool multi = fmt.find(L'\n') != std::wstring::npos;
+    if (multi)
+        out += "\\par\r\n";
+    if (xml) AppendXmlRtf(out, fmt, kCdataPal, autoFormat, false);
+    else     AppendJsonRtf(out, fmt, kCdataPal);
+    if (multi)
+        out += "\\par\r\n";
+    return true;
+}
+
+static bool s_formatCdata = false;
+
+void ValueFormatters::SetFormatCdata (bool on) { s_formatCdata = on; }
+bool ValueFormatters::GetFormatCdata ()        { return s_formatCdata; }
+
+std::string ValueFormatters::FormatXmlRtf(const std::string& text, bool autoFormat, bool compact)
+{
+    std::wstring wtext = FormatXml(text, autoFormat, compact);
+    if (wtext.empty())
+        return "";
+
+    std::string out = RtfHeader();
+    AppendXmlRtf(out, wtext, kDocPal, autoFormat, s_formatCdata);
+    out += "\r\n}";
+    return out;
+}
+
+std::string ValueFormatters::FormatJsonRtf(const std::string& text, bool autoFormat, bool compact)
+{
+    std::wstring wtext = FormatJson(text, autoFormat, compact);
+    if (wtext.empty())
+        return "";
+
+    std::string out = RtfHeader();
+    AppendJsonRtf(out, wtext, kDocPal);
     out += "\r\n}";
     return out;
 }

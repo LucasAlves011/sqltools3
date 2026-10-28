@@ -2,8 +2,20 @@ SQLTools Changelog
 ==================
 
 
+Unreleased
+----------
+Date: 2026-10-27
+  * Value panel: the text zoom (Ctrl + wheel) is kept when moving to another cell,
+    until SQLTools is closed.
+  * Value panel: new "Format CDATA" option. JSON or XML inside a CDATA section is
+    formatted and shown in its own colors.
+  * Value panel: Shift + wheel and trackpad horizontal gestures scroll the text
+    sideways.
+
+
 3.3.1
 -----
+Date: 2026-10-27
   * Favorite owners now work at two levels: global favorites (Settings >
     Favorite Owners) appear on every connection, and the star in the owners
     panel saves favorites per connection (owner-favorites.ini in the
@@ -15,6 +27,7 @@ SQLTools Changelog
 
 3.3.0
 -----
+Date: 2026-10-27
   * New modern look across the whole application: flat toolbars, tabs, status
     bar, panels and grid, with a refreshed set of vector icons.
   * New Objects List (Alt+3): type bar, favorite owners, filters, status badges
@@ -32,11 +45,13 @@ SQLTools Changelog
 
 3.2.0
 -----
+Date: 2026-10-24
   * Release used to validate the update flow (no functional changes).
 
 
 3.1.0
 -----
+Date: 2026-10-24
   * Oracle Instant Client 19c is now embedded in SQLTools.exe: no Oracle Client
     installation is required (an OCI.DLL already available on the machine is
     still preferred).
@@ -47,6 +62,7 @@ SQLTools Changelog
 
 3.0.2
 -----
+Date: 2026-09-10
   * Cursor peek: redesigned with vector icons, smarter sizing, back navigation
     and a syntax fix; copy the selection or the whole content with a button,
     shortcuts and the context menu.
@@ -56,6 +72,7 @@ SQLTools Changelog
 
 3.0.1
 -----
+Date: 2026-09-09
   * New collapsible Value side panel with automatic BLOB/hex decoding and
     syntax highlighting for XML, JSON, text and hex dump.
   * Isolated Ctrl+A and Ctrl+C in the panel and selective text copy.

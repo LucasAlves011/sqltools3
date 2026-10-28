@@ -31,12 +31,18 @@ enum
     IDM_OPT_AUTOFORMAT = 10206,
     IDM_OPT_COMPACT    = 10207,
     IDM_ENC_UTF8       = 10208,
-    IDM_ENC_ANSI       = 10209
+    IDM_ENC_ANSI       = 10209,
+    IDM_OPT_CDATA      = 10210
 };
 
 static const TCHAR* s_szSplitterClass = _T("SQLTools_ValueSplitter");
 static const TCHAR* s_szGutterClass   = _T("SQLTools_ValueGutter");
 static const TCHAR* s_szPanelClass    = _T("SQLTools_ValuePanel");
+
+// zoom do texto (Ctrl + roda): lembrado ate fechar o programa; o RTF carregado a cada valor o devolveria a 100%
+static int s_zoomNum = 0, s_zoomDen = 0;
+
+static const TCHAR* s_szProfileSection = _T("GridValuePanel");
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -587,6 +593,8 @@ BEGIN_MESSAGE_MAP(CValueEditCtrl, CRichEditCtrl)
     ON_WM_CONTEXTMENU()
     ON_WM_KEYDOWN()
     ON_WM_GETDLGCODE()
+    ON_WM_MOUSEWHEEL()
+    ON_MESSAGE(0x020E /*WM_MOUSEHWHEEL*/, OnMouseHWheel)
 END_MESSAGE_MAP()
 
 CValueEditCtrl::CValueEditCtrl()
@@ -595,6 +603,63 @@ CValueEditCtrl::CValueEditCtrl()
 
 CValueEditCtrl::~CValueEditCtrl()
 {
+}
+
+// rolagem horizontal (trackpad e Shift + roda), como no editor e no grid: por colunas de caracteres, com acumulador
+static int s_hWheelAccum = 0;
+
+static void ScrollEditHorizontally (CRichEditCtrl& edit, int zDelta)      // positivo = para a direita
+{
+    UINT chars = 3;
+    if (!::SystemParametersInfo(SPI_GETWHEELSCROLLCHARS, 0, &chars, 0) || !chars)
+        chars = 3;
+
+    s_hWheelAccum += zDelta;
+    int n = ::MulDiv(s_hWheelAccum, chars, WHEEL_DELTA);
+    if (n == 0)
+        return;
+    s_hWheelAccum -= ::MulDiv(n, WHEEL_DELTA, chars);
+
+    const int code = n > 0 ? SB_LINERIGHT : SB_LINELEFT;
+    for (int k = abs(n); k > 0; --k)
+        edit.SendMessage(WM_HSCROLL, MAKEWPARAM(code, 0), 0);
+}
+
+LRESULT CValueEditCtrl::OnMouseHWheel(WPARAM wParam, LPARAM)
+{
+    ScrollEditHorizontally(*this, (short)HIWORD(wParam));
+    return 0;
+}
+
+BOOL CValueEditCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+    if ((nFlags & MK_SHIFT) && !(nFlags & MK_CONTROL))
+    {
+        ScrollEditHorizontally(*this, -zDelta);                  // roda para cima = para a esquerda
+        return TRUE;
+    }
+    BOOL res = CRichEditCtrl::OnMouseWheel(nFlags, zDelta, pt);
+    if (nFlags & MK_CONTROL)
+    {
+        int num = 0, den = 0;
+        SendMessage(EM_GETZOOM, (WPARAM)&num, (LPARAM)&den);
+        s_zoomNum = num;
+        s_zoomDen = den;
+    }
+    return res;
+}
+
+// o foco costuma estar na grade: a roda sobre o texto do painel Valor e repassada a ele
+bool ForwardWheelToValuePanel (UINT msg, UINT nFlags, short zDelta, CPoint pt)
+{
+    HWND h = ::WindowFromPoint(pt);
+    if (!h)
+        return false;
+    CValueEditCtrl* edit = dynamic_cast<CValueEditCtrl*>(CWnd::FromHandlePermanent(h));
+    if (!edit)
+        return false;
+    edit->SendMessage(msg, MAKEWPARAM(nFlags, zDelta), MAKELPARAM(pt.x, pt.y));
+    return true;
 }
 
 UINT CValueEditCtrl::OnGetDlgCode()
@@ -737,6 +802,7 @@ CValuePanelWnd::CValuePanelWnd(OciGridView* pGrid)
     , m_bAutoFormat(true)
     , m_bWordWrap(false)
     , m_bCompact(false)
+    , m_bFormatCdata(false)
     , m_encoding(VE_UTF8)
     , m_lastMenuCloseTime(0)
     , m_bHoverClose(false)
@@ -817,6 +883,9 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
         cf.crTextColor = ModernTheme::Text;
         m_wndEdit.SetDefaultCharFormat(cf);
     }
+
+    m_bFormatCdata = AfxGetApp()->GetProfileInt(s_szProfileSection, _T("FormatCdata"), 0) != 0;
+    ValueFormatters::SetFormatCdata(m_bFormatCdata);
 
     // Gutter
     m_wndGutter.Create(this, IDC_VP_GUTTER, &m_wndEdit);
@@ -1021,6 +1090,14 @@ void CValuePanelWnd::SetCompact(bool bCompact)
     RefreshDisplay();
 }
 
+void CValuePanelWnd::SetFormatCdata(bool on)
+{
+    m_bFormatCdata = on;
+    ValueFormatters::SetFormatCdata(on);
+    AfxGetApp()->WriteProfileInt(s_szProfileSection, _T("FormatCdata"), on ? 1 : 0);
+    RefreshDisplay();
+}
+
 void CValuePanelWnd::SetEncoding(EValueEncoding enc)
 {
     m_encoding = enc;
@@ -1077,6 +1154,10 @@ void CValuePanelWnd::RefreshDisplay()
         m_wndEdit.SetSel(0, 0);
     }
 
+    // o RTF zera o zoom: devolve o que o usuario escolheu
+    if (s_zoomNum > 0 && s_zoomDen > 0)
+        m_wndEdit.SendMessage(EM_SETZOOM, s_zoomNum, s_zoomDen);
+
     // Atualiza o rótulo do botão Dropdown
     CString btnLabel;
     switch (m_currentFormat)
@@ -1113,6 +1194,8 @@ void CValuePanelWnd::OnFormatDropdown()
     menu.AppendMenu(MF_STRING | (m_bWordWrap   ? MF_CHECKED : MF_UNCHECKED), IDM_OPT_WORDWRAP,   _T("Quebra de linha"));
     menu.AppendMenu(MF_STRING | (m_bAutoFormat ? MF_CHECKED : MF_UNCHECKED), IDM_OPT_AUTOFORMAT, _T("Formata\xE7\xE3o autom\xE1tica"));
     menu.AppendMenu(MF_STRING | (m_bCompact    ? MF_CHECKED : MF_UNCHECKED), IDM_OPT_COMPACT,    _T("Save compact value (minified)"));
+
+    menu.AppendMenu(MF_STRING | (m_bFormatCdata ? MF_CHECKED : MF_UNCHECKED), IDM_OPT_CDATA, _T("Formatar CDATA"));
 
     CMenu subEnc;
     subEnc.CreatePopupMenu();
@@ -1154,6 +1237,9 @@ void CValuePanelWnd::OnFormatDropdown()
         break;
     case IDM_OPT_COMPACT:
         SetCompact(!m_bCompact);
+        break;
+    case IDM_OPT_CDATA:
+        SetFormatCdata(!m_bFormatCdata);
         break;
     case IDM_ENC_UTF8:
         SetEncoding(VE_UTF8);
