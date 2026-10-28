@@ -61,6 +61,8 @@ IDB_PEEK_ICONS         BITMAP                  "res\\PeekIcons.bmp"
 #ifdef OCI_EMBED
 // Oracle Instant Client comprimido (gerado por tools/PackOci), extraido em runtime por OCI8/EmbeddedOci.cpp
 IDR_OCI_BUNDLE          RCDATA                  "..\\3dParty\\oracle\\instantclient19\\oci19.bin"
+// licenca Oracle (Free Use Terms) gravada junto das DLLs extraidas
+IDR_OCI_LICENSE         RCDATA                  "..\\3dParty\\oracle\\instantclient19\\BASIC_LITE_LICENSE"
 #endif
 
 #ifndef NOMANIFEST

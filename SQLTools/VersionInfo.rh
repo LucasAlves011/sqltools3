@@ -36,7 +36,8 @@
 #define SQLTOOLS_COPYRIGHT      "Copyright (C) 1997-2026 Aleksey Kochetov\r\n"\
                                 "Contributors: Tomasz Drzewiecki, Ken Clubok,\r\n"\
                                 "converted to 64 bit by Wilson Yeung,\r\n"\
-                                "many improvements taken from SQLTools++ by Randolf Geist"
+                                "many improvements taken from SQLTools++ by Randolf Geist,\r\n"\
+                                "modernization and further changes by Lucas Matheus"
 
 #define SQLTOOLS_BUILD          2
 #define SQLTOOLS_BUILD_S        "2"

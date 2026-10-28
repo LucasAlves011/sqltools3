@@ -4,6 +4,7 @@
 //
 #define IDR_MANIFEST                    1
 #define IDR_OCI_BUNDLE                  9100
+#define IDR_OCI_LICENSE                 9102
 #define IDR_CHANGELOG                   9101
 #define IDB_VALUE_ICONS                 9103
 #define IDB_OBJLIST_ICONS               9104

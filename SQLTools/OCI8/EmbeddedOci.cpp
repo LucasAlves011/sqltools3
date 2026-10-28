@@ -66,8 +66,12 @@ namespace EmbeddedOci
             return (((unsigned long long)a.nFileSizeHigh << 32) | a.nFileSizeLow) == size;
         }
 
+        const wchar_t* const LICENSE_NAME = L"ORACLE_LICENSE.txt";
+
         bool allPresent (const std::vector<Entry>& entries, const std::wstring& dir)
         {
+            if (GetFileAttributesW((dir + L"\\" + LICENSE_NAME).c_str()) == INVALID_FILE_ATTRIBUTES)
+                return false;
             for (size_t i = 0; i < entries.size(); ++i)
                 if (!fileHasSize(dir + L"\\" + entries[i].name, entries[i].rawSize))
                     return false;
@@ -89,6 +93,15 @@ namespace EmbeddedOci
             return CloseHandle(h) && ok;
         }
 
+        // a licenca da Oracle exige que uma copia acompanhe as DLLs distribuidas
+        bool writeLicense (const std::wstring& dir)
+        {
+            HRSRC hLic = FindResourceW(0, MAKEINTRESOURCEW(IDR_OCI_LICENSE), RT_RCDATA);
+            HGLOBAL hLicMem = hLic ? LoadResource(0, hLic) : 0;
+            const void* lic = hLicMem ? LockResource(hLicMem) : 0;
+            return lic && writeFile(dir + L"\\" + LICENSE_NAME, lic, SizeofResource(0, hLic));
+        }
+
         bool extractAll (const std::vector<Entry>& entries, const std::wstring& dir)
         {
             DECOMPRESSOR_HANDLE dec = 0;
@@ -105,7 +118,8 @@ namespace EmbeddedOci
                   && writeFile(dir + L"\\" + e.name, raw.empty() ? 0 : &raw[0], raw.size());
             }
             CloseDecompressor(dec);
-            return ok;
+
+            return ok && writeLicense(dir);
         }
 
         void removeDir (const std::wstring& dir)
@@ -181,8 +195,12 @@ namespace EmbeddedOci
                 CreateDirectoryW(tmp.c_str(), 0);
 
                 bool ok = extractAll(entries, tmp);
-                if (ok && !MoveFileExW(tmp.c_str(), dir.c_str(), 0))
-                    ok = allPresent(entries, dir); // outra instancia pode ter concluido antes
+                if (ok)
+                {
+                    removeDir(dir); // pasta de versao anterior sem a licenca; falha se alguma DLL estiver em uso
+                    if (!MoveFileExW(tmp.c_str(), dir.c_str(), 0))
+                        ok = allPresent(entries, dir) || (writeLicense(dir) && allPresent(entries, dir)); // outra instancia pode ter concluido antes
+                }
 
                 removeDir(tmp); // se foi renomeado, ja nao existe
                 if (!ok)
