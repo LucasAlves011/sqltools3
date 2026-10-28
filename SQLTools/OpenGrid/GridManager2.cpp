@@ -51,6 +51,14 @@ PaintGridManager::PaintGridManager (CWnd* client, AGridSource* source, bool shou
 {
     //m_Dcc.m_pSubscriber = this;
     InitColors();
+
+    // troca de tema com o programa aberto: as cores da grade (compartilhadas) sao refeitas
+    static bool s_listening = false;
+    if (!s_listening)
+    {
+        s_listening = true;
+        ModernTheme::AddThemeListener([]() { PaintGridManager::InitColors(); });
+    }
 }
 
 void PaintGridManager::InitColors ()

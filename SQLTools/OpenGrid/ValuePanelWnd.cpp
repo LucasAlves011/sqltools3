@@ -107,6 +107,10 @@ enum { VI_CODE = 0, VI_COPY = 1, VI_SAVE = 2, VI_DROPDOWN = 3, VI_HILITE = 4 };
 static CImageList& ValueIcons ()
 {
     static CImageList s_list;
+    static unsigned s_generation = 0;
+    if (s_generation != ModernTheme::Generation() && s_list.GetSafeHandle())
+        s_list.DeleteImageList();           // a paleta mudou: icones refeitos com os tons do tema atual
+    s_generation = ModernTheme::Generation();
     if (!s_list.GetSafeHandle())
     {
         HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_VALUE_ICONS),
@@ -793,6 +797,7 @@ BEGIN_MESSAGE_MAP(CValuePanelWnd, CWnd)
     ON_BN_CLICKED(IDC_VP_BTN_COPY,   OnBtnCopy)
     ON_BN_CLICKED(IDC_VP_BTN_SAVE,   OnBtnSave)
     ON_EN_VSCROLL(IDC_VP_EDIT,       OnEditVScroll)
+    ON_REGISTERED_MESSAGE(ModernTheme::UM_THEME_CHANGED, OnThemeChanged)
 END_MESSAGE_MAP()
 
 CValuePanelWnd::CValuePanelWnd(OciGridView* pGrid)
@@ -1125,6 +1130,22 @@ static DWORD CALLBACK EditStreamInCallback(DWORD_PTR dwCookie, LPBYTE pbBuff, LO
     memcpy(pbBuff, pCookie->pData + pCookie->offset, toCopy);
     pCookie->offset += toCopy;
     *pcb = toCopy;
+    return 0;
+}
+
+// troca de tema com o programa aberto: fundo e cor do texto do editor e conteudo realcado de novo
+LRESULT CValuePanelWnd::OnThemeChanged(WPARAM, LPARAM)
+{
+    m_wndEdit.SetBackgroundColor(FALSE, ModernTheme::Surface);
+    CHARFORMAT2 cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_COLOR;
+    cf.crTextColor = ModernTheme::Text;
+    m_wndEdit.SetDefaultCharFormat(cf);
+
+    RefreshDisplay();
+    m_wndGutter.Invalidate();
+    Invalidate();
     return 0;
 }
 

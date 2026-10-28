@@ -11,6 +11,11 @@ namespace ModernDark
     // nome do tema de controles do sistema para listas, arvores e barras de rolagem
     const wchar_t* ControlTheme ();
 
+    // troca de tema com o programa aberto
+    void RestyleMenuBar (HWND hFrame);
+    void ApplyAppMode ();
+    void ConvertBitmap (HBITMAP hBitmap, bool premultiplied, bool toDark);
+
     // barra de titulo escura (e cor da legenda igual a paleta) para uma janela de nivel superior
     void StyleTitleBar (HWND hWnd);
 

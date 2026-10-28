@@ -504,9 +504,10 @@ HBRUSH CDbSourceWnd::OnCtlColor (CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
     if (nCtlColor == CTLCOLOR_DLG || nCtlColor == CTLCOLOR_STATIC)
     {
-        static CBrush s_surface(ModernTheme::Surface);
+        static CBrush s_surface;
+        static COLORREF s_color = CLR_INVALID;
         pDC->SetBkColor(ModernTheme::Surface);
-        return (HBRUSH)s_surface.GetSafeHandle();
+        return ModernTheme::CachedBrush(s_surface, s_color, ModernTheme::Surface);
     }
     return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
 }

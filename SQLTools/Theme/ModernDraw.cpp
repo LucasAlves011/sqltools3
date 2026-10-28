@@ -55,6 +55,9 @@ namespace ModernDraw
     CImageList& Images ()
     {
         static CImageList list;
+        static unsigned generation = 0;
+        if (generation != ModernTheme::Generation() && list.GetSafeHandle()) { list.DeleteImageList(); }
+        generation = ModernTheme::Generation();
         if (!list.GetSafeHandle())
         {
             HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_OBJLIST_ICONS),
@@ -73,6 +76,22 @@ namespace ModernDraw
 
     void CreatePaneImageList (CImageList& list)
     {
+        // as listas ficam registradas para serem refeitas (no mesmo objeto) na troca de tema
+        static std::vector<CImageList*> lists;
+        if (std::find(lists.begin(), lists.end(), &list) == lists.end())
+        {
+            lists.push_back(&list);
+            if (lists.size() == 1)
+                ModernTheme::AddThemeListener([]() {
+                    for (size_t i = 0; i < lists.size(); ++i)
+                        if (lists[i]->GetSafeHandle())
+                        {
+                            lists[i]->DeleteImageList();
+                            CreatePaneImageList(*lists[i]);
+                        }
+                });
+        }
+
         HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_PANE_ICONS32),
                                             IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
         if (hBmp)
@@ -88,6 +107,9 @@ namespace ModernDraw
     void DrawDialogIcon (HDC hdc, int index, int x, int y, bool disabled)
     {
         static CImageList list;
+        static unsigned generation = 0;
+        if (generation != ModernTheme::Generation() && list.GetSafeHandle()) { list.DeleteImageList(); }
+        generation = ModernTheme::Generation();
         if (!list.GetSafeHandle())
         {
             HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_DIALOG_ICONS),
@@ -125,6 +147,9 @@ namespace ModernDraw
     void DrawPeekIcon (HDC hdc, int index, int x, int y)
     {
         static CImageList list;
+        static unsigned generation = 0;
+        if (generation != ModernTheme::Generation() && list.GetSafeHandle()) { list.DeleteImageList(); }
+        generation = ModernTheme::Generation();
         if (!list.GetSafeHandle())
         {
             HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_PEEK_ICONS),

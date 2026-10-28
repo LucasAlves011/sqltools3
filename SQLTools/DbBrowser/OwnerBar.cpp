@@ -308,10 +308,11 @@ protected:
     {
         if (nCtlColor == CTLCOLOR_EDIT)
         {
-            static CBrush s_brush(Surface);
+            static CBrush s_brush;
+            static COLORREF s_color = CLR_INVALID;
             pDC->SetBkColor(Surface);
             pDC->SetTextColor(Text);
-            return (HBRUSH)s_brush.GetSafeHandle();
+            return CachedBrush(s_brush, s_color, Surface);
         }
         return CModernPopup::OnCtlColor(pDC, pWnd, nCtlColor);
     }

@@ -546,11 +546,8 @@ int CSQLToolsApp::DoMessageBox (LPCTSTR lpszPrompt, UINT nType, UINT /*nIDPrompt
 
 void CSQLToolsApp::OnViewDarkTheme()
 {
-    // a paleta e escolhida uma vez por execucao: a troca vale na proxima partida
-    const bool dark = !ModernTheme::LoadThemeSetting();
-    ModernTheme::SaveThemeSetting(dark);
-    AfxMessageBox(dark ? L"The dark theme will be used the next time SQLTools starts."
-                       : L"The light theme will be used the next time SQLTools starts.", MB_OK | MB_ICONINFORMATION);
+    // a troca vale na hora: paleta, icones e janelas abertas sao atualizados
+    ModernTheme::SwitchTheme(!ModernTheme::IsDark());
 }
 
 void CSQLToolsApp::OnUpdateViewDarkTheme(CCmdUI* pCmdUI)

@@ -183,11 +183,32 @@ BOOL CBooklet::GetActiveTab (CView*& pWnd) const
     return (m_Tabs.size() > 0) ? TRUE : FALSE;
 }
 
+// troca de tema com o programa aberto: os icones da barra voltam a ser lidos do recurso, nos tons do tema atual
+LRESULT CBooklet::OnThemeChanged (WPARAM, LPARAM)
+{
+    HBITMAP hBmp = (HBITMAP)::LoadImage(AfxGetResourceHandle(), MAKEINTRESOURCE(IDT_BOOKLET), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+    if (hBmp)
+    {
+        ModernDark::RecolorBitmap(hBmp);        // so tem efeito no tema escuro
+        CImageList images;
+        images.Create(16, 16, ILC_COLOR32, 22, 0);
+        CBitmap bmp;
+        bmp.Attach(hBmp);
+        images.Add(&bmp, (CBitmap*)NULL);
+        HIMAGELIST old = (HIMAGELIST)m_toolbar.SendMessage(TB_SETIMAGELIST, 0, (LPARAM)images.Detach());
+        if (old)
+            ImageList_Destroy(old);
+    }
+    m_toolbar.Invalidate();
+    return 0;
+}
+
 BEGIN_MESSAGE_MAP(CBooklet, CView)
 	//{{AFX_MSG_MAP(CBooklet)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
 	//}}AFX_MSG_MAP
+    ON_REGISTERED_MESSAGE(ModernTheme::UM_THEME_CHANGED, OnThemeChanged)
     ON_COMMAND(ID_BOOKLET_PIN,       OnPin)
     ON_COMMAND(ID_BOOKLET_RESULT,    OnQuery)
     ON_COMMAND(ID_BOOKLET_STATISTICS,OnStatistics)

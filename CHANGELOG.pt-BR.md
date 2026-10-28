@@ -5,6 +5,9 @@ SQLTools - Histórico de alterações
 3.4.0
 -----
 Data: 2026-10-28
+  * View > Dark Theme agora troca o tema na hora, sem reiniciar o SQLTools. As
+    janelas abertas, barras de ferramentas, ícones, editor, grades e painéis
+    acompanham a troca.
   * Object Viewer: visual moderno. Ícones novos, fonte e cores do tema, seleção
     em linha inteira e combo no tema escuro. O comportamento não muda.
   * What's New: a barra de rolagem segue o tema escuro (também em outros campos

@@ -455,10 +455,11 @@ HBRUSH GridView::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
     if (nCtlColor == CTLCOLOR_EDIT
     || nCtlColor == CTLCOLOR_STATIC)
     {
-        static CBrush surface(ModernTheme::Surface);
+        static CBrush surface;
+        static COLORREF surfaceColor = CLR_INVALID;
         pDC->SetBkColor(ModernTheme::Surface);
         pDC->SetTextColor(ModernTheme::Text);
-        return (HBRUSH)surface.GetSafeHandle();
+        return ModernTheme::CachedBrush(surface, surfaceColor, ModernTheme::Surface);
     }
     else
         return CView::OnCtlColor(pDC, pWnd, nCtlColor);

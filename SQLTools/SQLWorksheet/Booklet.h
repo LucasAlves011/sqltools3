@@ -56,6 +56,7 @@ protected:
 	afx_msg int  OnCreate (LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize (UINT nType, int cx, int cy);
 	afx_msg void OnQuery      ();
+	afx_msg LRESULT OnThemeChanged (WPARAM, LPARAM);
     afx_msg void OnStatistics ();
     afx_msg void OnPlan       ();
     afx_msg void OnOutput     ();

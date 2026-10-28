@@ -122,8 +122,19 @@ void CTreeViewer::ApplyModernLook ()
 
 void CTreeViewer::SetModernImageList ()
 {
+    if (m_Images.GetSafeHandle())
+        m_Images.DeleteImageList();
     ModernDraw::CreateObjectTreeImageList(m_Images);
     SetImageList(&m_Images, TVSIL_NORMAL);
+}
+
+// troca de tema com o programa aberto: icones, cores e tema dos controles da arvore
+LRESULT CTreeViewer::OnThemeChanged (WPARAM, LPARAM)
+{
+    SetModernImageList();
+    ApplyModernLook();
+    Invalidate();
+    return 0;
 }
 
 void CTreeViewer::LoadAndSetImageList (UINT nResId)
@@ -140,6 +151,7 @@ BEGIN_MESSAGE_MAP(CTreeViewer, CTreeCtrlEx)
     ON_WM_RBUTTONDOWN()
     ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, &CTreeViewer::OnNMCustomdraw)
     ON_WM_SETCURSOR()
+    ON_REGISTERED_MESSAGE(ModernTheme::UM_THEME_CHANGED, OnThemeChanged)
     ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
     ON_COMMAND(ID_OV_SETTING, OnSettings)
     ON_COMMAND(ID_OV_REFRESH, OnRefresh)

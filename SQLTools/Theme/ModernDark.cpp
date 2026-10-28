@@ -118,7 +118,7 @@ namespace
         { 217, 138,   0, 245, 178,  52 },   // ambar
     };
 
-    void RecolorPixels (BYTE* px, size_t count, bool premultiplied)
+    void RecolorPixels (BYTE* px, size_t count, bool premultiplied, bool reverse = false)
     {
         for (size_t i = 0; i < count; ++i, px += 4)
         {
@@ -136,15 +136,17 @@ namespace
             int best = -1, bestDist = 3 * 70 * 70;
             for (int k = 0; k < (int)(sizeof(REMAPS) / sizeof(REMAPS[0])); ++k)
             {
-                int dr = r - REMAPS[k].r, dg = g - REMAPS[k].g, db = b - REMAPS[k].b;
+                // reverse: o icone ja esta nas cores do tema escuro e volta as originais
+                const BYTE fr = reverse ? REMAPS[k].nr : REMAPS[k].r, fg = reverse ? REMAPS[k].ng : REMAPS[k].g, fb = reverse ? REMAPS[k].nb : REMAPS[k].b;
+                int dr = r - fr, dg = g - fg, db = b - fb;
                 int d = dr * dr + dg * dg + db * db;
                 if (d < bestDist) { bestDist = d; best = k; }
             }
             if (best >= 0)
             {
-                r = REMAPS[best].nr;
-                g = REMAPS[best].ng;
-                b = REMAPS[best].nb;
+                r = reverse ? REMAPS[best].r : REMAPS[best].nr;
+                g = reverse ? REMAPS[best].g : REMAPS[best].ng;
+                b = reverse ? REMAPS[best].b : REMAPS[best].nb;
             }
             if (premultiplied && a < 255)
             {
@@ -179,11 +181,10 @@ namespace ModernDark
 
     void StyleTitleBar (HWND hWnd)
     {
-        if (!IsDark())
-            return;
-        const BOOL dark = TRUE;
+        const BOOL dark = IsDark() ? TRUE : FALSE;
         ::DwmSetWindowAttribute(hWnd, 20 /*DWMWA_USE_IMMERSIVE_DARK_MODE*/, &dark, sizeof(dark));
-        COLORREF caption = SurfaceAlt, text = Text;
+        // tema claro: cores padrao do Windows (DWMWA_COLOR_DEFAULT)
+        COLORREF caption = IsDark() ? SurfaceAlt : 0xFFFFFFFF, text = IsDark() ? Text : 0xFFFFFFFF;
         ::DwmSetWindowAttribute(hWnd, 35 /*DWMWA_CAPTION_COLOR*/, &caption, sizeof(caption));
         ::DwmSetWindowAttribute(hWnd, 36 /*DWMWA_TEXT_COLOR*/, &text, sizeof(text));
     }
@@ -192,6 +193,39 @@ namespace ModernDark
     {
         if (IsDark())
             ::SetWindowSubclass(hFrame, MenuBarProc, 1, 0);
+    }
+
+    // troca de tema com o programa aberto: liga ou desliga o desenho escuro da barra de menus
+    void RestyleMenuBar (HWND hFrame)
+    {
+        ::RemoveWindowSubclass(hFrame, MenuBarProc, 1);
+        if (IsDark())
+            ::SetWindowSubclass(hFrame, MenuBarProc, 1, 0);
+        ::DrawMenuBar(hFrame);
+        ::SetWindowPos(hFrame, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    // modo do aplicativo no Windows (menus de contexto, barras de rolagem e controles do sistema)
+    void ApplyAppMode ()
+    {
+        if (HMODULE ux = ::GetModuleHandleW(L"uxtheme.dll"))
+        {
+            if (SetPreferredAppModeFn setMode = (SetPreferredAppModeFn)::GetProcAddress(ux, MAKEINTRESOURCEA(135)))
+                setMode(IsDark() ? ForceDark : ForceLight);
+            if (FlushMenuThemesFn flush = (FlushMenuThemesFn)::GetProcAddress(ux, MAKEINTRESOURCEA(136)))
+                flush();
+        }
+    }
+
+    // converte os icones de um bitmap entre os tons do tema claro (original) e do escuro, independente do tema atual
+    void ConvertBitmap (HBITMAP hBitmap, bool premultiplied, bool toDark)
+    {
+        if (!hBitmap)
+            return;
+        BITMAP bm = {};
+        if (!::GetObject(hBitmap, sizeof(bm), &bm) || bm.bmBitsPixel != 32 || bm.bmWidth <= 0 || bm.bmHeight == 0 || !bm.bmBits)
+            return;
+        RecolorPixels((BYTE*)bm.bmBits, (size_t)bm.bmWidth * (size_t)abs(bm.bmHeight), premultiplied, !toDark);
     }
 
     void RecolorBitmap (HBITMAP hBitmap, bool premultiplied)

@@ -632,3 +632,95 @@ bool ModernTheme::ApplyOnce ()
         return false;
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Troca de tema com o programa aberto
+///////////////////////////////////////////////////////////////////////////////
+
+#include "Theme/ModernDark.h"
+#include "Theme/ModernDialog.h"
+#include <functional>
+
+namespace
+{
+    std::vector<std::function<void()>>& ThemeListeners ()
+    {
+        static std::vector<std::function<void()>> listeners;
+        return listeners;
+    }
+}
+
+void ModernTheme::AddThemeListener (std::function<void()> listener)
+{
+    ThemeListeners().push_back(listener);
+}
+
+const UINT ModernTheme::UM_THEME_CHANGED = ::RegisterWindowMessageW(L"SQLTools.ThemeChanged");
+
+UINT ModernTheme::ThemeChangedMessage ()
+{
+    return UM_THEME_CHANGED;
+}
+
+static unsigned g_generation = 0;
+
+unsigned ModernTheme::Generation ()
+{
+    return g_generation;
+}
+
+HBRUSH ModernTheme::CachedBrush (CBrush& brush, COLORREF& cachedColor, COLORREF color)
+{
+    if (!brush.GetSafeHandle() || cachedColor != color)
+    {
+        brush.DeleteObject();
+        brush.CreateSolidBrush(color);
+        cachedColor = color;
+    }
+    return (HBRUSH)brush.GetSafeHandle();
+}
+
+void ModernTheme::SwitchTheme (bool dark)
+{
+    if (dark == IsDark())
+        return;
+
+    CWaitCursor wait;
+
+    SaveThemeSetting(dark);
+    ApplyPalette(dark);
+    ++g_generation;
+    ModernDark::ApplyAppMode();
+
+    // cores do MFC (barras, menus, abas, paineis)
+    afxGlobalData.UpdateSysColors();
+    CMFCVisualManager::GetInstance()->OnUpdateSystemColors();
+
+    // editor e janelas de dados: cores e fontes que o tema grava nas configuracoes
+    try
+    {
+        applyEditorTheme();
+        bool changed = applyWindowFonts();
+        AfxGetApp()->WriteProfileInt(SECTION, KEY_APPLIED_DARK, dark ? 1 : 0);
+        if (changed)
+            theApp.SaveSettings();
+
+        OpenEditor::SettingsManager& mgr = COEDocument::GetSettingsManagerForUpdate();
+        for (int c = 0, climit = mgr.GetClassCount(); c < climit; ++c)
+            mgr.GetClassByPos(c)->NotifySettingsChanged();
+        mgr.GetGlobalSettings()->NotifySettingsChanged();
+        GetSQLToolsSettingsForUpdate().NotifySettingsChanged();
+    }
+    catch (...) {}
+
+    // icones, pincis e demais itens guardados em cache por quem os criou
+    for (size_t i = 0; i < ThemeListeners().size(); ++i)
+        ThemeListeners()[i]();
+
+    ModernDialog::ReThemeAll();
+    CMFCVisualManager::RedrawAll();
+
+    // quem guarda cores por conta propria (paineis, grades, editores) repinta com a nova paleta
+    if (CWnd* main = AfxGetMainWnd())
+        main->SendMessageToDescendants(ThemeChangedMessage(), 0, 0, TRUE, TRUE);
+}

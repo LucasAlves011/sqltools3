@@ -4,6 +4,7 @@
 // das fontes/cores padrao. Somente aparencia: nenhum comando ou comportamento muda.
 
 #include <afxvisualmanagerofficexp.h>
+#include <functional>
 
 namespace ModernTheme
 {
@@ -51,7 +52,23 @@ namespace ModernTheme
     COLORREF SysColor (int index);
     bool IsDark ();
 
-    // tema escolhido pelo usuario (guardado no registro); a troca vale na proxima partida
+    // troca de tema com o programa aberto (reaplica paleta, editor, icones e todas as janelas existentes)
+    void SwitchTheme (bool dark);
+
+    // quem guarda icones, pinceis ou cores em cache registra aqui como atualizar-se na troca de tema
+    void AddThemeListener (std::function<void()> listener);
+
+    // mensagem enviada a todas as janelas depois da troca (ON_REGISTERED_MESSAGE)
+    extern const UINT UM_THEME_CHANGED;
+    UINT ThemeChangedMessage ();
+
+    // numero da paleta em uso: sobe a cada troca; caches de icones e pinceis comparam e se refazem
+    unsigned Generation ();
+
+    // pincel de cor solida que se refaz sozinho quando a cor muda (para o cache de WM_CTLCOLOR e classes)
+    HBRUSH CachedBrush (CBrush& brush, COLORREF& cachedColor, COLORREF color);
+
+    // tema escolhido pelo usuario (guardado no registro)
     bool LoadThemeSetting ();
     void SaveThemeSetting (bool dark);
 

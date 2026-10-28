@@ -263,6 +263,11 @@ int CMDIMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     ModernDark::RecolorBitmap(CMFCToolBar::GetImages()->GetImageWell(), true);   // icones das barras no tema escuro
 
+    // troca de tema com o programa aberto: os icones das barras passam entre os tons claros e escuros
+    ModernTheme::AddThemeListener([]() {
+        ModernDark::ConvertBitmap(CMFCToolBar::GetImages()->GetImageWell(), true, ModernTheme::IsDark());
+    });
+
 
     if (!m_wndObjectViewerFrame.Create(lpszQuickViewer, this, CSize(200, 300), TRUE, IDC_MF_DBTREE_BAR)
     || !m_wndObjectViewer.Create(&m_wndObjectViewerFrame))

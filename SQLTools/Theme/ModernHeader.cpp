@@ -46,11 +46,10 @@ HBRUSH CModernHeader::OnCtlColor (CDC* pDC, CWnd* pWnd, UINT nCtlColor)
     {
         if (pWnd && pWnd->GetSafeHwnd())
             ::SetWindowSubclass(pWnd->GetSafeHwnd(), FilterEditProc, 1, 0);
-        if (!m_editBrush.GetSafeHandle())
-            m_editBrush.CreateSolidBrush(Surface);
+        static COLORREF s_editColor = CLR_INVALID;
         pDC->SetTextColor(Text);
         pDC->SetBkColor(Surface);
-        return (HBRUSH)m_editBrush.GetSafeHandle();
+        return CachedBrush(m_editBrush, s_editColor, Surface);
     }
     return CHeaderCtrl::OnCtlColor(pDC, pWnd, nCtlColor);
 }

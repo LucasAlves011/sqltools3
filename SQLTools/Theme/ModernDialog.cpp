@@ -15,13 +15,38 @@ using namespace ModernDraw;
 
 namespace
 {
+    // pincel de fundo das classes de janela do MFC e da area MDI (troca quando a paleta muda)
+    HBRUSH ClassBrush ()
+    {
+        static HBRUSH brush = NULL;
+        static COLORREF color = CLR_INVALID;
+        if (!brush || color != Surface)
+        {
+            brush = ::CreateSolidBrush(Surface);   // o pincel antigo pode ainda estar em uso por classes: nao e apagado
+            color = Surface;
+        }
+        return brush;
+    }
+
+    // fundo de um controle/dialogo: "1" = Surface, "0" = SurfaceAlt; guardado como tipo (e nao como cor) para
+    // acompanhar a troca de tema com a janela aberta
+    COLORREF BgOf (int kind)
+    {
+        return kind ? Surface : SurfaceAlt;
+    }
+
     HBRUSH BrushFor (COLORREF color)
     {
-        static CBrush surface, alt;
-        CBrush& b = (color == Surface) ? surface : alt;
-        if (!b.GetSafeHandle())
-            b.CreateSolidBrush(color);
-        return (HBRUSH)b.GetSafeHandle();
+        static CBrush brushes[2];
+        static COLORREF colors[2] = { CLR_INVALID, CLR_INVALID };
+        const int i = (color == Surface) ? 0 : 1;
+        if (!brushes[i].GetSafeHandle() || colors[i] != color)     // a paleta pode ter mudado
+        {
+            brushes[i].DeleteObject();
+            brushes[i].CreateSolidBrush(color);
+            colors[i] = color;
+        }
+        return (HBRUSH)brushes[i].GetSafeHandle();
     }
 
     CString ClassOf (HWND h)
@@ -36,7 +61,7 @@ namespace
     // ---- fundo do dialogo / pagina ----
     LRESULT CALLBACK DialogProc (HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR ref)
     {
-        const COLORREF bg = (COLORREF)ref;
+        const COLORREF bg = BgOf((int)ref);
         switch (msg)
         {
         case WM_ERASEBKGND:
@@ -136,7 +161,7 @@ namespace
     // ---- botoes (caixa de selecao, opcao, botao e grupo) ----
     struct ButtonData
     {
-        COLORREF bg;
+        int bg;             // ver BgOf
         bool hover;
         int icon;           // -1 = sem icone
         COLORREF tint;
@@ -170,7 +195,7 @@ namespace
         g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
         CRect frame(rc.left, rc.top + ts.cy / 2, rc.right - 1, rc.bottom - 1);
         const CRect title(rc.left + 10, rc.top, rc.left + 10 + ts.cx + 8, rc.top + ts.cy);
-        dc.FillSolidRect(title, data.bg);
+        dc.FillSolidRect(title, BgOf(data.bg));
         // a linha da borda passa por tras do titulo: desenha a borda e depois repinta o titulo
         {
             Gdiplus::GraphicsPath path;
@@ -222,7 +247,7 @@ namespace
         bmp.CreateCompatibleBitmap(&mem, rc.Width(), rc.Height());
         CBitmap* pOldBmp = buf.SelectObject(&bmp);
 
-        buf.FillSolidRect(rc, data.bg);
+        buf.FillSolidRect(rc, BgOf(data.bg));
         buf.SetBkMode(TRANSPARENT);
         HFONT font = (HFONT)::SendMessage(h, WM_GETFONT, 0, 0);
         HGDIOBJ oldFont = font ? buf.SelectObject(font) : NULL;
@@ -420,7 +445,7 @@ namespace
     // ---- setas de incremento (spin): duas metades com chevrons finos ----
     struct SpinData
     {
-        COLORREF bg;
+        int bg;
         int hot;            // 0 nenhuma, 1 metade de cima (ou esquerda), 2 metade de baixo (ou direita)
         int pressed;
     };
@@ -607,7 +632,7 @@ namespace
     // ---- caixas de combinacao ----
     struct ComboData
     {
-        COLORREF bg;
+        int bg;
         bool hover;
     };
 
@@ -818,7 +843,7 @@ namespace
         }
     }
 
-    void SkinControls (HWND hParent, COLORREF bg, const ModernDialog::ButtonIcon* icons = NULL, int iconCount = 0)
+    void SkinControls (HWND hParent, int bg, const ModernDialog::ButtonIcon* icons = NULL, int iconCount = 0)
     {
         for (HWND c = ::GetWindow(hParent, GW_CHILD); c; c = ::GetWindow(c, GW_HWNDNEXT))
         {
@@ -914,8 +939,8 @@ namespace ModernDialog
         if (::GetProp(hPage, L"ModernSkin"))
             return;
         ::SetProp(hPage, L"ModernSkin", (HANDLE)1);
-        ::SetWindowSubclass(hPage, DialogProc, 1, (DWORD_PTR)Surface);
-        SkinControls(hPage, Surface);
+        ::SetWindowSubclass(hPage, DialogProc, 1, (DWORD_PTR)1);
+        SkinControls(hPage, 1);
         ::InvalidateRect(hPage, NULL, TRUE);
     }
 
@@ -924,8 +949,8 @@ namespace ModernDialog
         if (::GetProp(hDlg, L"ModernSkin"))
             return;
         ::SetProp(hDlg, L"ModernSkin", (HANDLE)1);
-        ::SetWindowSubclass(hDlg, DialogProc, 1, (DWORD_PTR)SurfaceAlt);
-        SkinControls(hDlg, SurfaceAlt, icons, iconCount);
+        ::SetWindowSubclass(hDlg, DialogProc, 1, (DWORD_PTR)0);
+        SkinControls(hDlg, 0, icons, iconCount);
         ::InvalidateRect(hDlg, NULL, TRUE);
     }
 
@@ -934,8 +959,8 @@ namespace ModernDialog
         if (::GetProp(hSheet, L"ModernSkin"))
             return;
         ::SetProp(hSheet, L"ModernSkin", (HANDLE)1);
-        ::SetWindowSubclass(hSheet, DialogProc, 1, (DWORD_PTR)SurfaceAlt);
-        SkinControls(hSheet, SurfaceAlt);
+        ::SetWindowSubclass(hSheet, DialogProc, 1, (DWORD_PTR)0);
+        SkinControls(hSheet, 0);
         ::InvalidateRect(hSheet, NULL, TRUE);
     }
 
@@ -978,8 +1003,7 @@ namespace ModernDialog
                     // na cor da paleta depois de pintadas: troca o pincel da classe para nao piscar na partida
                     if (cls == L"MDIClient" || cls.Left(3) == L"Afx")
                     {
-                        static HBRUSH s_surface = ::CreateSolidBrush(Surface);
-                        ::SetClassLongPtr(cwp->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)s_surface);
+                        ::SetClassLongPtr(cwp->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)ClassBrush());
                     }
                     if (cls == L"ScrollBar" || cls.Left(15) == L"Kochware.OpenGr" || (IsDark() && cls.Left(8) == L"RICHEDIT") || (IsDark() && cls == L"OpenEditorWindow"))
                         ::SetWindowTheme(cwp->hwnd, ModernDark::ControlTheme(), NULL);
@@ -1047,5 +1071,52 @@ namespace ModernDialog
     {
         if (!g_hook)
             g_hook = ::SetWindowsHookEx(WH_CALLWNDPROCRET, GlobalHookProc, NULL, ::GetCurrentThreadId());
+    }
+
+    namespace
+    {
+        // reaplica o tema do sistema e as cores da paleta a um controle ja criado
+        BOOL CALLBACK ReThemeControl (HWND h, LPARAM)
+        {
+            const CString cls = ClassOf(h);
+            if (cls == L"SysListView32")
+            {
+                ListView_SetBkColor(h, Surface);
+                ListView_SetTextBkColor(h, Surface);
+                ListView_SetTextColor(h, Text);
+                ::SetWindowTheme(h, ModernDark::ControlTheme(), NULL);
+            }
+            else if (cls == L"SysTreeView32")
+            {
+                TreeView_SetBkColor(h, Surface);
+                TreeView_SetTextColor(h, Text);
+                ::SetWindowTheme(h, ModernDark::ControlTheme(), NULL);
+            }
+            else if (cls == L"ScrollBar" || cls.Left(15) == L"Kochware.OpenGr" || cls.Left(8) == L"RICHEDIT" || cls == L"OpenEditorWindow"
+                  || cls == L"SysTabControl32" || cls == L"msctls_trackbar32" || cls == L"SysDateTimePick32")
+                ::SetWindowTheme(h, ModernDark::ControlTheme(), NULL);
+            else if (cls.CompareNoCase(L"Edit") == 0 && (::GetWindowLong(h, GWL_STYLE) & (WS_VSCROLL | WS_HSCROLL)))
+                ::SetWindowTheme(h, ModernDark::ControlTheme(), NULL);
+            else if (cls == L"MDIClient" || cls.Left(3) == L"Afx")
+                ::SetClassLongPtr(h, GCLP_HBRBACKGROUND, (LONG_PTR)ClassBrush());
+            return TRUE;
+        }
+
+        BOOL CALLBACK ReThemeTopLevel (HWND h, LPARAM)
+        {
+            ModernDark::StyleTitleBar(h);
+            ReThemeControl(h, 0);
+            ::EnumChildWindows(h, ReThemeControl, 0);
+            ::RedrawWindow(h, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+            return TRUE;
+        }
+    }
+
+    // troca de tema com o programa aberto: janelas, controles e barra de menus ja existentes passam para a paleta atual
+    void ReThemeAll ()
+    {
+        if (CWnd* main = AfxGetMainWnd())
+            ModernDark::RestyleMenuBar(main->GetSafeHwnd());
+        ::EnumThreadWindows(::GetCurrentThreadId(), ReThemeTopLevel, 0);
     }
 }

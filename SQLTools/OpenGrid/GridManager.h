@@ -376,7 +376,7 @@ struct PaintGridManager : public NavGridManager
     static DrawCellContexts m_Dcc;
 
     PaintGridManager (CWnd*, AGridSource*, bool shouldDeleteSource);
-    void InitColors ();
+    static void InitColors ();   // usa so m_Dcc (estatico); tambem chamado na troca de tema
 
     void Paint (CDC& dc, bool erase, const CRect& rect);
 private:

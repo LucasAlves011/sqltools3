@@ -179,6 +179,7 @@ protected:
     afx_msg void OnBtnCopy();
     afx_msg void OnBtnSave();
     afx_msg void OnEditVScroll();
+    afx_msg LRESULT OnThemeChanged(WPARAM, LPARAM);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
     afx_msg void OnMouseLeave();
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
