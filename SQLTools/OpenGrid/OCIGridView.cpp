@@ -252,23 +252,27 @@ void OciGridView::OnSize(UINT nType, int cx, int cy)
     int panelW = m_bValuePanelVisible ? (std::max)(120, (std::min)(m_nValuePanelWidth, cx - 120)) : 0;
     int gridW = (std::max)(30, cx - panelW - splitterW - sbW);
 
-    if (m_wndVScrollBar.GetSafeHwnd())
-    {
-        m_wndVScrollBar.MoveWindow(gridW, 0, sbW, cy);
-    }
+    // as tres janelas filhas sao movidas em lote e sem copiar o conteudo antigo
+    // (SWP_NOCOPYBITS), senao o arraste do divisor deixa restos e areas pretas
+    const UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS;
+    HDWP hdwp = ::BeginDeferWindowPos(3);
+
+    if (m_wndVScrollBar.GetSafeHwnd() && hdwp)
+        hdwp = ::DeferWindowPos(hdwp, m_wndVScrollBar.m_hWnd, NULL, gridW, 0, sbW, cy, flags);
 
     if (m_pSplitter && m_pSplitter->GetSafeHwnd())
     {
         m_pSplitter->SetCollapsed(!m_bValuePanelVisible);
-        m_pSplitter->MoveWindow(gridW + sbW, 0, splitterW, cy);
+        if (hdwp)
+            hdwp = ::DeferWindowPos(hdwp, m_pSplitter->m_hWnd, NULL, gridW + sbW, 0, splitterW, cy, flags);
     }
 
     if (m_pValuePanel && m_pValuePanel->GetSafeHwnd())
     {
         if (m_bValuePanelVisible)
         {
-            m_pValuePanel->ShowWindow(SW_SHOW);
-            m_pValuePanel->MoveWindow(gridW + sbW + splitterW, 0, panelW, cy);
+            if (hdwp)
+                hdwp = ::DeferWindowPos(hdwp, m_pValuePanel->m_hWnd, NULL, gridW + sbW + splitterW, 0, panelW, cy, flags | SWP_SHOWWINDOW);
         }
         else
         {
@@ -276,8 +280,11 @@ void OciGridView::OnSize(UINT nType, int cx, int cy)
         }
     }
 
+    if (hdwp)
+        ::EndDeferWindowPos(hdwp);
+
     m_pManager->EvSize(CSize(gridW, cy));
-    Invalidate(TRUE);
+    RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);
 }
 
 void OciGridView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
@@ -331,7 +338,6 @@ void OciGridView::SetValuePanelWidth(int nWidth)
     {
         m_nValuePanelWidth = nWidth;
         OnSize(SIZE_RESTORED, rc.Width(), rc.Height());
-        Invalidate();
         AfxGetApp()->WriteProfileInt(_T("GridValuePanel"), _T("Width"), m_nValuePanelWidth);
     }
 }

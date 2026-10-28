@@ -915,17 +915,18 @@ void CValuePanelWnd::LayoutChildren(int cx, int cy)
     // botoes da toolbar
     int btnY = kHeaderH + 5;
     int btnH = 26;
-    m_btnFormat.MoveWindow(8, btnY, 88, btnH);
-    m_btnCopy.MoveWindow(102, btnY, 80, btnH);
-    m_btnSave.MoveWindow(188, btnY, 88, btnH);
+    const UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS;
+    m_btnFormat.SetWindowPos(NULL, 8, btnY, 88, btnH, flags);
+    m_btnCopy.SetWindowPos(NULL, 102, btnY, 80, btnH, flags);
+    m_btnSave.SetWindowPos(NULL, 188, btnY, 88, btnH, flags);
 
     // area do editor e gutter
     int gutterW = 40;
     int editW = (std::max)(10, cx - gutterW);
     int contentH = (std::max)(10, cy - topOffset);
 
-    m_wndGutter.MoveWindow(0, topOffset, gutterW, contentH);
-    m_wndEdit.MoveWindow(gutterW, topOffset, editW, contentH);
+    m_wndGutter.SetWindowPos(NULL, 0, topOffset, gutterW, contentH, flags);
+    m_wndEdit.SetWindowPos(NULL, gutterW, topOffset, editW, contentH, flags);
 }
 
 void CValuePanelWnd::OnSize(UINT nType, int cx, int cy)
