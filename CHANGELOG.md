@@ -2,6 +2,30 @@ SQLTools Changelog
 ==================
 
 
+3.5.0
+-----
+Date: 2026-10-29
+
+  New features
+    * SSH tunnel: connect to databases that are only reachable through an SSH
+      server, with no need for PuTTY. In the Connect window, click "SSH Tunnel..."
+      and fill in the SSH host, port and user, then choose a password or a private
+      key (OpenSSH format, with an optional passphrase). The "Test" button checks
+      the SSH data before connecting.
+    * The SSH server key is verified: the fingerprint of an unknown server is shown
+      for confirmation, and a changed key aborts the connection. Only modern
+      algorithms are accepted, the local port is open to SQLTools only, and the SSH
+      password is saved encrypted like the database password.
+    * If the SSH connection is lost, Reconnect brings the tunnel back
+      automatically.
+
+  Improvements
+    * The connection bar shows the real database host followed by (SSH) when a
+      tunnel is used.
+    * When the connection name does not fit the bar, a tooltip with the whole text
+      appears after the mouse rests on it.
+
+
 3.4.0
 -----
 Date: 2026-10-28

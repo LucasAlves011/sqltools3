@@ -36,6 +36,7 @@
 #include <COMMON/DlgDataExt.h>
 #include <OCI8/Connect.h>
 #include "Dlg\ConnectSettingsDlg.h"
+#include "Dlg\SshTunnelDlg.h"
 #include "ConnectData\ConnectDataXmlStreamer.h"
 #include <COMMON/InputDlg.h>
 #include <COMMON/MyUtf.h>
@@ -100,6 +101,7 @@ BEGIN_MESSAGE_MAP(CConnectDlg, CDialog)
     ON_BN_CLICKED(ID_HELP, OnBnClicked_Help)
     ON_BN_CLICKED(IDC_C_SETTINGS, OnSettings)
     ON_BN_CLICKED(IDC_C_SAVE, OnSave)
+    ON_BN_CLICKED(IDC_C_SSH, OnSsh)
 
     ON_COMMAND(ID_CON_CONNECT,              OnOK)                  
     ON_COMMAND(ID_CON_TEST,                 OnTest)
@@ -444,7 +446,7 @@ BOOL CConnectDlg::OnInitDialog()
     // com icone, os botoes precisam de mais largura: alarga a coluna direita do dialogo
     {
         static const UINT buttonIds[2][3] = { { IDOK, IDC_C_SAVE, IDCANCEL }, { IDC_C_TEST, IDC_C_DELETE, IDC_C_SETTINGS } };
-        static const UINT fieldIds[] = { IDC_C_TAG, IDC_C_USER, IDC_C_PASSWORD, IDC_C_CONNECT, IDC_C_HOST, IDC_C_TCP_PORT, IDC_C_SID, IDC_C_MODE };
+        static const UINT fieldIds[] = { IDC_C_TAG, IDC_C_USER, IDC_C_PASSWORD, IDC_C_CONNECT, IDC_C_HOST, IDC_C_TCP_PORT, IDC_C_SID, IDC_C_MODE, IDC_C_SSH };
 
         CRect rects[2][3];
         int width = 0;
@@ -559,6 +561,23 @@ bool CConnectDlg::doTest (bool showMessage, std::wstring& error)
         m_current.m_Alias = Common::wstr(buff);
     }
 
+    // SSH: the connection goes through a temporary tunnel to the database host
+    Ssh::Tunnel testTunnel;
+    std::wstring alias = m_current.m_Alias;
+    if (m_current.m_SshEnabled)
+    {
+        std::wstring host, port;
+        if (!Ssh::OpenTunnelFor(m_current, this, false, &testTunnel, host, port))
+        {
+            error = L"The SSH tunnel could not be opened.";
+            return false;
+        }
+        string buff;
+        OciConnect::MakeTNSString(buff, Common::str(host).c_str(), Common::str(port).c_str(), 
+            Common::str(m_current.m_Sid).c_str(), m_current.m_UseService);
+        alias = Common::wstr(buff);
+    }
+
     try { EXCEPTION_FRAME;
 
         OciConnect connect;
@@ -572,7 +591,7 @@ bool CConnectDlg::doTest (bool showMessage, std::wstring& error)
         connect.Open(
             Common::str(m_current.m_User).c_str(), 
             Common::str(m_current.m_DecryptedPassword).c_str(), 
-            Common::str(m_current.m_Alias).c_str(), 
+            Common::str(alias).c_str(), 
             mode, true, true);
         connect.Close();
 
@@ -820,6 +839,40 @@ void CConnectDlg::setupConnectionType ()
     GetDlgItem(IDC_C_TCP_PORT)->EnableWindow(m_current.m_Direct);
     //GetDlgItem(IDC_C_TNSCOPY)->EnableWindow(m_current.m_Direct);
     GetDlgItem(IDC_C_SERVICE_INSTEAD_OF_SID)->EnableWindow(m_current.m_Direct);
+    SetDlgItemText(IDC_C_SSH, m_current.m_SshEnabled ? L"SSH Tun&nel: On..." : L"SSH Tun&nel...");
+}
+
+void CConnectDlg::OnSsh ()
+{
+    UpdateData(TRUE);
+
+    CSshTunnelDlg dlg(this);
+    dlg.m_Enabled = m_current.m_SshEnabled;
+    dlg.m_Host    = m_current.m_SshHost;
+    dlg.m_Port    = m_current.m_SshPort;
+    dlg.m_User    = m_current.m_SshUser;
+    dlg.m_Auth    = m_current.m_SshAuth;
+    dlg.m_KeyFile = m_current.m_SshKeyFile;
+    dlg.m_Secret  = m_current.m_DecryptedSshPassword;
+
+    if (dlg.DoModal() == IDOK)
+    {
+        m_current.m_SshEnabled = dlg.m_Enabled ? true : false;
+        m_current.m_SshHost    = dlg.m_Host;
+        m_current.m_SshPort    = dlg.m_Port;
+        m_current.m_SshUser    = dlg.m_User;
+        m_current.m_SshAuth    = dlg.m_Auth;
+        m_current.m_SshKeyFile = dlg.m_KeyFile;
+        m_current.m_DecryptedSshPassword = dlg.m_Secret;
+
+        // the tunnel forwards a host:port, a TNS alias can not be used
+        if (m_current.m_SshEnabled && !m_current.m_Direct)
+        {
+            m_current.m_Direct = true;
+            UpdateData(FALSE);
+        }
+        setupConnectionType();
+    }
 }
 
 void CConnectDlg::OnSettings ()

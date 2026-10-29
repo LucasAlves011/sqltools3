@@ -71,6 +71,7 @@
 #define IDT_BOOKLET                     180
 #define IDB_CONNECT                     182
 #define IDD_CONNECT_SETTINGS            189
+#define IDD_SSH_TUNNEL                  211
 #define IDR_CONNECT                     190
 #define IDB_FIND_FILES                  191
 #define IDB_PANE_ICONS                  201
@@ -111,6 +112,18 @@
 #define IDC_C_TCP_PORT                  1007
 #define IDC_C_SID                       1008
 #define IDC_C_SETTINGS                  1010
+#define IDC_C_SSH                       1422
+#define IDC_SSH_ENABLE                  1423
+#define IDC_SSH_HOST                    1424
+#define IDC_SSH_PORT                    1425
+#define IDC_SSH_USER                    1426
+#define IDC_SSH_AUTH                    1427
+#define IDC_SSH_SECRET                  1428
+#define IDC_SSH_KEYFILE                 1429
+#define IDC_SSH_BROWSE                  1430
+#define IDC_SSH_SECRET_LABEL            1431
+#define IDC_SSH_KEY_LABEL               1432
+#define IDC_SSH_TEST                    1433
 #define IDC_CL_COMPILE                  1013
 #define IDC_CL_DELETE                   1014
 #define IDC_CL_ENABLE                   1015
@@ -580,9 +593,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        211
+#define _APS_NEXT_RESOURCE_VALUE        212
 #define _APS_NEXT_COMMAND_VALUE         38267
-#define _APS_NEXT_CONTROL_VALUE         1422
+#define _APS_NEXT_CONTROL_VALUE         1434
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

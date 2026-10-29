@@ -20,6 +20,7 @@
 #include "stdafx.h"
 #include "SQLTools.h"
 #include "ConnectionTasks.h"
+#include "Ssh\SshTunnel.h"
 #include "OCI8\Connect.h"
 #include <OCI8\ACursor.h>
 #include "ThreadCommunication\MessageOnlyWindow.h"
@@ -492,6 +493,12 @@ void ConnectTask::DoInBackground (OciConnect& connect)
     {
         m_error = x.what();
     }
+
+    // SSH tunnels: keep only the one of the new connection
+    if (connect.IsOpen())
+        Ssh::ReleaseRetiredTunnels();
+    else
+        Ssh::StopAllTunnels();
 }
 
 void ConnectTask::ReturnInForeground ()
@@ -572,6 +579,7 @@ void SubmitConnectTask (const string& uid, const string& password, const string&
             }
             // call it regardless because connection can be lost earlier
             AfterClosingConnection();
+            Ssh::StopAllTunnels();
         }
 
         virtual void ReturnInForeground ()
@@ -615,6 +623,17 @@ void SubmitDisconnectTask (bool exit /*= false*/)
                 try
                 {
                     ActivePrimeExecutionOnOff onOff;
+
+                    try
+                    {
+                        Ssh::EnsureMainTunnel(); // the SSH connection may be the one that was lost
+                    }
+                    catch (const Ssh::Error& x)
+                    {
+                        MessageBeep(MB_ICONSTOP);
+                        AfxMessageBox(Common::wstr(x.what()).c_str(), MB_OK|MB_ICONSTOP);
+                        return;
+                    }
 
                     connect.Reconnect();
                     after_opening_connect(connect);

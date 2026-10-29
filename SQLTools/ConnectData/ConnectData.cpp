@@ -41,6 +41,13 @@
     CMN_IMPL_PROPERTY(ConnectEntry, LastUsage,      0);
     CMN_IMPL_PROPERTY(ConnectEntry, UsageCounter,   0);
     CMN_IMPL_PROPERTY(ConnectEntry, Slow,           false);
+    CMN_IMPL_PROPERTY(ConnectEntry, SshEnabled,     false);
+    CMN_IMPL_PROPERTY(ConnectEntry, SshHost,        L"");
+    CMN_IMPL_PROPERTY(ConnectEntry, SshPort,        L"22");
+    CMN_IMPL_PROPERTY(ConnectEntry, SshUser,        L"");
+    CMN_IMPL_PROPERTY(ConnectEntry, SshAuth,        0);
+    CMN_IMPL_PROPERTY(ConnectEntry, SshKeyFile,     L"");
+    CMN_IMPL_PROPERTY(ConnectEntry, SshPassword,    "");
 
     CMN_IMPL_PROPERTY_BINDER(ConnectData);
     CMN_IMPL_PROPERTY(ConnectData, SavePasswords,               true);
@@ -114,6 +121,8 @@ void ConnectData::GetConnectEntry (int row, ConnectEntry& entry, const wstring& 
     string buff;
     Decrypt(Common::str(password), entry.m_Password, buff);
     entry.m_DecryptedPassword = Common::wstr(buff);
+    Decrypt(Common::str(password), entry.m_SshPassword, buff);
+    entry.m_DecryptedSshPassword = Common::wstr(buff);
 }
 
 void ConnectData::AppendConnectEntry (const ConnectEntry& _entry, const wstring& password)
@@ -123,10 +132,13 @@ void ConnectData::AppendConnectEntry (const ConnectEntry& _entry, const wstring&
     entry.SetLastUsage(time(0));
     entry.SetUsageCounter(1);
     
-    if (m_SavePasswords)
+    if (m_SavePasswords) {
         Encrypt(Common::str(password), Common::str(entry.m_DecryptedPassword), entry.m_Password);
-    else
+        Encrypt(Common::str(password), Common::str(entry.m_DecryptedSshPassword), entry.m_SshPassword);
+    } else {
         entry.m_Password.clear();
+        entry.m_SshPassword.clear();
+    }
 
     entry.m_status = ConnectEntry::MODIFIED;
 }
@@ -139,10 +151,13 @@ void ConnectData::SetConnectEntry (int row, const ConnectEntry& _entry, const ws
     entry.SetLastUsage(time(0));
     entry.SetUsageCounter(usageCounter);
     
-    if (m_SavePasswords)
+    if (m_SavePasswords) {
         Encrypt(Common::str(password), Common::str(entry.m_DecryptedPassword), entry.m_Password);
-    else
+        Encrypt(Common::str(password), Common::str(entry.m_DecryptedSshPassword), entry.m_SshPassword);
+    } else {
         entry.m_Password.clear();
+        entry.m_SshPassword.clear();
+    }
 
     entry.m_status = ConnectEntry::MODIFIED;
 }
@@ -157,10 +172,11 @@ void ConnectData::ClearPasswords ()
     std::vector<ConnectEntry>::iterator it = m_entries.begin();
     for (; it != m_entries.end(); ++it)
     {
-        if (!it->m_Password.empty())
+        if (!it->m_Password.empty() || !it->m_SshPassword.empty())
         {
             it->m_status = ConnectEntry::MODIFIED;
             it->m_Password.clear();
+            it->m_SshPassword.clear();
         }
     }
 }
@@ -176,6 +192,8 @@ void ConnectData::ResetPasswordsAndScriptOnLogin (const std::wstring& password)
     {
         it->m_Password.clear();
         it->m_DecryptedPassword.clear();
+        it->m_SshPassword.clear();
+        it->m_DecryptedSshPassword.clear();
     }
 
     EncryptAll(Common::str(password));
@@ -235,10 +253,13 @@ void ConnectData::EncryptAll (const string& password)
     {
         it->m_status = ConnectEntry::MODIFIED;
         
-        if (m_SavePasswords) 
+        if (m_SavePasswords) {
             Encrypt(password, Common::str(it->m_DecryptedPassword), it->m_Password);
-        else
+            Encrypt(password, Common::str(it->m_DecryptedSshPassword), it->m_SshPassword);
+        } else {
             it->m_Password.clear();
+            it->m_SshPassword.clear();
+        }
     }
 }
 
@@ -260,6 +281,8 @@ void ConnectData::DecryptAll (const string& password)
         it->m_status = ConnectEntry::MODIFIED;
         Decrypt(password, it->m_Password, buff);
         it->m_DecryptedPassword = Common::wstr(buff);
+        Decrypt(password, it->m_SshPassword, buff);
+        it->m_DecryptedSshPassword = Common::wstr(buff);
     }
 }
 

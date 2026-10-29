@@ -22,6 +22,7 @@
 #include "OCI8/BCursor.h"
 #include <COMMON/ExceptionHelper.h>
 #include <COMMON/OsInfo.h>
+#include "Ssh/SshTunnel.h"
 
 // 23.06.2003 bug fix, 8.0.5 compatibility
 // 26.10.2003 bug fix, any sql statement which is executed after cancelation will be also canceled
@@ -702,7 +703,12 @@ std::string Connect::GetDisplayString (bool mode) const
     {
         displayStr += m_strSid;
         displayStr += ':';
-        displayStr += m_strHost;
+        std::string host = m_strHost;
+        // through an SSH tunnel the client connects to the local end, show the real host
+        if (Ssh::MapDisplayHost(host, m_strPort))
+            displayStr += host + " (SSH)";
+        else
+            displayStr += m_strHost;
     }
 
     if (mode)

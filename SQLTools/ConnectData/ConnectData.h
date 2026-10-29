@@ -54,7 +54,16 @@ struct ConnectEntry
     CD_STREAMABLE_PROPERTY(time_t,       LastUsage);
     CD_STREAMABLE_PROPERTY(int,          UsageCounter);
     CD_STREAMABLE_PROPERTY(bool,         Slow);
+    // SSH tunnel (the database host/port are then resolved from the SSH server)
+    CD_STREAMABLE_PROPERTY(bool,         SshEnabled);
+    CD_STREAMABLE_PROPERTY(std::wstring, SshHost);
+    CD_STREAMABLE_PROPERTY(std::wstring, SshPort);
+    CD_STREAMABLE_PROPERTY(std::wstring, SshUser);
+    CD_STREAMABLE_PROPERTY(int,          SshAuth);          // 0 - password, 1 - private key
+    CD_STREAMABLE_PROPERTY(std::wstring, SshKeyFile);
+    CD_STREAMABLE_PROPERTY(std::string,  SshPassword);      // encrypted with the master password
     CD_SIMPLE_PROPERTY(std::wstring,     DecryptedPassword);
+    CD_SIMPLE_PROPERTY(std::wstring,     DecryptedSshPassword);
 
     enum Status { UNDEFINED, UPTODATE, MODIFIED, DELETED }; 
     mutable Status m_status;

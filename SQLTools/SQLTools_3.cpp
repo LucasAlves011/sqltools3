@@ -30,6 +30,7 @@
 #include "COMMON/ExceptionHelper.h"
 #include "SQLToolsSettings.h"
 #include "Dlg/ConnectDlg.h"
+#include "Dlg/SshTunnelDlg.h"
 #include "SQLWorksheet/StatView.h"
 #include "DbBrowser/DbSourceWnd.h"
 #include "Tools/ExtractSchemaDlg.h"
@@ -278,13 +279,18 @@ void CSQLToolsApp::OnSqlConnect()
         {
             const ConnectEntry& entry = connectDlg.GetConnectEntry();
 
-            if (!entry.m_Direct)
+            // reach the database through an SSH tunnel: the client connects to the local end of it
+            std::wstring dbHost = entry.m_Host, dbPort = entry.m_Port;
+            if (entry.m_SshEnabled && !Ssh::OpenTunnelFor(entry, m_pMainWnd, true, 0, dbHost, dbPort))
+                continue; // show the connect dialog again
+
+            if (!entry.m_Direct && !entry.m_SshEnabled)
                 ConnectionTasks::SubmitConnectTask(Common::str(entry.m_User), Common::str(entry.m_DecryptedPassword), Common::str(entry.m_Alias), 
                     ConnectionTasks::ToConnectionMode(entry.m_Mode), entry.m_Safety ? true : false, entry.m_Slow
                 );
             else
                 ConnectionTasks::SubmitConnectTask(Common::str(entry.m_User), Common::str(entry.m_DecryptedPassword), 
-                    Common::str(entry.m_Host), Common::str(entry.m_Port), Common::str(entry.m_Sid), entry.m_UseService, 
+                    Common::str(dbHost), Common::str(dbPort), Common::str(entry.m_Sid), entry.m_UseService, 
                     ConnectionTasks::ToConnectionMode(entry.m_Mode), 
                     entry.m_Safety ? true : false, entry.m_Slow
                 );

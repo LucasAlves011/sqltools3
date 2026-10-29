@@ -35,7 +35,10 @@ LabelWithWaitBar::LabelWithWaitBar()
     m_nTimerElapse(200),
     m_animation(false),
     m_nTextPosition(DT_CENTER),
-    m_flat(false)
+    m_flat(false),
+    m_truncated(false),
+    m_tipShown(false),
+    m_tracking(false)
 {
 }
 
@@ -46,7 +49,92 @@ LabelWithWaitBar::~LabelWithWaitBar()
 
 BEGIN_MESSAGE_MAP(LabelWithWaitBar, CStatic)
     ON_WM_TIMER()
+    ON_WM_MOUSEMOVE()
+    ON_WM_LBUTTONDOWN()
+    ON_MESSAGE(WM_MOUSEHOVER, OnMouseHover)
+    ON_MESSAGE(WM_MOUSELEAVE, OnMouseLeave)
 END_MESSAGE_MAP()
+
+// A tooltip with the whole text, shown when the mouse rests on the label and the text is cut by its width.
+// It is a tracking tooltip, positioned and shown by hand.
+void LabelWithWaitBar::ensureTip ()
+{
+    if (m_tip.GetSafeHwnd() || !m_hWnd)
+        return;
+
+    if (m_tip.Create(this, TTS_ALWAYSTIP | TTS_NOPREFIX))
+    {
+        TOOLINFOW ti = { sizeof(ti) };
+        ti.uFlags = TTF_IDISHWND | TTF_TRACK | TTF_ABSOLUTE;
+        ti.hwnd   = m_hWnd;
+        ti.uId    = (UINT_PTR)m_hWnd;
+        ti.lpszText = const_cast<LPWSTR>(L" ");
+        m_tip.SendMessage(TTM_ADDTOOLW, 0, (LPARAM)&ti);
+        m_tip.SetMaxTipWidth(600);
+    }
+}
+
+void LabelWithWaitBar::showTip ()
+{
+    ensureTip();
+    if (!m_tip.GetSafeHwnd() || !m_truncated || m_text.IsEmpty())
+        return;
+
+    TOOLINFOW ti = { sizeof(ti) };
+    ti.hwnd   = m_hWnd;
+    ti.uId    = (UINT_PTR)m_hWnd;
+    ti.lpszText = const_cast<LPWSTR>((LPCWSTR)m_text);
+    m_tip.SendMessage(TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
+
+    CRect rc;
+    GetWindowRect(rc);
+    // right under the label, aligned to its left side
+    m_tip.SendMessage(TTM_TRACKPOSITION, 0, MAKELPARAM(rc.left, rc.bottom + 2));
+    m_tip.SendMessage(TTM_TRACKACTIVATE, TRUE, (LPARAM)&ti);
+    m_tipShown = true;
+}
+
+void LabelWithWaitBar::hideTip ()
+{
+    if (m_tipShown && m_tip.GetSafeHwnd())
+    {
+        TOOLINFOW ti = { sizeof(ti) };
+        ti.hwnd = m_hWnd;
+        ti.uId  = (UINT_PTR)m_hWnd;
+        m_tip.SendMessage(TTM_TRACKACTIVATE, FALSE, (LPARAM)&ti);
+    }
+    m_tipShown = false;
+}
+
+void LabelWithWaitBar::OnMouseMove (UINT flags, CPoint pt)
+{
+    CStatic::OnMouseMove(flags, pt);
+    if (!m_tracking)
+    {
+        TRACKMOUSEEVENT tme = { sizeof(tme), TME_HOVER | TME_LEAVE, m_hWnd, 500 };
+        m_tracking = TrackMouseEvent(&tme) ? true : false;
+    }
+}
+
+LRESULT LabelWithWaitBar::OnMouseHover (WPARAM, LPARAM)
+{
+    // the hover request is spent, TME_LEAVE is still pending
+    showTip();
+    return 0;
+}
+
+LRESULT LabelWithWaitBar::OnMouseLeave (WPARAM, LPARAM)
+{
+    m_tracking = false;
+    hideTip();
+    return 0;
+}
+
+void LabelWithWaitBar::OnLButtonDown (UINT flags, CPoint pt)
+{
+    hideTip();
+    CStatic::OnLButtonDown(flags, pt);
+}
 
 
 // LabelWithWaitBar message handlers
@@ -55,6 +143,7 @@ void LabelWithWaitBar::SetText (LPCTSTR pText, COLORREF color)
 {
     m_text = pText;
     m_textColor = color;
+    hideTip();
     if (m_hWnd) Invalidate(TRUE);
 }
 
@@ -89,6 +178,7 @@ void LabelWithWaitBar::DrawItem (LPDRAWITEMSTRUCT d)
     dc.Attach(d->hDC);
     CRect rc = d->rcItem;
     int w = rc.Width(), h = rc.Height();
+    m_truncated = false;
 
     CDC mem;
     mem.CreateCompatibleDC(&dc);
@@ -121,6 +211,7 @@ void LabelWithWaitBar::DrawItem (LPDRAWITEMSTRUCT d)
         mem.SetBkMode(TRANSPARENT);
         mem.SetTextColor(TextMuted);
         CRect rt(12, 0, w - 8, h);
+        m_truncated = mem.GetTextExtent(m_text).cx > rt.Width();
         mem.DrawText(m_text, rt, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
         mem.SelectObject(pOldFlat);
         dc.BitBlt(rc.left, rc.top, w, h, &mem, 0, 0, SRCCOPY);
@@ -221,6 +312,7 @@ void LabelWithWaitBar::DrawItem (LPDRAWITEMSTRUCT d)
     else
     {
         // nao cabe: texto unico com reticencias, como antes
+        m_truncated = true;
         mem.SelectObject(&s_font);
         mem.SetTextColor(mainColor);
         mem.DrawText(m_text, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);

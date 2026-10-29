@@ -23,3 +23,15 @@ licenses in their folders under `3dParty/`.
 The US and Brazil flag images in `SQLTools/res/flags/` are used in the What's New window. They come
 from the flag-icons project (MIT License, Copyright (c) 2013 Panayiotis Lipiridis); the license text
 is in `SQLTools/res/flags/LICENSE-flag-icons.txt`.
+
+## libssh2 and OpenSSL (SSH tunnel, statically linked)
+
+The SSH tunnel feature (connecting to databases through an SSH server) uses:
+
+- **libssh2** 1.11.1 - BSD 3-Clause license, Copyright (c) the libssh2 project and contributors.
+  Full text: `3dParty/libssh2/licenses/libssh2-LICENSE.txt`.
+- **OpenSSL** 3.x - Apache License 2.0, Copyright (c) The OpenSSL Project Authors.
+  Full text: `3dParty/libssh2/licenses/openssl-LICENSE.txt`.
+
+Both are compatible with the GNU GPL v3 used by SQLTools. They are built from the official sources with vcpkg
+(triplet `x64-windows-static`) and linked statically into `SQLTools.exe`.

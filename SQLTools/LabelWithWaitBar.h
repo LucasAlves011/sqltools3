@@ -35,6 +35,14 @@ class LabelWithWaitBar : public CStatic
     bool     m_animation;
     UINT     m_nTextPosition;
     bool     m_flat;
+    bool     m_truncated;       // the text did not fit the last time it was drawn
+    CToolTipCtrl m_tip;         // tracking tooltip, shown by hand when the mouse rests on a cut text
+    bool     m_tipShown;
+    bool     m_tracking;
+
+    void ensureTip ();
+    void showTip ();
+    void hideTip ();
 
 public:
 	LabelWithWaitBar ();
@@ -52,6 +60,10 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
     afx_msg void OnTimer(UINT_PTR nIDEvent);
+    afx_msg void OnMouseMove (UINT, CPoint);
+    afx_msg void OnLButtonDown (UINT, CPoint);
+    afx_msg LRESULT OnMouseHover (WPARAM, LPARAM);
+    afx_msg LRESULT OnMouseLeave (WPARAM, LPARAM);
 };
 
 

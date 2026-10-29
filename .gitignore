@@ -58,3 +58,6 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/c_cpp_properties.json
+
+# libssh2/OpenSSL static libs (Git LFS) live in an x64 folder
+!3dParty/libssh2/lib/x64/

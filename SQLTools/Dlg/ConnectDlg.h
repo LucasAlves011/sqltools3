@@ -179,6 +179,7 @@ protected:
     afx_msg void OnSettings ();
     afx_msg void OnBnClicked_Help();
     afx_msg void OnSave ();
+    afx_msg void OnSsh ();
 
     afx_msg void OnCleanup ();
     afx_msg void OnCopyUsernameAlias ();

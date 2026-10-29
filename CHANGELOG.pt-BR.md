@@ -2,6 +2,30 @@ SQLTools - Histórico de alterações
 =================================
 
 
+3.5.0
+-----
+Data: 2026-10-29
+
+  Novas funcionalidades
+    * Tunnel SSH: conecte em bancos que só são acessíveis por um servidor SSH, sem
+      precisar do PuTTY. Na janela Connect, clique em "SSH Tunnel..." e informe o
+      host, a porta e o usuário SSH; depois escolha senha ou chave privada
+      (formato OpenSSH, com passphrase opcional). O botão "Test" confere os dados
+      do SSH antes de conectar.
+    * A chave do servidor SSH é verificada: o fingerprint de um servidor
+      desconhecido é exibido para confirmação, e uma chave alterada aborta a
+      conexão. Só algoritmos modernos são aceitos, a porta local fica aberta
+      apenas para o SQLTools e a senha SSH é salva criptografada, como a senha do
+      banco.
+    * Se a conexão SSH cair, o Reconnect recria o tunnel automaticamente.
+
+  Melhorias
+    * A barra de conexão mostra o host real do banco seguido de (SSH) quando há
+      tunnel.
+    * Quando o nome da conexão não cabe na barra, um tooltip com o texto completo
+      aparece depois que o mouse fica parado sobre ela.
+
+
 3.4.0
 -----
 Data: 2026-10-28
