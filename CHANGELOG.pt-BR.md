@@ -2,6 +2,23 @@ SQLTools - Histórico de alterações
 =================================
 
 
+3.5.1
+-----
+Data: 2026-10-30
+
+  Melhorias
+    * Tunnel SSH: o botão "Test" avisa quando o servidor só aceita algoritmos de
+      criptografia mais antigos e menos seguros.
+
+  Correções de bugs
+    * Tunnel SSH: servidores com SSH mais antigo não falham mais com "Unable to
+      exchange encryption keys". O SQLTools tenta primeiro os algoritmos modernos
+      e, só se o servidor não aceitar nenhum, tenta os antigos automaticamente. A
+      chave do servidor continua sendo verificada.
+    * Tunnel SSH: corrigida uma corrupção de memória ao entrar com chave privada
+      RSA (um bug da biblioteca de SSH, agora corrigido).
+
+
 3.5.0
 -----
 Data: 2026-10-29

@@ -35,3 +35,4 @@ The SSH tunnel feature (connecting to databases through an SSH server) uses:
 
 Both are compatible with the GNU GPL v3 used by SQLTools. They are built from the official sources with vcpkg
 (triplet `x64-windows-static`) and linked statically into `SQLTools.exe`.
+libssh2 carries one local bug-fix patch (a heap buffer bounds check in `userauth.c`), described in `3dParty/libssh2/README.md`.

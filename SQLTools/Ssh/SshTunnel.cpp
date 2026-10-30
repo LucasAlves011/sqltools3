@@ -51,6 +51,13 @@ namespace Ssh
         const char* kCrypt   = "aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr";
         const char* kMac     = "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256";
 
+        // Older algorithms, tried only in a second attempt when the server accepted none of the modern ones
+        // (old servers). The host key is verified in the same way, and the user is told about the fallback.
+        const char* kKexLegacy     = ",diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha1,diffie-hellman-group1-sha1";
+        const char* kHostKeyLegacy = ",ssh-rsa";
+        const char* kCryptLegacy   = ",aes256-cbc,aes192-cbc,aes128-cbc";
+        const char* kMacLegacy     = ",hmac-sha1";
+
         std::string Utf8Path (const std::wstring& w)
         {
             if (w.empty()) return std::string();
@@ -218,6 +225,7 @@ namespace Ssh
         std::atomic<bool> stop{false}, running{false};
         std::vector<Conn> conns;
         std::string secretCopy;     // for keyboard-interactive callback only during Start
+        bool usedLegacy = false;
 
         ~Impl () { Shutdown(); }
 
@@ -235,7 +243,6 @@ namespace Ssh
                 libssh2_session_disconnect(session, "SQLTools closed the tunnel");
                 libssh2_session_free(session);
                 session = 0;
-                libssh2_exit();
             }
             CloseSock(listener);
             CloseSock(sock);
@@ -324,7 +331,7 @@ namespace Ssh
                     "The connection was aborted. If the change is legitimate, remove the line of this host from\n" +
                     Utf8Path(KnownHostsPath()) + "\nand connect again.");
             default:
-                if (!confirm || !confirm(endpoint, typeName, fp))
+                if (!confirm || !confirm(endpoint, usedLegacy ? typeName + " (the server only accepts older, less secure algorithms)" : typeName, fp))
                     throw Error("The SSH host key of " + endpoint + " was not accepted.");
                 RememberHost(endpoint, typeName, fp);
             }
@@ -376,27 +383,52 @@ namespace Ssh
 
             ws.reset(new WinSock);
             if (!ws->ok) throw Error("Cannot initialize Winsock.");
-            if (libssh2_init(0)) throw Error("Cannot initialize libssh2.");
+            // initialized once per process: shutting the crypto library down and starting it again is not safe
+            static const int initResult = libssh2_init(0);
+            if (initResult) throw Error("Cannot initialize libssh2.");
 
             targetHost = cfg.targetHost;
             targetPort = cfg.targetPort;
 
-            ConnectSocket(cfg);
+            // first only modern algorithms; if the server accepts none of them, once more with the older ones too
+            for (bool legacy = false; ; legacy = true)
+            {
+                ConnectSocket(cfg);
 
-            session = libssh2_session_init();
-            if (!session) throw Error("Cannot create the SSH session.");
-            libssh2_session_set_blocking(session, 1);
-            libssh2_session_set_timeout(session, kConnectTimeoutMs);
+                session = libssh2_session_init();
+                if (!session) throw Error("Cannot create the SSH session.");
+                libssh2_session_set_blocking(session, 1);
+                libssh2_session_set_timeout(session, kConnectTimeoutMs);
 
-            libssh2_session_method_pref(session, LIBSSH2_METHOD_KEX,      kKex);
-            libssh2_session_method_pref(session, LIBSSH2_METHOD_HOSTKEY,  kHostKey);
-            libssh2_session_method_pref(session, LIBSSH2_METHOD_CRYPT_CS, kCrypt);
-            libssh2_session_method_pref(session, LIBSSH2_METHOD_CRYPT_SC, kCrypt);
-            libssh2_session_method_pref(session, LIBSSH2_METHOD_MAC_CS,   kMac);
-            libssh2_session_method_pref(session, LIBSSH2_METHOD_MAC_SC,   kMac);
+                const std::string kex   = std::string(kKex)     + (legacy ? kKexLegacy     : "");
+                const std::string hkey  = std::string(kHostKey) + (legacy ? kHostKeyLegacy : "");
+                const std::string crypt = std::string(kCrypt)   + (legacy ? kCryptLegacy   : "");
+                const std::string mac   = std::string(kMac)     + (legacy ? kMacLegacy     : "");
+                libssh2_session_method_pref(session, LIBSSH2_METHOD_KEX,      kex.c_str());
+                libssh2_session_method_pref(session, LIBSSH2_METHOD_HOSTKEY,  hkey.c_str());
+                libssh2_session_method_pref(session, LIBSSH2_METHOD_CRYPT_CS, crypt.c_str());
+                libssh2_session_method_pref(session, LIBSSH2_METHOD_CRYPT_SC, crypt.c_str());
+                libssh2_session_method_pref(session, LIBSSH2_METHOD_MAC_CS,   mac.c_str());
+                libssh2_session_method_pref(session, LIBSSH2_METHOD_MAC_SC,   mac.c_str());
 
-            if (libssh2_session_handshake(session, sock))
-                throw Error(LastError(session, "SSH handshake failed (the server may only support outdated algorithms)"));
+                int rc = libssh2_session_handshake(session, sock);
+                if (!rc)
+                {
+                    usedLegacy = legacy;
+                    break;
+                }
+
+                // a timeout is not a negotiation problem, a second attempt would only make the user wait more
+                const bool retry = !legacy && rc != LIBSSH2_ERROR_TIMEOUT && rc != LIBSSH2_ERROR_SOCKET_TIMEOUT;
+                if (!retry)
+                    throw Error(LastError(session, legacy
+                        ? "SSH handshake failed: the server accepts none of the algorithms SQLTools supports, not even the older ones"
+                        : "SSH handshake failed"));
+
+                libssh2_session_free(session);
+                session = 0;
+                CloseSock(sock);
+            }
 
             VerifyHostKey(cfg, confirm);
             Authenticate(cfg);
@@ -601,6 +633,7 @@ namespace Ssh
 
     bool Tunnel::IsRunning () const { return m_impl && m_impl->running; }
     unsigned short Tunnel::LocalPort () const { return m_impl ? m_impl->port : 0; }
+    bool Tunnel::UsedLegacy () const { return m_impl && m_impl->usedLegacy; }
 }
 
 #else // !SQLTOOLS_SSH
@@ -617,6 +650,7 @@ namespace Ssh
     void Tunnel::Stop () {}
     bool Tunnel::IsRunning () const { return false; }
     unsigned short Tunnel::LocalPort () const { return 0; }
+    bool Tunnel::UsedLegacy () const { return false; }
 }
 
 #endif

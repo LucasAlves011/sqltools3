@@ -2,6 +2,23 @@ SQLTools Changelog
 ==================
 
 
+3.5.1
+-----
+Date: 2026-10-30
+
+  Improvements
+    * SSH tunnel: the "Test" button warns when the server only accepts older, less
+      secure encryption algorithms.
+
+  Bug fixes
+    * SSH tunnel: servers with older SSH software no longer fail with "Unable to
+      exchange encryption keys". SQLTools tries the modern algorithms first and,
+      only if the server accepts none, tries the older ones automatically. The
+      server key is still verified.
+    * SSH tunnel: fixed a memory corruption when signing in with an RSA private
+      key (a bug in the SSH library, now patched).
+
+
 3.5.0
 -----
 Date: 2026-10-29

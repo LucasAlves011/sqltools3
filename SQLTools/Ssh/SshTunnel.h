@@ -67,6 +67,8 @@ namespace Ssh
         void Stop ();
         bool IsRunning () const;
         unsigned short LocalPort () const;
+        // true if the server did not accept any modern algorithm and the connection fell back to older ones
+        bool UsedLegacy () const;
     };
 
     // The tunnel of the main (interactive) connection. A new tunnel does not close the previous one at once,

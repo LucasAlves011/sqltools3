@@ -123,10 +123,13 @@ void CSshTunnelDlg::OnTest ()
         CWaitCursor wait;
         Ssh::Tunnel tunnel;
         tunnel.Start(cfg, makeConfirm(m_hWnd));
+        const bool legacy = tunnel.UsedLegacy();
         tunnel.Stop();
         MessageBeep(MB_OK);
-        MessageBox((L"SSH connection to " + m_Host + L":" + m_Port + L" as \"" + m_User + L"\" is OK.").c_str(), 
-            L"SSH Tunnel", MB_OK | MB_ICONASTERISK);
+        std::wstring msg = L"SSH connection to " + m_Host + L":" + m_Port + L" as \"" + m_User + L"\" is OK.";
+        if (legacy)
+            msg += L"\n\nThis server only accepts older, less secure encryption algorithms. It works, but consider updating its SSH server.";
+        MessageBox(msg.c_str(), L"SSH Tunnel", MB_OK | (legacy ? MB_ICONEXCLAMATION : MB_ICONASTERISK));
     }
     catch (const Ssh::Error& x)
     {
