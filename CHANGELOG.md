@@ -2,6 +2,20 @@ SQLTools Changelog
 ==================
 
 
+3.6.0
+-----
+Date: 2026-10-30
+
+  New features
+    * Value panel: new search bar, opened with Ctrl+F (or "Find..." in the
+      right-click menu), just like the one in the code editor. It shows how many
+      matches there are ("3 of 12"), jumps to the next (Enter / F3) or previous
+      (Shift+Enter / Shift+F3) one and closes with Esc. Options: match case
+      (Alt+C), whole word (Alt+W), regular expression (Alt+R), backslash sequences
+      such as \n and \t (Alt+B) and "Mark all" (Alt+M), which highlights every
+      match. The options are remembered between sessions and follow the dark theme.
+
+
 3.5.1
 -----
 Date: 2026-10-30

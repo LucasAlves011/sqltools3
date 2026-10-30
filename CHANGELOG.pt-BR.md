@@ -2,6 +2,21 @@ SQLTools - Histórico de alterações
 =================================
 
 
+3.6.0
+-----
+Data: 2026-10-30
+
+  Novas funcionalidades
+    * Painel Valor: nova barra de busca, aberta com Ctrl+F (ou "Localizar..." no
+      menu do botão direito), como a do editor de código. Mostra quantas
+      ocorrências existem ("3 de 12"), vai para a próxima (Enter / F3) ou anterior
+      (Shift+Enter / Shift+F3) e fecha com Esc. Opções: diferenciar maiúsculas
+      (Alt+C), palavra inteira (Alt+W), expressão regular (Alt+R), sequências com
+      barra invertida como \n e \t (Alt+B) e "Marcar todos" (Alt+M), que destaca
+      todas as ocorrências. As opções ficam lembradas entre sessões e seguem o
+      tema escuro.
+
+
 3.5.1
 -----
 Data: 2026-10-30

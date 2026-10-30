@@ -3,6 +3,10 @@
 #include "OCIGridView.h"
 #include <COMMCTRL.H>
 #include <gdiplus.h>
+#include <algorithm>
+#include <regex>
+#include <COMMON/MyUtf.h>
+#include <COMMON/StrHelpers.h>
 #include "Theme/ModernTheme.h"
 #include "Theme/ModernDark.h"
 #include "resource.h"
@@ -17,7 +21,8 @@ enum
     IDC_VP_BTN_COPY   = 10102,
     IDC_VP_BTN_SAVE   = 10103,
     IDC_VP_GUTTER     = 10104,
-    IDC_VP_EDIT       = 10105
+    IDC_VP_EDIT       = 10105,
+    IDC_VP_FIND       = 10106
 };
 
 // IDs de menu
@@ -38,6 +43,7 @@ enum
 static const TCHAR* s_szSplitterClass = _T("SQLTools_ValueSplitter");
 static const TCHAR* s_szGutterClass   = _T("SQLTools_ValueGutter");
 static const TCHAR* s_szPanelClass    = _T("SQLTools_ValuePanel");
+static const TCHAR* s_szFindClass     = _T("SQLTools_ValueFindBar");
 
 // zoom do texto (Ctrl + roda): lembrado ate fechar o programa; o RTF carregado a cada valor o devolveria a 100%
 static int s_zoomNum = 0, s_zoomDen = 0;
@@ -89,6 +95,7 @@ static void DrawChevron (Gdiplus::Graphics& g, float cx, float cy, int dir /*0 e
     Gdiplus::PointF p[3];
     if (dir == 0)      { p[0] = Gdiplus::PointF(cx + 2*s, cy - 4*s); p[1] = Gdiplus::PointF(cx - 2*s, cy); p[2] = Gdiplus::PointF(cx + 2*s, cy + 4*s); }
     else if (dir == 1) { p[0] = Gdiplus::PointF(cx - 2*s, cy - 4*s); p[1] = Gdiplus::PointF(cx + 2*s, cy); p[2] = Gdiplus::PointF(cx - 2*s, cy + 4*s); }
+    else if (dir == 3) { p[0] = Gdiplus::PointF(cx - 3.5f*s, cy + 1.5f*s); p[1] = Gdiplus::PointF(cx, cy - 2*s); p[2] = Gdiplus::PointF(cx + 3.5f*s, cy + 1.5f*s); }
     else               { p[0] = Gdiplus::PointF(cx - 3.5f*s, cy - 1.5f*s); p[1] = Gdiplus::PointF(cx, cy + 2*s); p[2] = Gdiplus::PointF(cx + 3.5f*s, cy - 1.5f*s); }
     g.DrawLines(&pen, p, 3);
 }
@@ -590,6 +597,642 @@ void CValueLineGutter::OnPaint()
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Busca no texto: motor (texto simples ou expressao regular) usado pela barra de busca do painel
+/////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+    struct FindOptions
+    {
+        std::wstring query;
+        bool matchCase = false, wholeWord = false, regex = false, backslash = false;
+    };
+
+    const size_t kMaxMatches = 200000;      // alem disso a contagem para ("200000+")
+    const size_t kMaxMarks   = 5000;        // "marcar todos" pinta no maximo estas ocorrencias
+
+    inline bool IsWordChar (wchar_t c)
+    {
+        return c == L'_' || ::IsCharAlphaNumericW(c);
+    }
+
+    COLORREF MarkColor ()
+    {
+        return ModernTheme::IsDark() ? RGB(112, 92, 0) : RGB(255, 232, 128);
+    }
+
+    // texto simples digitado pelo usuario: sequencias com barra (\t, \n, \ddd) se pedidas, e quebras de linha como \n
+    std::wstring PlainQuery (const FindOptions& o)
+    {
+        std::wstring q = o.query;
+        if (o.backslash)
+        {
+            std::string buff;
+            Common::to_unprintable_str(Common::str(q).c_str(), buff, false);
+            q = Common::wstr(buff);
+        }
+        std::wstring out;
+        for (size_t i = 0; i < q.size(); ++i)
+        {
+            if (q[i] == L'\r')
+            {
+                out += L'\n';
+                if (i + 1 < q.size() && q[i + 1] == L'\n')
+                    ++i;
+            }
+            else
+                out += q[i];
+        }
+        return out;
+    }
+
+    // 'text' usa \n como quebra de linha; as posicoes devolvidas valem para o RichEdit (mesmo tamanho)
+    bool FindAllMatches (const std::wstring& text, const FindOptions& o, std::vector<CHARRANGE>& out,
+                         bool& capped, CString& error)
+    {
+        capped = false;
+        out.clear();
+        if (o.query.empty())
+            return true;
+
+        try
+        {
+            if (o.regex)
+            {
+                auto flags = std::regex_constants::ECMAScript | std::regex_constants::multiline;
+                if (!o.matchCase)
+                    flags |= std::regex_constants::icase;
+                std::wstring pattern = o.wholeWord ? L"\\b(?:" + o.query + L")\\b" : o.query;
+                std::wregex re(pattern, flags);
+
+                for (std::wsregex_iterator it(text.begin(), text.end(), re), end; it != end; ++it)
+                {
+                    if (it->length() == 0)
+                        continue;
+                    if (out.size() >= kMaxMatches)
+                    {
+                        capped = true;
+                        break;
+                    }
+                    CHARRANGE r;
+                    r.cpMin = (LONG)it->position();
+                    r.cpMax = r.cpMin + (LONG)it->length();
+                    out.push_back(r);
+                }
+            }
+            else
+            {
+                std::wstring needle = PlainQuery(o);
+                if (needle.empty())
+                    return true;
+
+                std::wstring lowered;
+                const std::wstring* hay = &text;
+                if (!o.matchCase)
+                {
+                    lowered = text;
+                    ::CharLowerBuffW(&lowered[0], (DWORD)lowered.size());
+                    ::CharLowerBuffW(&needle[0], (DWORD)needle.size());
+                    hay = &lowered;
+                }
+
+                const bool wordL = IsWordChar(needle.front());
+                const bool wordR = IsWordChar(needle.back());
+                size_t pos = 0;
+                while ((pos = hay->find(needle, pos)) != std::wstring::npos)
+                {
+                    const size_t end = pos + needle.size();
+                    bool ok = true;
+                    if (o.wholeWord)
+                    {
+                        if (wordL && pos > 0 && IsWordChar(text[pos - 1]))
+                            ok = false;
+                        if (wordR && end < text.size() && IsWordChar(text[end]))
+                            ok = false;
+                    }
+                    if (!ok)
+                    {
+                        ++pos;
+                        continue;
+                    }
+                    if (out.size() >= kMaxMatches)
+                    {
+                        capped = true;
+                        break;
+                    }
+                    CHARRANGE r;
+                    r.cpMin = (LONG)pos;
+                    r.cpMax = (LONG)end;
+                    out.push_back(r);
+                    pos = end;
+                }
+            }
+        }
+        catch (const std::regex_error&)
+        {
+            out.clear();
+            error = L"Express\xE3o regular inv\xE1lida";
+            return false;
+        }
+        catch (const std::exception&)
+        {
+            out.clear();
+            error = L"Express\xE3o regular complexa demais";
+            return false;
+        }
+        return true;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// CValueFindBar
+/////////////////////////////////////////////////////////////////////////////
+
+enum { IDC_VPF_EDIT = 10110 };
+
+static const int kFindRowH   = 24;
+static const int kFindBarH   = 64;
+static const TCHAR* s_szFindProfile = _T("GridValuePanel");
+
+BEGIN_MESSAGE_MAP(CValueFindBar, CWnd)
+    ON_WM_CREATE()
+    ON_WM_SIZE()
+    ON_WM_PAINT()
+    ON_WM_ERASEBKGND()
+    ON_WM_LBUTTONDOWN()
+    ON_WM_MOUSEMOVE()
+    ON_WM_MOUSELEAVE()
+    ON_WM_CTLCOLOR()
+    ON_EN_CHANGE(IDC_VPF_EDIT, OnEditChange)
+    ON_EN_SETFOCUS(IDC_VPF_EDIT, OnEditFocusChanged)
+    ON_EN_KILLFOCUS(IDC_VPF_EDIT, OnEditFocusChanged)
+END_MESSAGE_MAP()
+
+CValueFindBar::CValueFindBar(CValuePanelWnd* pPanel)
+    : m_matchCase(false), m_wholeWord(false), m_regex(false), m_backslash(false), m_markAll(false)
+    , m_pPanel(pPanel)
+    , m_brushColor(CLR_INVALID)
+    , m_hot(H_NONE)
+    , m_bTrackingMouse(false)
+    , m_bSettingText(false)
+    , m_current(-1)
+    , m_total(0)
+    , m_capped(false)
+{
+}
+
+CValueFindBar::~CValueFindBar()
+{
+}
+
+int CValueFindBar::Height ()
+{
+    return kFindBarH;
+}
+
+BOOL CValueFindBar::Create(CWnd* pParentWnd, UINT nID)
+{
+    HINSTANCE hInst = AfxGetInstanceHandle();
+    WNDCLASS wc;
+    if (!::GetClassInfo(hInst, s_szFindClass, &wc))
+    {
+        memset(&wc, 0, sizeof(wc));
+        wc.style = CS_HREDRAW | CS_VREDRAW;
+        wc.lpfnWndProc = ::DefWindowProc;
+        wc.hInstance = hInst;
+        wc.hCursor = ::LoadCursor(NULL, IDC_ARROW);
+        wc.lpszClassName = s_szFindClass;
+        AfxRegisterClass(&wc);
+    }
+
+    return CWnd::Create(s_szFindClass, _T(""),
+        WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+        CRect(0, 0, 0, 0), pParentWnd, nID);
+}
+
+int CValueFindBar::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+    if (CWnd::OnCreate(lpCreateStruct) == -1)
+        return -1;
+
+    m_fontUi.CreatePointFont(90, _T("Segoe UI"));
+    m_fontMono.CreatePointFont(90, _T("Consolas"));
+
+    m_edit.Create(WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, CRect(0, 0, 0, 0), this, IDC_VPF_EDIT);
+    m_edit.SetFont(&m_fontUi);
+    m_edit.SendMessage(EM_SETCUEBANNER, TRUE, (LPARAM)L"Localizar");
+
+    CWinApp* app = AfxGetApp();
+    m_matchCase = app->GetProfileInt(s_szFindProfile, _T("FindMatchCase"), 0) != 0;
+    m_wholeWord = app->GetProfileInt(s_szFindProfile, _T("FindWholeWord"), 0) != 0;
+    m_regex     = app->GetProfileInt(s_szFindProfile, _T("FindRegex"), 0) != 0;
+    m_backslash = app->GetProfileInt(s_szFindProfile, _T("FindBackslash"), 0) != 0;
+    m_markAll   = app->GetProfileInt(s_szFindProfile, _T("FindMarkAll"), 0) != 0;
+
+    m_tip.Create(this, TTS_ALWAYSTIP | TTS_NOPREFIX);
+    static const struct { Hit hit; const wchar_t* text; } tips[] = {
+        { H_CASE,      L"Diferenciar mai\xFAsculas de min\xFAsculas (Alt+C)" },
+        { H_WORD,      L"Palavra inteira (Alt+W)" },
+        { H_REGEX,     L"Express\xE3o regular (Alt+R)" },
+        { H_BACKSLASH, L"Interpretar sequ\xEAncias com barra invertida: \\t, \\n, \\ddd... (Alt+B)" },
+        { H_MARK,      L"Marcar todas as ocorr\xEAncias no texto (Alt+M)" },
+        { H_PREV,      L"Ocorr\xEAncia anterior (Shift+Enter)" },
+        { H_NEXT,      L"Pr\xF3xima ocorr\xEAncia (Enter)" },
+        { H_CLOSE,     L"Fechar (Esc)" },
+    };
+    for (const auto& t : tips)
+        m_tip.AddTool(this, t.text, CRect(0, 0, 0, 0), (UINT_PTR)t.hit);
+    m_tip.Activate(TRUE);
+
+    return 0;
+}
+
+void CValueFindBar::OnSize(UINT nType, int cx, int cy)
+{
+    CWnd::OnSize(nType, cx, cy);
+    Layout(cx, cy);
+}
+
+void CValueFindBar::Layout (int cx, int)
+{
+    const int pad = 10;
+    const int row1 = 7;
+    const int row2 = row1 + kFindRowH + 6;
+    const int h = kFindRowH;
+
+    m_rcClose   = CRect(cx - pad - 24, row1, cx - pad, row1 + h);
+    m_rcNext    = CRect(m_rcClose.left - 24, row1, m_rcClose.left, row1 + h);
+    m_rcPrev    = CRect(m_rcNext.left - 24, row1, m_rcNext.left, row1 + h);
+    m_rcEditBox = CRect(pad, row1, (std::max)(pad + 60, (int)m_rcPrev.left - 6), row1 + h);
+
+    // altura do campo de texto = altura da fonte, centralizado na caixa
+    int editH = 16;
+    if (CDC* dc = GetDC())
+    {
+        CFont* old = dc->SelectObject(&m_fontUi);
+        TEXTMETRIC tm;
+        if (dc->GetTextMetrics(&tm))
+            editH = tm.tmHeight + 1;
+        dc->SelectObject(old);
+        ReleaseDC(dc);
+    }
+    m_edit.SetWindowPos(NULL, m_rcEditBox.left + 8, m_rcEditBox.top + (h - editH) / 2,
+        (std::max)(10, (int)m_rcEditBox.Width() - 16), editH, SWP_NOZORDER | SWP_NOACTIVATE);
+
+    int x = pad;
+    const int bw = 28;
+    m_rcCase      = CRect(x, row2, x + bw, row2 + h); x += bw + 2;
+    m_rcWord      = CRect(x, row2, x + bw, row2 + h); x += bw + 2;
+    m_rcRegex     = CRect(x, row2, x + bw, row2 + h); x += bw + 2;
+    m_rcBackslash = CRect(x, row2, x + bw, row2 + h); x += bw + 10;
+    m_rcMark      = CRect(x, row2, x + 96, row2 + h);
+    m_rcStatus    = CRect(m_rcMark.right + 10, row2, (std::max)((int)m_rcMark.right + 10, cx - pad), row2 + h);
+
+    if (m_tip.m_hWnd)
+    {
+        for (Hit hit : { H_CASE, H_WORD, H_REGEX, H_BACKSLASH, H_MARK, H_PREV, H_NEXT, H_CLOSE })
+            m_tip.SetToolRect(this, (UINT_PTR)hit, RectOf(hit));
+    }
+    Invalidate();
+}
+
+CRect CValueFindBar::RectOf (Hit h) const
+{
+    switch (h)
+    {
+    case H_CASE:      return m_rcCase;
+    case H_WORD:      return m_rcWord;
+    case H_REGEX:     return m_rcRegex;
+    case H_BACKSLASH: return m_rcBackslash;
+    case H_MARK:      return m_rcMark;
+    case H_PREV:      return m_rcPrev;
+    case H_NEXT:      return m_rcNext;
+    case H_CLOSE:     return m_rcClose;
+    default:          return CRect(0, 0, 0, 0);
+    }
+}
+
+CValueFindBar::Hit CValueFindBar::HitTest (CPoint pt) const
+{
+    for (Hit h : { H_CASE, H_WORD, H_REGEX, H_BACKSLASH, H_MARK, H_PREV, H_NEXT, H_CLOSE })
+        if (RectOf(h).PtInRect(pt))
+            return h;
+    return H_NONE;
+}
+
+std::wstring CValueFindBar::GetQuery () const
+{
+    CString s;
+    if (m_edit.m_hWnd)
+        m_edit.GetWindowText(s);
+    return std::wstring((LPCTSTR)s);
+}
+
+void CValueFindBar::SetQuery (const std::wstring& text)
+{
+    m_bSettingText = true;
+    m_edit.SetWindowText(text.c_str());
+    m_bSettingText = false;
+}
+
+void CValueFindBar::FocusEdit (bool selectAll)
+{
+    m_edit.SetFocus();
+    if (selectAll)
+        m_edit.SetSel(0, -1);
+}
+
+bool CValueFindBar::IsEditFocused () const
+{
+    return m_edit.m_hWnd && ::GetFocus() == m_edit.m_hWnd;
+}
+
+void CValueFindBar::SelectAllText ()
+{
+    m_edit.SetSel(0, -1);
+}
+
+void CValueFindBar::CopyText ()
+{
+    m_edit.Copy();
+}
+
+void CValueFindBar::SetStatus (int current, int total, bool capped, const CString& error)
+{
+    m_current = current;
+    m_total = total;
+    m_capped = capped;
+    m_error = error;
+    InvalidateRect(m_rcStatus, FALSE);
+    InvalidateRect(m_rcPrev, FALSE);
+    InvalidateRect(m_rcNext, FALSE);
+}
+
+void CValueFindBar::ThemeChanged ()
+{
+    Invalidate();
+    if (m_edit.m_hWnd)
+        m_edit.Invalidate();
+}
+
+BOOL CValueFindBar::OnEraseBkgnd(CDC*)
+{
+    return TRUE;
+}
+
+HBRUSH CValueFindBar::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+    if (pWnd && pWnd->m_hWnd == m_edit.m_hWnd)
+    {
+        pDC->SetTextColor(ModernTheme::Text);
+        pDC->SetBkColor(ModernTheme::SurfaceAlt);
+        return ModernTheme::CachedBrush(m_brushEdit, m_brushColor, ModernTheme::SurfaceAlt);
+    }
+    return CWnd::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+void CValueFindBar::OnEditChange()
+{
+    if (!m_bSettingText && m_pPanel)
+        m_pPanel->OnFindChanged(true);
+}
+
+void CValueFindBar::OnEditFocusChanged()
+{
+    InvalidateRect(m_rcEditBox, FALSE);
+}
+
+void CValueFindBar::OnPaint()
+{
+    using namespace ModernTheme;
+
+    CPaintDC dc(this);
+    CRect rc;
+    GetClientRect(rc);
+
+    CDC mem;
+    mem.CreateCompatibleDC(&dc);
+    CBitmap bmp;
+    bmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
+    CBitmap* pOldBmp = mem.SelectObject(&bmp);
+
+    mem.FillSolidRect(rc, Surface);
+    mem.FillSolidRect(rc.left, rc.bottom - 1, rc.Width(), 1, Border);
+
+    Gdiplus::Graphics g(mem.GetSafeHdc());
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+
+    // caixa do campo de texto (com contorno de destaque quando tem o foco)
+    FillRoundRect(g, m_rcEditBox, 5.0f, SurfaceAlt);
+    if (IsEditFocused())
+    {
+        Gdiplus::GraphicsPath path;
+        RoundRectPath(path, Gdiplus::RectF((float)m_rcEditBox.left + 0.5f, (float)m_rcEditBox.top + 0.5f,
+                                           (float)m_rcEditBox.Width() - 1.0f, (float)m_rcEditBox.Height() - 1.0f), 5.0f);
+        Gdiplus::Pen pen(Clr(Accent), 1.0f);
+        g.DrawPath(&pen, &path);
+    }
+
+    const struct { Hit hit; bool on; } toggles[] = {
+        { H_CASE, m_matchCase }, { H_WORD, m_wholeWord }, { H_REGEX, m_regex }, { H_BACKSLASH, m_backslash }, { H_MARK, m_markAll } };
+    for (const auto& t : toggles)
+    {
+        CRect r = RectOf(t.hit);
+        if (t.on)
+            FillRoundRect(g, r, 5.0f, AccentTint);
+        else if (m_hot == t.hit)
+            FillRoundRect(g, r, 5.0f, Hover);
+    }
+    for (Hit hit : { H_PREV, H_NEXT, H_CLOSE })
+        if (m_hot == hit && (hit == H_CLOSE || m_total > 0))
+            FillRoundRect(g, RectOf(hit), 5.0f, Hover);
+
+    mem.SetBkMode(TRANSPARENT);
+
+    // rotulos dos botoes de opcao
+    CFont* pOldFont = mem.SelectObject(&m_fontMono);
+    auto label = [&](const CRect& r, const wchar_t* text, bool on)
+    {
+        mem.SetTextColor(on ? Accent : Text);
+        CRect rr = r;
+        mem.DrawText(text, -1, rr, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+    };
+    label(m_rcCase,      L"Aa", m_matchCase);
+    label(m_rcWord,      L"ab", m_wholeWord);
+    label(m_rcRegex,     L".*", m_regex);
+    label(m_rcBackslash, L"\\n", m_backslash);
+
+    // palavra inteira: colchete embaixo das letras
+    {
+        COLORREF c = m_wholeWord ? Accent : Text;
+        Gdiplus::Pen pen(Clr(c), 1.0f);
+        float cx = (float)m_rcWord.CenterPoint().x, y = (float)m_rcWord.CenterPoint().y + 8.0f;
+        g.DrawLine(&pen, cx - 7, y, cx + 7, y);
+        g.DrawLine(&pen, cx - 7, y - 2, cx - 7, y);
+        g.DrawLine(&pen, cx + 7, y - 2, cx + 7, y);
+    }
+
+    // botao "Marcar todos" e a contagem
+    mem.SelectObject(&m_fontUi);
+    label(m_rcMark, L"Marcar todos", m_markAll);
+
+    CString status;
+    bool danger = false;
+    if (!m_error.IsEmpty())
+    {
+        status = m_error;
+        danger = true;
+    }
+    else if (m_edit.m_hWnd && m_edit.GetWindowTextLength() > 0)
+    {
+        if (m_total == 0)
+        {
+            status = _T("Sem resultados");
+            danger = true;
+        }
+        else
+        {
+            CString total;
+            total.Format(_T("%d%s"), m_total, m_capped ? _T("+") : _T(""));
+            if (m_current >= 0)
+                status.Format(_T("%d de %s"), m_current + 1, (LPCTSTR)total);
+            else if (m_total == 1 && !m_capped)
+                status = _T("1 resultado");
+            else
+                status.Format(_T("%s resultados"), (LPCTSTR)total);
+        }
+    }
+    mem.SetTextColor(danger ? Danger : TextMuted);
+    CRect rcStatus = m_rcStatus;
+    mem.DrawText(status, rcStatus, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+    mem.SelectObject(pOldFont);
+
+    // navegacao e fechar
+    const COLORREF navCol = m_total > 0 ? Text : TextDisabled;
+    DrawChevron(g, (float)m_rcPrev.CenterPoint().x, (float)m_rcPrev.CenterPoint().y, 3, navCol, 1.6f);
+    DrawChevron(g, (float)m_rcNext.CenterPoint().x, (float)m_rcNext.CenterPoint().y, 2, navCol, 1.6f);
+    DrawCloseGlyph(g, (float)m_rcClose.CenterPoint().x, (float)m_rcClose.CenterPoint().y, m_hot == H_CLOSE ? Text : TextMuted);
+
+    dc.BitBlt(0, 0, rc.Width(), rc.Height(), &mem, 0, 0, SRCCOPY);
+    mem.SelectObject(pOldBmp);
+}
+
+void CValueFindBar::OnMouseMove(UINT nFlags, CPoint point)
+{
+    if (!m_bTrackingMouse)
+    {
+        TRACKMOUSEEVENT tme;
+        tme.cbSize = sizeof(tme);
+        tme.dwFlags = TME_LEAVE;
+        tme.hwndTrack = m_hWnd;
+        _TrackMouseEvent(&tme);
+        m_bTrackingMouse = true;
+    }
+    Hit hit = HitTest(point);
+    if (hit != m_hot)
+    {
+        m_hot = hit;
+        Invalidate(FALSE);
+    }
+    CWnd::OnMouseMove(nFlags, point);
+}
+
+void CValueFindBar::OnMouseLeave()
+{
+    m_bTrackingMouse = false;
+    if (m_hot != H_NONE)
+    {
+        m_hot = H_NONE;
+        Invalidate(FALSE);
+    }
+}
+
+void CValueFindBar::OnLButtonDown(UINT nFlags, CPoint point)
+{
+    Hit hit = HitTest(point);
+    if (hit != H_NONE)
+    {
+        Activate(hit);
+        return;
+    }
+    CWnd::OnLButtonDown(nFlags, point);
+}
+
+void CValueFindBar::SaveOptions () const
+{
+    CWinApp* app = AfxGetApp();
+    app->WriteProfileInt(s_szFindProfile, _T("FindMatchCase"), m_matchCase ? 1 : 0);
+    app->WriteProfileInt(s_szFindProfile, _T("FindWholeWord"), m_wholeWord ? 1 : 0);
+    app->WriteProfileInt(s_szFindProfile, _T("FindRegex"),     m_regex ? 1 : 0);
+    app->WriteProfileInt(s_szFindProfile, _T("FindBackslash"), m_backslash ? 1 : 0);
+    app->WriteProfileInt(s_szFindProfile, _T("FindMarkAll"),   m_markAll ? 1 : 0);
+}
+
+void CValueFindBar::Activate (Hit h)
+{
+    switch (h)
+    {
+    case H_CASE:      m_matchCase = !m_matchCase; break;
+    case H_WORD:      m_wholeWord = !m_wholeWord; break;
+    case H_REGEX:     m_regex     = !m_regex;     break;
+    case H_BACKSLASH: m_backslash = !m_backslash; break;
+    case H_MARK:      m_markAll   = !m_markAll;   break;
+    case H_PREV:      m_pPanel->FindNext(false);  return;
+    case H_NEXT:      m_pPanel->FindNext(true);   return;
+    case H_CLOSE:     m_pPanel->HideFindBar();    return;
+    default:          return;
+    }
+    SaveOptions();
+    Invalidate(FALSE);
+    m_pPanel->OnFindChanged(h != H_MARK);
+    if (m_edit.m_hWnd)
+        m_edit.SetFocus();
+}
+
+BOOL CValueFindBar::PreTranslateMessage(MSG* pMsg)
+{
+    if (m_tip.m_hWnd && pMsg->hwnd == m_hWnd && pMsg->message >= WM_MOUSEFIRST && pMsg->message <= WM_MOUSELAST)
+        m_tip.RelayEvent(pMsg);
+
+    if (pMsg->hwnd == m_edit.m_hWnd && (pMsg->message == WM_KEYDOWN || pMsg->message == WM_SYSKEYDOWN))
+    {
+        const bool ctrl  = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+        const bool alt   = (GetKeyState(VK_MENU) & 0x8000) != 0;
+
+        switch (pMsg->wParam)
+        {
+        case VK_RETURN:
+        case VK_F3:
+            m_pPanel->FindNext(!shift);
+            return TRUE;
+        case VK_ESCAPE:
+            m_pPanel->HideFindBar();
+            return TRUE;
+        case 'F':
+            if (ctrl && !alt)
+            {
+                FocusEdit(true);
+                return TRUE;
+            }
+            break;
+        }
+        if (alt && !ctrl)
+        {
+            switch (pMsg->wParam)
+            {
+            case 'C': Activate(H_CASE);      return TRUE;
+            case 'W': Activate(H_WORD);      return TRUE;
+            case 'R': Activate(H_REGEX);     return TRUE;
+            case 'B': Activate(H_BACKSLASH); return TRUE;
+            case 'M': Activate(H_MARK);      return TRUE;
+            }
+        }
+    }
+    return CWnd::PreTranslateMessage(pMsg);
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // CValueEditCtrl
 /////////////////////////////////////////////////////////////////////////////
 
@@ -676,6 +1319,24 @@ BOOL CValueEditCtrl::PreTranslateMessage(MSG* pMsg)
     if (pMsg->message == WM_KEYDOWN)
     {
         bool bCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        if (CValuePanelWnd* pPanel = dynamic_cast<CValuePanelWnd*>(GetParent()))
+        {
+            if (bCtrl && (pMsg->wParam == 'F' || pMsg->wParam == 'f'))
+            {
+                pPanel->ShowFindBar();
+                return TRUE;
+            }
+            if (pMsg->wParam == VK_F3)
+            {
+                pPanel->FindNext((GetKeyState(VK_SHIFT) & 0x8000) == 0);
+                return TRUE;
+            }
+            if (pMsg->wParam == VK_ESCAPE && pPanel->IsFindBarVisible())
+            {
+                pPanel->HideFindBar();
+                return TRUE;
+            }
+        }
         if (bCtrl)
         {
             if (pMsg->wParam == 'A' || pMsg->wParam == 'a')
@@ -756,6 +1417,8 @@ void CValueEditCtrl::OnContextMenu(CWnd*, CPoint pos)
 
     menu.AppendMenu(MF_STRING, 1, _T("Copiar\tCtrl+C"));
     menu.AppendMenu(MF_STRING, 2, _T("Selecionar Tudo\tCtrl+A"));
+    menu.AppendMenu(MF_SEPARATOR);
+    menu.AppendMenu(MF_STRING, 3, _T("Localizar...\tCtrl+F"));
 
     int cmd = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD, pos.x, pos.y, this);
     if (cmd == 1)
@@ -778,6 +1441,11 @@ void CValueEditCtrl::OnContextMenu(CWnd*, CPoint pos)
     else if (cmd == 2)
     {
         SetSel(0, -1);
+    }
+    else if (cmd == 3)
+    {
+        if (CValuePanelWnd* pPanel = dynamic_cast<CValuePanelWnd*>(GetParent()))
+            pPanel->ShowFindBar();
     }
 }
 
@@ -809,6 +1477,12 @@ CValuePanelWnd::CValuePanelWnd(OciGridView* pGrid)
     , m_bCompact(false)
     , m_bFormatCdata(false)
     , m_encoding(VE_UTF8)
+    , m_findBar(this)
+    , m_bFindVisible(false)
+    , m_findTextValid(false)
+    , m_findCur(-1)
+    , m_findCapped(false)
+    , m_marksApplied(false)
     , m_lastMenuCloseTime(0)
     , m_bHoverClose(false)
 {
@@ -878,6 +1552,7 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
         | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN;
     m_wndEdit.Create(editStyle, CRect(0, 0, 0, 0), this, IDC_VP_EDIT);
     m_wndEdit.SetFont(&m_fontEditor);
+    m_wndEdit.SendMessage(EM_SETOPTIONS, ECOOP_OR, ECO_NOHIDESEL);    // a ocorrencia selecionada continua visivel com o foco na barra de busca
     m_wndEdit.LimitText(0x7FFFFFF);
     m_wndEdit.SetEventMask(m_wndEdit.GetEventMask() | ENM_SCROLL | ENM_CHANGE);
     m_wndEdit.SetBackgroundColor(FALSE, ModernTheme::Surface);
@@ -895,6 +1570,9 @@ int CValuePanelWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
     // Gutter
     m_wndGutter.Create(this, IDC_VP_GUTTER, &m_wndEdit);
     m_wndGutter.SetFont(&m_fontEditor);
+
+    // Barra de busca (Ctrl+F), oculta ate ser pedida
+    m_findBar.Create(this, IDC_VP_FIND);
 
     return 0;
 }
@@ -924,6 +1602,17 @@ void CValuePanelWnd::LayoutChildren(int cx, int cy)
     m_btnFormat.SetWindowPos(NULL, 8, btnY, 88, btnH, flags);
     m_btnCopy.SetWindowPos(NULL, 102, btnY, 80, btnH, flags);
     m_btnSave.SetWindowPos(NULL, 188, btnY, 88, btnH, flags);
+
+    // barra de busca, entre a toolbar e o editor
+    if (m_findBar.GetSafeHwnd())
+    {
+        if (m_bFindVisible)
+            m_findBar.SetWindowPos(NULL, 0, topOffset, cx, CValueFindBar::Height(), flags | SWP_SHOWWINDOW);
+        else
+            m_findBar.ShowWindow(SW_HIDE);
+    }
+    if (m_bFindVisible)
+        topOffset += CValueFindBar::Height();
 
     // area do editor e gutter
     int gutterW = 40;
@@ -1065,6 +1754,10 @@ void CValuePanelWnd::ClearData()
     m_rawBytes.clear();
     m_wndEdit.SetWindowText(_T(""));
     m_wndGutter.Invalidate();
+    m_findTextValid = false;
+    m_marksApplied = false;
+    if (m_bFindVisible)
+        RunFind(false);
 }
 
 void CValuePanelWnd::SetFormat(EValueFormat format)
@@ -1143,6 +1836,7 @@ LRESULT CValuePanelWnd::OnThemeChanged(WPARAM, LPARAM)
     cf.crTextColor = ModernTheme::Text;
     m_wndEdit.SetDefaultCharFormat(cf);
 
+    m_findBar.ThemeChanged();
     RefreshDisplay();
     m_wndGutter.Invalidate();
     Invalidate();
@@ -1192,6 +1886,246 @@ void CValuePanelWnd::RefreshDisplay()
     }
     m_btnFormat.SetWindowText(btnLabel);
 
+    m_wndGutter.Invalidate();
+
+    // o conteudo foi trocado: texto em cache e marcas perdidos, a busca aberta e refeita sem mexer na selecao
+    m_findTextValid = false;
+    m_marksApplied = false;
+    if (m_bFindVisible)
+        RunFind(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Busca (Ctrl+F)
+/////////////////////////////////////////////////////////////////////////////
+
+bool CValuePanelWnd::IsFindEditFocused() const
+{
+    return m_bFindVisible && m_findBar.IsEditFocused();
+}
+
+// texto do editor com \n como quebra de linha (mesmo tamanho: as posicoes valem para o RichEdit)
+const std::wstring& CValuePanelWnd::SearchText()
+{
+    if (!m_findTextValid)
+    {
+        m_findText.clear();
+        GETTEXTLENGTHEX gtl = {};
+        gtl.flags = GTL_NUMCHARS;
+        gtl.codepage = 1200;
+        LRESULT len = m_wndEdit.SendMessage(EM_GETTEXTLENGTHEX, (WPARAM)&gtl, 0);
+        if (len > 0 && len != E_INVALIDARG)
+        {
+            m_findText.resize((size_t)len + 1);
+            GETTEXTEX gt = {};
+            gt.cb = (DWORD)((len + 1) * sizeof(wchar_t));
+            gt.flags = GT_DEFAULT;
+            gt.codepage = 1200;
+            LRESULT got = m_wndEdit.SendMessage(EM_GETTEXTEX, (WPARAM)&gt, (LPARAM)&m_findText[0]);
+            m_findText.resize((size_t)got);
+            std::replace(m_findText.begin(), m_findText.end(), L'\r', L'\n');
+        }
+        m_findTextValid = true;
+    }
+    return m_findText;
+}
+
+void CValuePanelWnd::ShowFindBar()
+{
+    // o texto selecionado (de uma linha) vira o texto procurado
+    std::wstring seed;
+    long s = 0, e = 0;
+    m_wndEdit.GetSel(s, e);
+    if (e > s && e - s <= 200)
+    {
+        CString sel = m_wndEdit.GetSelText();
+        if (sel.FindOneOf(_T("\r\n")) < 0)
+            seed = (LPCTSTR)sel;
+    }
+
+    m_bFindVisible = true;
+    CRect rc;
+    GetClientRect(rc);
+    LayoutChildren(rc.Width(), rc.Height());
+
+    const bool changed = !seed.empty() && seed != m_findBar.GetQuery();
+    if (changed)
+        m_findBar.SetQuery(seed);
+    m_findBar.FocusEdit(true);
+    RunFind(changed);
+}
+
+void CValuePanelWnd::HideFindBar()
+{
+    if (!m_bFindVisible)
+        return;
+    m_bFindVisible = false;
+    ApplyMarks();                       // tira as marcas; a selecao atual permanece
+    CRect rc;
+    GetClientRect(rc);
+    LayoutChildren(rc.Width(), rc.Height());
+    m_wndEdit.SetFocus();
+    m_wndGutter.Invalidate();
+}
+
+void CValuePanelWnd::OnFindChanged(bool jump)
+{
+    if (m_bFindVisible)
+        RunFind(jump);
+}
+
+void CValuePanelWnd::RunFind(bool jump)
+{
+    FindOptions o;
+    o.query = m_findBar.GetQuery();
+    o.matchCase = m_findBar.m_matchCase;
+    o.wholeWord = m_findBar.m_wholeWord;
+    o.regex = m_findBar.m_regex;
+    o.backslash = m_findBar.m_backslash;
+
+    m_findError.Empty();
+    m_findCur = -1;
+    if (o.query.empty())
+    {
+        m_matches.clear();
+        m_findCapped = false;
+    }
+    else
+    {
+        CWaitCursor wait;
+        FindAllMatches(SearchText(), o, m_matches, m_findCapped, m_findError);
+    }
+
+    long s = 0, e = 0;
+    m_wndEdit.GetSel(s, e);
+    if (jump && !m_matches.empty())
+    {
+        // a partir de onde a selecao comecou, para a busca incremental nao pular a ocorrencia ao digitar
+        auto it = std::lower_bound(m_matches.begin(), m_matches.end(), s,
+            [](const CHARRANGE& m, long v) { return m.cpMin < v; });
+        SelectMatch(it == m_matches.end() ? 0 : (int)(it - m_matches.begin()));
+    }
+    else
+    {
+        for (size_t i = 0; i < m_matches.size(); ++i)
+            if (m_matches[i].cpMin == s && m_matches[i].cpMax == e)
+            {
+                m_findCur = (int)i;
+                break;
+            }
+    }
+
+    ApplyMarks();
+    UpdateFindStatus();
+}
+
+void CValuePanelWnd::UpdateFindStatus()
+{
+    m_findBar.SetStatus(m_findCur, (int)m_matches.size(), m_findCapped, m_findError);
+}
+
+void CValuePanelWnd::SelectMatch(int index)
+{
+    if (index < 0 || index >= (int)m_matches.size())
+        return;
+    m_findCur = index;
+    const CHARRANGE& m = m_matches[index];
+    m_wndEdit.SetSel(m.cpMin, m.cpMax);
+
+    // se a ocorrencia esta fora da vista, rola deixando-a mais ou menos no terco superior
+    CRect rcClient;
+    m_wndEdit.GetClientRect(rcClient);
+    const int first = m_wndEdit.GetFirstVisibleLine();
+    int lh = 16;
+    const int a = m_wndEdit.LineIndex(first), b = m_wndEdit.LineIndex(first + 1);
+    if (a >= 0 && b > a)
+        lh = (std::max)(8, (int)(m_wndEdit.GetCharPos(b).y - m_wndEdit.GetCharPos(a).y));
+    const CPoint pt = m_wndEdit.GetCharPos(m.cpMin);
+    if (pt.y < 0 || pt.y + lh > rcClient.Height())
+    {
+        const int line = m_wndEdit.LineFromChar(m.cpMin);
+        const int visible = (std::max)(1, rcClient.Height() / lh);
+        m_wndEdit.LineScroll(line - first - visible / 3);
+    }
+    m_wndEdit.SendMessage(EM_SCROLLCARET);
+    m_wndGutter.Invalidate();
+}
+
+void CValuePanelWnd::FindNext(bool forward)
+{
+    if (!m_bFindVisible)
+    {
+        ShowFindBar();
+        return;
+    }
+    if (m_matches.empty())
+        return;
+
+    long s = 0, e = 0;
+    m_wndEdit.GetSel(s, e);
+    auto less = [](const CHARRANGE& m, long v) { return m.cpMin < v; };
+    int idx;
+    if (forward)
+    {
+        auto it = std::lower_bound(m_matches.begin(), m_matches.end(), e > s ? e : s, less);
+        idx = it == m_matches.end() ? 0 : (int)(it - m_matches.begin());
+    }
+    else
+    {
+        auto it = std::lower_bound(m_matches.begin(), m_matches.end(), s, less);
+        idx = it == m_matches.begin() ? (int)m_matches.size() - 1 : (int)(it - m_matches.begin()) - 1;
+    }
+    SelectMatch(idx);
+    UpdateFindStatus();
+}
+
+// "Marcar todos": pinta o fundo das ocorrencias (e desfaz as marcas anteriores); a selecao e a rolagem sao preservadas
+void CValuePanelWnd::ApplyMarks()
+{
+    const bool want = m_bFindVisible && m_findBar.m_markAll && !m_matches.empty();
+    if (!want && !m_marksApplied)
+        return;
+
+    long s = 0, e = 0;
+    m_wndEdit.GetSel(s, e);
+    const int firstLine = m_wndEdit.GetFirstVisibleLine();
+    const BOOL readOnly = (m_wndEdit.GetStyle() & ES_READONLY) != 0;
+    const LRESULT mask = m_wndEdit.SendMessage(EM_SETEVENTMASK, 0, 0);
+    m_wndEdit.SetRedraw(FALSE);
+    if (readOnly)
+        m_wndEdit.SetReadOnly(FALSE);
+
+    CHARFORMAT2 cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_BACKCOLOR;
+    if (m_marksApplied)
+    {
+        m_wndEdit.SetSel(0, -1);
+        cf.dwEffects = CFE_AUTOBACKCOLOR;
+        m_wndEdit.SetSelectionCharFormat(cf);
+    }
+    if (want)
+    {
+        cf.dwEffects = 0;
+        cf.crBackColor = MarkColor();
+        const size_t n = (std::min)(m_matches.size(), kMaxMarks);
+        for (size_t i = 0; i < n; ++i)
+        {
+            m_wndEdit.SetSel(m_matches[i].cpMin, m_matches[i].cpMax);
+            m_wndEdit.SetSelectionCharFormat(cf);
+        }
+    }
+    m_marksApplied = want;
+
+    m_wndEdit.SetSel(s, e);
+    if (readOnly)
+        m_wndEdit.SetReadOnly(TRUE);
+    const int now = m_wndEdit.GetFirstVisibleLine();
+    if (now != firstLine)
+        m_wndEdit.LineScroll(firstLine - now);
+    m_wndEdit.SendMessage(EM_SETEVENTMASK, 0, mask);
+    m_wndEdit.SetRedraw(TRUE);
+    m_wndEdit.Invalidate();
     m_wndGutter.Invalidate();
 }
 
@@ -1274,6 +2208,11 @@ void CValuePanelWnd::OnFormatDropdown()
 
 void CValuePanelWnd::SelectAll()
 {
+    if (IsFindEditFocused())
+    {
+        m_findBar.SelectAllText();
+        return;
+    }
     if (m_wndEdit.GetSafeHwnd())
     {
         m_wndEdit.SetSel(0, -1);
@@ -1283,6 +2222,11 @@ void CValuePanelWnd::SelectAll()
 
 void CValuePanelWnd::CopySelection()
 {
+    if (IsFindEditFocused())
+    {
+        m_findBar.CopyText();
+        return;
+    }
     if (m_wndEdit.GetSafeHwnd())
     {
         long selStart = 0, selEnd = 0;
@@ -1313,6 +2257,11 @@ BOOL CValuePanelWnd::PreTranslateMessage(MSG* pMsg)
             if (pMsg->wParam == 'C' || pMsg->wParam == 'c')
             {
                 CopySelection();
+                return TRUE;
+            }
+            if (pMsg->wParam == 'F' || pMsg->wParam == 'f')
+            {
+                ShowFindBar();
                 return TRUE;
             }
         }

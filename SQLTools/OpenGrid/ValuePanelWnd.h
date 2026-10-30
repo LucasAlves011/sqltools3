@@ -4,6 +4,7 @@
 
 #include <afxwin.h>
 #include <afxcmn.h>
+#include <richedit.h>
 #include <vector>
 #include <string>
 #include "ValueFormatters.h"
@@ -105,6 +106,79 @@ private:
 };
 
 /////////////////////////////////////////////////////////////////////////////
+// CValueFindBar - barra de busca (Ctrl+F) do painel Valor
+/////////////////////////////////////////////////////////////////////////////
+class CValueFindBar : public CWnd
+{
+public:
+    CValueFindBar(CValuePanelWnd* pPanel);
+    virtual ~CValueFindBar();
+
+    BOOL Create(CWnd* pParentWnd, UINT nID);
+
+    static int Height();
+
+    std::wstring GetQuery() const;
+    void SetQuery(const std::wstring& text);        // sem disparar a busca
+    void FocusEdit(bool selectAll);
+    bool IsEditFocused() const;
+    void SelectAllText();
+    void CopyText();
+    void SetStatus(int current, int total, bool capped, const CString& error);
+    void ThemeChanged();
+
+    bool m_matchCase;
+    bool m_wholeWord;
+    bool m_regex;
+    bool m_backslash;
+    bool m_markAll;
+
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
+
+protected:
+    DECLARE_MESSAGE_MAP()
+    afx_msg int  OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnPaint();
+    afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+    afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
+    afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+    afx_msg void OnEditChange();
+    afx_msg void OnEditFocusChanged();
+
+private:
+    enum Hit { H_NONE, H_CASE, H_WORD, H_REGEX, H_BACKSLASH, H_MARK, H_PREV, H_NEXT, H_CLOSE };
+
+    void Layout(int cx, int cy);
+    CRect RectOf(Hit h) const;
+    Hit   HitTest(CPoint pt) const;
+    void  Activate(Hit h);
+    void  SaveOptions() const;
+    void  ToggleOption(Hit h);
+
+    CValuePanelWnd* m_pPanel;
+    CEdit           m_edit;
+    CToolTipCtrl    m_tip;
+    CFont           m_fontUi;
+    CFont           m_fontMono;
+    CBrush          m_brushEdit;
+    COLORREF        m_brushColor;
+
+    CRect m_rcEditBox, m_rcPrev, m_rcNext, m_rcClose;
+    CRect m_rcCase, m_rcWord, m_rcRegex, m_rcBackslash, m_rcMark, m_rcStatus;
+
+    Hit   m_hot;
+    bool  m_bTrackingMouse;
+    bool  m_bSettingText;
+
+    int     m_current, m_total;
+    bool    m_capped;
+    CString m_error;
+};
+
+/////////////////////////////////////////////////////////////////////////////
 // CValueEditCtrl - RichEdit especializado para captura de Ctrl+A / Ctrl+C e context menu
 /////////////////////////////////////////////////////////////////////////////
 class CValueEditCtrl : public CRichEditCtrl
@@ -166,6 +240,14 @@ public:
 
     void RefreshDisplay();
 
+    // busca (Ctrl+F)
+    void ShowFindBar();
+    void HideFindBar();
+    bool IsFindBarVisible() const { return m_bFindVisible; }
+    bool IsFindEditFocused() const;
+    void FindNext(bool forward);
+    void OnFindChanged(bool jump);      // texto ou opcoes da barra mudaram
+
     virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 protected:
@@ -189,6 +271,12 @@ private:
     CRect GetCloseButtonRect() const;
     CRect GetTabRect() const;
 
+    void RunFind(bool jump);
+    void SelectMatch(int index);
+    void ApplyMarks();
+    void UpdateFindStatus();
+    const std::wstring& SearchText();
+
     OciGridView*      m_pGrid;
     CFont             m_fontEditor;
     CFont             m_fontUi;
@@ -200,6 +288,17 @@ private:
     CModernButton     m_btnSave;
     CValueLineGutter  m_wndGutter;
     CValueEditCtrl    m_wndEdit;
+    CValueFindBar     m_findBar;
+
+    // estado da busca
+    bool                  m_bFindVisible;
+    std::wstring          m_findText;          // texto do editor (quebras de linha como \n), em cache
+    bool                  m_findTextValid;
+    std::vector<CHARRANGE> m_matches;
+    int                   m_findCur;
+    bool                  m_findCapped;
+    CString               m_findError;
+    bool                  m_marksApplied;
 
     DWORD             m_lastMenuCloseTime;
     bool              m_bHoverClose;
