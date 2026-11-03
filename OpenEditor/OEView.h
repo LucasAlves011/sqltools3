@@ -383,6 +383,7 @@ protected:
     afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
     afx_msg void OnLButtonDblClkImpl(UINT nFlags, CPoint point);
     afx_msg void OnTimer(UINT_PTR nIDEvent);
+    void MoveColumnarCursors (int delta);
     afx_msg void OnEditToggleColumnarSelection();
     afx_msg void OnEditToggleStreamSelection();
     afx_msg void OnEditToggleSelectionMode();

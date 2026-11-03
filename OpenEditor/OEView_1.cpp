@@ -683,7 +683,20 @@ void COEditorView::OnKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
 
     bool _shift = (0xFF00 & GetKeyState(VK_SHIFT))   ? true : false;
     bool _cntrl = (0xFF00 & GetKeyState(VK_CONTROL)) ? true : false;
+    bool _alt   = (0xFF00 & GetKeyState(VK_MENU))    ? true : false;
+
+    // Alt+Up / Alt+Down add lines to the multi-line cursor (same as Alt+click and drag)
+    if (_alt && !_shift && !_cntrl && (nChar == VK_UP || nChar == VK_DOWN))
+    {
+        _shift = true;
+        if (GetBlockMode() != ebtColumn)
+            SetBlockMode(ebtColumn, true);
+    }
+
     bool _force = GetBlockMode() == ebtColumn && _shift ? true : false;
+
+    // with a multi-line cursor, Left/Right move all the cursors instead of dropping them
+    const bool _keepColumns = !_shift && !_cntrl && GetBlockMode() == ebtColumn && !IsSelectionEmpty();
 
     switch (nChar)
     {
@@ -752,6 +765,12 @@ void COEditorView::OnKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
         if (_cntrl)
             WordLeft();
         else
+            if (_keepColumns)
+            {
+                MoveColumnarCursors(-1);
+                clearSelection = false;
+            }
+            else
             if (!_shift && !IsSelectionEmpty())
             {
                 Square blkPos;
@@ -770,6 +789,12 @@ void COEditorView::OnKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
         if (_cntrl)
             WordRight();
         else
+            if (_keepColumns)
+            {
+                MoveColumnarCursors(+1);
+                clearSelection = false;
+            }
+            else
             if (!_shift && !IsSelectionEmpty())
             {
                 Square blkPos;
@@ -846,7 +871,6 @@ void COEditorView::OnKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
 
     if (_shift)
     {
-        bool _alt = (0xFF00 & GetKeyState(VK_MENU)) ? true : false;
         if (_alt && GetBlockMode() != ebtColumn) // convert to columnar mode
             SetBlockMode(ebtColumn, true);
 
@@ -862,6 +886,22 @@ void COEditorView::OnKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
 
     // for better visual response
     if (nRepCnt) UpdateWindow();
+}
+
+// moves a columnar selection (the multi-line cursor) one column left or right
+void COEditorView::MoveColumnarCursors (int delta)
+{
+    Square sel;
+    GetSelection(sel);
+
+    if (sel.start.column + delta < 0 || sel.end.column + delta < 0)
+        return;
+
+    sel.start.column += delta;
+    sel.end.column   += delta;
+
+    MoveTo(sel.end, true);
+    SetSelection(sel);
 }
 
 void COEditorView::OnSysKeyDown (UINT nChar, UINT nRepCnt, UINT nFlags)
