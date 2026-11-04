@@ -29,6 +29,16 @@ namespace ModernDialog
     // aplica o visual moderno a todo dialogo e folha de propriedades criados pela aplicacao (gancho da thread)
     void InstallGlobalSkin ();
 
+    // o mesmo gancho, so enquanto durar o objeto, para dialogos abertos por outra thread (tarefas em segundo plano)
+    class ScopedThreadSkin
+    {
+    public:
+        ScopedThreadSkin ();
+        ~ScopedThreadSkin ();
+    private:
+        HHOOK m_hook;
+    };
+
     // moldura da janela de configuracao (fundo cinza claro, botoes OK/Cancelar e contorno da arvore)
     void SkinSheet (HWND hSheet);
 

@@ -2,6 +2,26 @@ SQLTools Changelog
 ==================
 
 
+3.6.1
+-----
+Date: 2026-11-04
+
+  New features
+    * Code editor: Alt+Up and Alt+Down add lines to the multi-line cursor, the same
+      as Alt+click and drag.
+
+  Improvements
+    * Code editor: with the multi-line cursor, the Left and Right arrows now move
+      all the cursors together instead of removing them. They only go away when
+      you press Esc or click with the mouse.
+
+  Bug fixes
+    * Objects List: dragging an object and dropping it below the last line of the
+      editor no longer fails with "invalid QuickArray<T> subscript".
+    * Error messages shown by background tasks (for example a connection timeout
+      while loading the Objects List) now follow the dark theme.
+
+
 3.6.0
 -----
 Date: 2026-10-30

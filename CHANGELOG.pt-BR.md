@@ -2,6 +2,26 @@ SQLTools - Histórico de alterações
 =================================
 
 
+3.6.1
+-----
+Data: 2026-11-04
+
+  Novas funcionalidades
+    * Editor de código: Alt+Seta para cima e Alt+Seta para baixo adicionam linhas
+      ao cursor em várias linhas, igual ao Alt+clique e arrasta.
+
+  Melhorias
+    * Editor de código: com o cursor em várias linhas, as setas para esquerda e
+      direita agora movem todos os cursores juntos em vez de removê-los. Eles só
+      somem ao apertar Esc ou clicar com o mouse.
+
+  Correções de bugs
+    * Objects List: arrastar um objeto e soltar abaixo da última linha do editor
+      não dá mais o erro "invalid QuickArray<T> subscript".
+    * Mensagens de erro de tarefas em segundo plano (por exemplo, timeout de
+      conexão ao carregar o Objects List) agora seguem o tema escuro.
+
+
 3.6.0
 -----
 Data: 2026-10-30

@@ -1067,10 +1067,30 @@ namespace ModernDialog
         }
     }
 
+    namespace { DWORD g_hookThread = 0; }
+
     void InstallGlobalSkin ()
     {
         if (!g_hook)
+        {
             g_hook = ::SetWindowsHookEx(WH_CALLWNDPROCRET, GlobalHookProc, NULL, ::GetCurrentThreadId());
+            g_hookThread = ::GetCurrentThreadId();
+        }
+    }
+
+    ScopedThreadSkin::ScopedThreadSkin ()
+        : m_hook(NULL)
+    {
+        // o gancho global so vale na thread principal; em outras threads (ex.: erro de uma tarefa em segundo plano)
+        // o dialogo nasceria claro
+        if (g_hook && ::GetCurrentThreadId() != g_hookThread)
+            m_hook = ::SetWindowsHookEx(WH_CALLWNDPROCRET, GlobalHookProc, NULL, ::GetCurrentThreadId());
+    }
+
+    ScopedThreadSkin::~ScopedThreadSkin ()
+    {
+        if (m_hook)
+            ::UnhookWindowsHookEx(m_hook);
     }
 
     namespace

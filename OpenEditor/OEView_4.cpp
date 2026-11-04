@@ -468,7 +468,8 @@ BOOL COEditorView::OnDrop (COleDataObject* pDataObject, DROPEFFECT dropEffect, C
                 if (info == "{code}")
                     AlignCodeFragment(text.c_str(), text);
 
-                if (pDataObject->IsDataAvailable(Common::SimpleDragDataSource::GetDbObjectNameFormat()))
+                if (pDataObject->IsDataAvailable(Common::SimpleDragDataSource::GetDbObjectNameFormat())
+                && GetPosition().line < GetLineCount()) // dropped below the last line: there is no text to look at
                 {
                     Position caret = GetPosition();
                     Common::OEStringW lineText;

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Theme/ModernMessageBox.h"
 #include "Theme/ModernTheme.h"
+#include "Theme/ModernDialog.h"
 #include <list>
 #include <vector>
 #include <algorithm>
@@ -198,6 +199,7 @@ namespace ModernMessageBox
     {
         if (!pParent)
             pParent = AfxGetMainWnd();
+        ModernDialog::ScopedThreadSkin skin;
         CMessageDlg dlg(pParent, text, caption, type);
         return (int)dlg.Run();
     }
