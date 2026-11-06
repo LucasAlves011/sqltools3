@@ -85,6 +85,7 @@ class COEditorView : public CView, protected OpenEditor::EditContext
     BOOL m_bDragScrolling; //  data is dragged over the window and scrolling has started after a small delay
 
     int   m_nClicks;
+    BOOL  m_bPeekOnButtonUp;   // duplo clique: abre o visualizador de cursor ao soltar o botao
     CRect m_rcClick;
     DWORD m_tmLastClick;
 
@@ -382,6 +383,7 @@ protected:
     afx_msg void OnLButtonDownImpl(UINT nFlags, CPoint point);
     afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
     afx_msg void OnLButtonDblClkImpl(UINT nFlags, CPoint point);
+    void OpenCursorPeekForSelection ();
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     void MoveColumnarCursors (int delta);
     afx_msg void OnEditToggleColumnarSelection();

@@ -303,6 +303,7 @@ COEditorView::COEditorView ()
     m_nMouseSelStartLine   = -1;
     m_nClicks = 0;
     m_tmLastClick = 0;
+    m_bPeekOnButtonUp = FALSE;
     m_bSyntaxHighlight     = TRUE;
     m_nDigitsInLatsLineNumber = 1;
     m_nMaxLineLength       = 1;
@@ -1114,6 +1115,7 @@ void COEditorView::OnLButtonDown (UINT nFlags, CPoint point)
         m_bMouseSelection = TRUE;
         m_bMouseSelectionByWord = TRUE;
         m_bMouseSelectionStart = FALSE;
+        m_bPeekOnButtonUp = TRUE;      // o visualizador de cursor so abre por duplo clique no nome
         break;
     }
 }
@@ -1221,10 +1223,50 @@ void COEditorView::OnLButtonUp (UINT /*nFlags*/, CPoint point)
         m_nMouseSelStartLine = -1;
     }
 
+    if (m_bPeekOnButtonUp)
+    {
+        m_bPeekOnButtonUp = FALSE;
+        OpenCursorPeekForSelection();
+    }
+
     // cursor above selection
     if (point.x > m_Rulers[0].m_Indent && point.y > m_Rulers[1].m_Indent
     && CursorOnSelection(point))
         SetCursor(g_hCurArrow);
+}
+
+// Visualizador e editor flutuante de cursor: abre quando o texto selecionado (por duplo clique) e o nome
+// de um cursor ou objeto local
+void COEditorView::OpenCursorPeekForSelection ()
+{
+    if (GetSettings().GetLanguage() != "PL/SQL" || IsSelectionEmpty())
+        return;
+
+    Square selection;
+    GetSelection(selection);
+    selection.normalize();
+    if (selection.start.line != selection.end.line)
+        return;
+
+    std::wstring selWord;
+    GetBlock(selWord);
+    while (!selWord.empty() && iswspace(selWord.front())) selWord.erase(selWord.begin());
+    while (!selWord.empty() && iswspace(selWord.back())) selWord.pop_back();
+
+    PlSqlObjectInfo objInfo;
+    if (!selWord.empty() && PlSqlCursorScanner::FindLocalObjectByName(this, selWord, objInfo))
+    {
+        CPoint ptScreen;
+        ptScreen.x = m_Rulers[0].PosToPix(selection.start.column);
+        ptScreen.y = m_Rulers[1].PosToPix(selection.start.line);
+        ClientToScreen(&ptScreen);
+
+        // Canto superior direito de onde clicou, afastado ~5 a 10 cm (~240px X e -130px Y)
+        ptScreen.x += 240;
+        ptScreen.y -= 130;
+
+        COECursorPeekDlg::OpenPeek(this, objInfo, ptScreen);
+    }
 }
 
 void COEditorView::OnLButtonDblClkImpl (UINT /*nFlags*/, CPoint point)
@@ -1474,28 +1516,6 @@ void COEditorView::OnUpdate_Pos (CCmdUI* pCmdUI)
                     Invalidate(FALSE);
                 }
 
-                // Visualizador e Editor Flutuante de Cursor
-                if (curSelChanged && GetSettings().GetLanguage() == "PL/SQL")
-                {
-                    std::wstring selWord = text;
-                    while (!selWord.empty() && iswspace(selWord.front())) selWord.erase(selWord.begin());
-                    while (!selWord.empty() && iswspace(selWord.back())) selWord.pop_back();
-
-                    PlSqlObjectInfo objInfo;
-                    if (!selWord.empty() && PlSqlCursorScanner::FindLocalObjectByName(this, selWord, objInfo))
-                    {
-                        CPoint ptScreen;
-                        ptScreen.x = m_Rulers[0].PosToPix(selection.start.column);
-                        ptScreen.y = m_Rulers[1].PosToPix(selection.start.line);
-                        ClientToScreen(&ptScreen);
-
-                        // Canto superior direito de onde clicou, afastado ~5 a 10 cm (~240px X e -130px Y)
-                        ptScreen.x += 240;
-                        ptScreen.y -= 130;
-
-                        COECursorPeekDlg::OpenPeek(this, objInfo, ptScreen);
-                    }
-                }
             }
         }
         else if (!m_highlightedText.empty())

@@ -37,6 +37,18 @@ Data: 2026-11-06 (beta, pre-release)
       quando a versão final for lançada.
 
 
+3.6.3
+-----
+Data: 2026-11-06
+
+  Correções de bugs
+    * Visualizador de cursor: não abre mais só porque o nome de um cursor foi
+      selecionado (pelo teclado ou arrastando o mouse); abre apenas com duplo
+      clique no nome (ou Alt+F12 / menu do botão direito, como antes).
+    * Visualizador de cursor: fixado, não mostra mais uma borda branca grossa
+      quando perde o foco.
+
+
 3.6.2
 -----
 Data: 2026-11-06
