@@ -4,43 +4,14 @@
 
 COESqlFormatPageTree::COESqlFormatPageTree (SettingsManager& manager)
 	: CPropertyPage(COESqlFormatPageTree::IDD)
-	//, m_recipient(nullptr)
-	//, m_recipientCommand(0)
 	, m_manager(manager)
-	, m_pSimpleStmt(nullptr)
-	, m_pSelectList(nullptr)
-	, m_pFromList(nullptr)
-	, m_pGroupByList(nullptr)
-	, m_pOrderByList(nullptr)
-	, m_pSelectStmt(nullptr)
-	, m_pBlock(nullptr)
-	, m_pCaseWhen(nullptr)
-	, m_pReturningMaxLen(nullptr)
-	, m_pReturningMaxItems(nullptr)
-	, m_pAlignAliases(nullptr)
-	, m_pSetOpBlankLine(nullptr)
-	, m_pAlignSetAssignments(nullptr)
-	, m_pAlignCaseInSet(nullptr)
-	, m_pLogErrorsMaxLen(nullptr)
-	, m_pBrickListEnabled(nullptr)
-	, m_pBrickListMaxLineLen(nullptr)
-	, m_pBrickListMaxLineItems(nullptr)
-	, m_pBrickListMinItems(nullptr)
-	, m_pBrickListLinkedInsert(nullptr)
-	, m_pBrickListLinkedSetOp(nullptr)
 {
-	//m_psp.dwFlags &= ~PSP_HASHELP;
+	LoadValues();
 }
 
 COESqlFormatPageTree::~COESqlFormatPageTree ()
 {
 }
-
-//void COESqlFormatPageTree::SetApplyRecipient (CWnd* recipient, UINT command)
-//{
-//	m_recipient = recipient;
-//	m_recipientCommand = command;
-//}
 
 void COESqlFormatPageTree::DoDataExchange (CDataExchange* pDX)
 {
@@ -48,10 +19,37 @@ void COESqlFormatPageTree::DoDataExchange (CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(COESqlFormatPageTree, CPropertyPage)
-	ON_NOTIFY(PTN_ITEMCHANGED, IDC_OE_SQL_FORMAT_TREE, OnPropTreeNotify)
-	ON_NOTIFY(PTN_CHECKCLICK,  IDC_OE_SQL_FORMAT_TREE, OnPropTreeNotify)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
+
+void COESqlFormatPageTree::LoadValues ()
+{
+	const OpenEditor::GlobalSettingsPtr s = m_manager.GetGlobalSettings();
+
+	m_simpleStmtOn   = s->GetFmtSimpleStmtEnabled();        m_simpleStmtLen  = s->GetFmtSimpleStmtMaxLen();
+	m_selectListOn   = s->GetFmtSelectShortListEnabled();   m_selectListLen  = s->GetFmtSelectShortListMaxLen();
+	m_fromListOn     = s->GetFmtFromShortListEnabled();     m_fromListLen    = s->GetFmtFromShortListMaxLen();
+	m_groupByOn      = s->GetFmtGroupByShortListEnabled();  m_groupByLen     = s->GetFmtGroupByShortListMaxLen();
+	m_orderByOn      = s->GetFmtOrderByShortListEnabled();  m_orderByLen     = s->GetFmtOrderByShortListMaxLen();
+	m_selectStmtOn   = s->GetFmtSelectStmtEnabled();        m_selectStmtLen  = s->GetFmtSelectStmtMaxLen();
+	m_blockLen       = s->GetFmtBlockShortMaxLen();
+	m_caseWhenLen    = s->GetFmtCaseWhenShortMaxLen();
+	m_returningLen   = s->GetFmtReturningMaxLen();
+	m_returningItems = s->GetFmtReturningMaxItems();
+
+	m_alignAliases        = s->GetFmtAlignColumnAliases();
+	m_setOpBlankLine      = s->GetFmtSetOpBlankLine();
+	m_alignSetAssignments = s->GetFmtAlignSetAssignments();
+	m_alignCaseInSet      = s->GetFmtAlignCaseInSet();
+	m_logErrorsLen        = s->GetFmtLogErrorsMaxLen();
+
+	m_brickEnabled      = s->GetFmtBrickListEnabled();
+	m_brickLineLen      = s->GetFmtBrickListMaxLineLen();
+	m_brickLineItems    = s->GetFmtBrickListMaxLineItems();
+	m_brickMinItems     = s->GetFmtBrickListMinItems();
+	m_brickLinkedInsert = s->GetFmtBrickListLinkedInsert();
+	m_brickLinkedSetOp  = s->GetFmtBrickListLinkedSetOp();
+}
 
 BOOL COESqlFormatPageTree::OnInitDialog ()
 {
@@ -59,267 +57,107 @@ BOOL COESqlFormatPageTree::OnInitDialog ()
 
 	CRect rc;
 	GetClientRect(&rc);
-	//rc.DeflateRect(4, 4);
+	m_list.Create(this, IDC_OE_SQL_FORMAT_TREE, rc);
 
-	m_tree.Create(WS_CHILD | WS_VISIBLE /*| WS_BORDER*/ | WS_TABSTOP | PTS_NOTIFY, rc, this, IDC_OE_SQL_FORMAT_TREE);
-	m_tree.SetInfoHeight(72);
-	m_tree.SetColumn(200);
+	const wchar_t* const shortLines = L"Short-line heuristics";
+	const wchar_t* const misc       = L"Miscellaneous";
+	const wchar_t* const brick      = L"Brick list";
 
-	BuildTree();
+	typedef ModernOption O;
+	std::vector<ModernOption> options;
+	auto add = [&](const wchar_t* group, const wchar_t* label, const wchar_t* info, O::EKind kind,
+	               bool* on, int* value, int lo = 0, int hi = 0, int step = 1)
+	{
+		ModernOption o = { group, label, info, kind, on, value, lo, hi, step };
+		options.push_back(o);
+	};
 
+	add(shortLines, L"Simple statement", L"Keep complete short statements on one line. The number is the maximum line length.",
+	    O::TOGGLE_NUMBER, &m_simpleStmtOn, &m_simpleStmtLen, 10, 500, 5);
+	add(shortLines, L"SELECT column list", L"Keep a short SELECT column list on one line. The number is the maximum line length.",
+	    O::TOGGLE_NUMBER, &m_selectListOn, &m_selectListLen, 10, 500, 5);
+	add(shortLines, L"FROM table list", L"Keep a short FROM table list on one line. The number is the maximum line length.",
+	    O::TOGGLE_NUMBER, &m_fromListOn, &m_fromListLen, 10, 500, 5);
+	add(shortLines, L"GROUP BY list", L"Keep a short GROUP BY list on one line. The number is the maximum line length.",
+	    O::TOGGLE_NUMBER, &m_groupByOn, &m_groupByLen, 10, 500, 5);
+	add(shortLines, L"ORDER BY list", L"Keep a short ORDER BY list on one line. The number is the maximum line length.",
+	    O::TOGGLE_NUMBER, &m_orderByOn, &m_orderByLen, 10, 500, 5);
+	add(shortLines, L"SELECT subquery", L"Keep a short SELECT subquery on one line. The number is the maximum line length.",
+	    O::TOGGLE_NUMBER, &m_selectStmtOn, &m_selectStmtLen, 10, 500, 5);
+	add(shortLines, L"Block max length", L"Maximum length for other parenthesised blocks kept on one line.",
+	    O::NUMBER, nullptr, &m_blockLen, 0, 500, 5);
+	add(shortLines, L"CASE WHEN max length", L"Keep a short WHEN clause on one line (0 to disable).",
+	    O::NUMBER, nullptr, &m_caseWhenLen, 0, 500, 5);
+	add(shortLines, L"RETURNING max length", L"Maximum line length for a RETURNING clause kept on one line.",
+	    O::NUMBER, nullptr, &m_returningLen, 0, 500, 5);
+	add(shortLines, L"RETURNING max items", L"Maximum number of items in a RETURNING clause kept on one line.",
+	    O::NUMBER, nullptr, &m_returningItems, 0, 99, 1);
+
+	add(misc, L"Align column aliases", L"Align column aliases in SELECT lists.", O::TOGGLE, &m_alignAliases, nullptr);
+	add(misc, L"Blank line before set ops", L"Insert a blank line before UNION / INTERSECT / MINUS.", O::TOGGLE, &m_setOpBlankLine, nullptr);
+	add(misc, L"Align SET assignments", L"Align the right-hand sides of assignments in SET clauses.", O::TOGGLE, &m_alignSetAssignments, nullptr);
+	add(misc, L"Align CASE in SET", L"Align CASE expressions on the right-hand side of SET assignments.", O::TOGGLE, &m_alignCaseInSet, nullptr);
+	add(misc, L"LOG ERRORS max length", L"Maximum line length for LOG ERRORS formatting (default 40).",
+	    O::NUMBER, nullptr, &m_logErrorsLen, 0, 500, 5);
+
+	add(brick, L"Enabled", L"Arrange long SELECT column lists and INSERT column / VALUES lists in a compact rectangle "
+	    L"(several items per line) instead of one item per line.", O::TOGGLE, &m_brickEnabled, nullptr);
+	add(brick, L"Max line length", L"Maximum total line length before wrapping to the next brick row.",
+	    O::NUMBER, nullptr, &m_brickLineLen, 20, 500, 5);
+	add(brick, L"Max items per line", L"Maximum number of items placed on one brick row.",
+	    O::NUMBER, nullptr, &m_brickLineItems, 1, 99, 1);
+	add(brick, L"Min items to activate", L"Minimum number of items in the list before the brick layout is used; "
+	    L"shorter lists use one item per line.", O::NUMBER, nullptr, &m_brickMinItems, 1, 99, 1);
+	add(brick, L"Linked INSERT col / VALUES", L"Wrap the VALUES list at the same positions as the INSERT column list "
+	    L"so both lists align vertically.", O::TOGGLE, &m_brickLinkedInsert, nullptr);
+	add(brick, L"Linked UNION / INTERSECT / MINUS", L"Wrap each SELECT column list in a compound query at the same "
+	    L"positions as the first branch.", O::TOGGLE, &m_brickLinkedSetOp, nullptr);
+
+	m_list.SetOptions(options);
 	return TRUE;
 }
 
-// helpers — static functions to reduce repetition in BuildTree
-
-static CPropTreeItemEdit* InsertCheckedEdit (CPropTree& tree, CPropTreeItem* parent,
-	LPCTSTR label, LPCTSTR info, bool checked, int value)
+BOOL COESqlFormatPageTree::OnCommand (WPARAM wParam, LPARAM lParam)
 {
-	CPropTreeItemEdit* p = (CPropTreeItemEdit*)tree.InsertItem(new CPropTreeItemEdit(), parent);
-	p->SetLabelText(label);
-	p->SetInfoText(info);
-	p->HasCheckBox(TRUE);
-	p->Check(checked ? TRUE : FALSE);
-	p->SetValueFormat(CPropTreeItemEdit::ValueFormatInteger);
-	p->SetItemValue(value);
-	return p;
-}
-
-static CPropTreeItemEdit* InsertEdit (CPropTree& tree, CPropTreeItem* parent,
-	LPCTSTR label, LPCTSTR info, int value)
-{
-	CPropTreeItemEdit* p = (CPropTreeItemEdit*)tree.InsertItem(new CPropTreeItemEdit(), parent);
-	p->SetLabelText(label);
-	p->SetInfoText(info);
-	p->SetValueFormat(CPropTreeItemEdit::ValueFormatInteger);
-	p->SetItemValue(value);
-	return p;
-}
-
-static CPropTreeItemStatic* InsertCheckedStatic (CPropTree& tree, CPropTreeItem* parent,
-	LPCTSTR label, LPCTSTR info, bool checked)
-{
-	CPropTreeItemStatic* p = (CPropTreeItemStatic*)tree.InsertItem(new CPropTreeItemStatic(), parent);
-	p->SetLabelText(label);
-	p->SetInfoText(info);
-	p->HasCheckBox(TRUE);
-	p->Check(checked ? TRUE : FALSE);
-	return p;
-}
-
-void COESqlFormatPageTree::BuildTree ()
-{
-	const OpenEditor::GlobalSettingsPtr s = m_manager.GetGlobalSettings();
-
-	// ── Short-line heuristics ──────────────────────────────────────────────
-	CPropTreeItem* pRoot1 = m_tree.InsertItem(new CPropTreeItem());
-	pRoot1->SetLabelText(_T("Short-line heuristics"));
-	pRoot1->SetInfoText(_T("Controls when SQL clauses are kept on a single line. "
-						   "Check to enable; the number is the maximum line length."));
-	pRoot1->Expand();
-
-	m_pSimpleStmt  = InsertCheckedEdit(m_tree, pRoot1,
-		_T("Simple statement"),
-		_T("Keep complete short statements on one line, max length"),
-		s->GetFmtSimpleStmtEnabled(),        s->GetFmtSimpleStmtMaxLen());
-
-	m_pSelectList  = InsertCheckedEdit(m_tree, pRoot1,
-		_T("SELECT column list"),
-		_T("Keep short SELECT column list on one line, max length"),
-		s->GetFmtSelectShortListEnabled(),   s->GetFmtSelectShortListMaxLen());
-
-	m_pFromList    = InsertCheckedEdit(m_tree, pRoot1,
-		_T("FROM table list"),
-		_T("Keep short FROM table list on one line, max length"),
-		s->GetFmtFromShortListEnabled(),     s->GetFmtFromShortListMaxLen());
-
-	m_pGroupByList = InsertCheckedEdit(m_tree, pRoot1,
-		_T("GROUP BY list"),
-		_T("Keep short GROUP BY list on one line, max length"),
-		s->GetFmtGroupByShortListEnabled(),  s->GetFmtGroupByShortListMaxLen());
-
-	m_pOrderByList = InsertCheckedEdit(m_tree, pRoot1,
-		_T("ORDER BY list"),
-		_T("Keep short ORDER BY list on one line, max length"),
-		s->GetFmtOrderByShortListEnabled(),  s->GetFmtOrderByShortListMaxLen());
-
-	m_pSelectStmt  = InsertCheckedEdit(m_tree, pRoot1,
-		_T("SELECT subquery"),
-		_T("Keep short SELECT subquery on one line, max length"),
-		s->GetFmtSelectStmtEnabled(),        s->GetFmtSelectStmtMaxLen());
-
-	m_pBlock       = InsertEdit(m_tree, pRoot1,
-		_T("Block max length"),
-		_T("Max length for other parenthesised blocks"),
-		s->GetFmtBlockShortMaxLen());
-
-	m_pCaseWhen    = InsertEdit(m_tree, pRoot1,
-		_T("CASE WHEN max length"),
-		_T("Keep short WHEN clause on one line (0 to disable)"),
-		s->GetFmtCaseWhenShortMaxLen());
-
-	m_pReturningMaxLen   = InsertEdit(m_tree, pRoot1,
-		_T("RETURNING max length"),
-		_T("Maximum line length for a RETURNING clause kept on one line"),
-		s->GetFmtReturningMaxLen());
-
-	m_pReturningMaxItems = InsertEdit(m_tree, pRoot1,
-		_T("RETURNING max items"),
-		_T("Maximum number of items in a RETURNING clause kept on one line"),
-		s->GetFmtReturningMaxItems());
-
-	// ── Miscellaneous
-	CPropTreeItem* pRoot2 = m_tree.InsertItem(new CPropTreeItem());
-	pRoot2->SetLabelText(_T("Miscellaneous"));
-	pRoot2->SetInfoText(_T("Additional SQL formatting options"));
-	pRoot2->Expand();
-
-	m_pAlignAliases  = InsertCheckedStatic(m_tree, pRoot2,
-		_T("Align column aliases"),
-		_T("Align column aliases in SELECT lists"),
-		s->GetFmtAlignColumnAliases());
-
-	m_pSetOpBlankLine = InsertCheckedStatic(m_tree, pRoot2,
-		_T("Blank line before set ops"),
-		_T("Insert blank line before UNION / INTERSECT / MINUS"),
-		s->GetFmtSetOpBlankLine());
-
-	m_pAlignSetAssignments = InsertCheckedStatic(m_tree, pRoot2,
-		_T("Align SET assignments"),
-		_T("Align right-hand sides of assignments in SET clauses"),
-		s->GetFmtAlignSetAssignments());
-
-	m_pAlignCaseInSet = InsertCheckedStatic(m_tree, pRoot2,
-		_T("Align CASE in SET"),
-		_T("Align CASE expressions on the right-hand side of SET assignments"),
-		s->GetFmtAlignCaseInSet());
-
-	m_pLogErrorsMaxLen = InsertEdit(m_tree, pRoot2,
-		_T("LOG ERRORS max length"),
-		_T("Maximum line length for LOG ERRORS formatting (default 40)"),
-		s->GetFmtLogErrorsMaxLen());
-
-	// ── Brick list ────────────────────────────────────────────────────────
-	CPropTreeItem* pRoot3 = m_tree.InsertItem(new CPropTreeItem());
-	pRoot3->SetLabelText(_T("Brick list"));
-	pRoot3->SetInfoText(_T("Arranges long column lists in a compact rectangle (multiple items per line) "
-						   "instead of one item per line. "
-						   "Applies to SELECT column lists and INSERT column/VALUES lists."));
-	pRoot3->Expand();
-
-	m_pBrickListEnabled = InsertCheckedStatic(m_tree, pRoot3,
-		_T("Enabled"),
-		_T("Enable brick-list layout for SELECT column lists and INSERT column/VALUES lists"),
-		s->GetFmtBrickListEnabled());
-
-	m_pBrickListMaxLineLen = InsertEdit(m_tree, pRoot3,
-		_T("Max line length"),
-		_T("Maximum total line length before wrapping to the next brick row"),
-		s->GetFmtBrickListMaxLineLen());
-
-	m_pBrickListMaxLineItems = InsertEdit(m_tree, pRoot3,
-		_T("Max items per line"),
-		_T("Maximum number of items placed on one brick row"),
-		s->GetFmtBrickListMaxLineItems());
-
-	m_pBrickListMinItems = InsertEdit(m_tree, pRoot3,
-		_T("Min items to activate"),
-		_T("Minimum number of items in the list before brick layout is applied; shorter lists use normal one-per-line layout"),
-		s->GetFmtBrickListMinItems());
-
-	m_pBrickListLinkedInsert = InsertCheckedStatic(m_tree, pRoot3,
-		_T("Linked INSERT col / VALUES"),
-		_T("Wrap the VALUES list at the same positions as the INSERT column list so both lists align vertically"),
-		s->GetFmtBrickListLinkedInsert());
-
-	m_pBrickListLinkedSetOp = InsertCheckedStatic(m_tree, pRoot3,
-		_T("Linked UNION / INTERSECT / MINUS"),
-		_T("Wrap each SELECT column list in a compound query at the same positions as the first branch"),
-		s->GetFmtBrickListLinkedSetOp());
-}
-
-void COESqlFormatPageTree::OnPropTreeNotify (NMHDR* /*pNMHDR*/, LRESULT* pResult)
-{
-	SetModified(TRUE);
-	*pResult = 0;
+	if (LOWORD(wParam) == IDC_OE_SQL_FORMAT_TREE && HIWORD(wParam) == EN_CHANGE)
+	{
+		SetModified(TRUE);
+		return TRUE;
+	}
+	return CPropertyPage::OnCommand(wParam, lParam);
 }
 
 BOOL COESqlFormatPageTree::OnApply ()
 {
 	try { EXCEPTION_FRAME;
 
-		if (!m_pSimpleStmt) return TRUE;
-
-		// Commit any value that is currently being edited in the active cell
-		CPropTreeItem* pFocused = m_tree.GetFocusedItem();
-		if (pFocused)
-			pFocused->CommitChanges();
+		if (!m_list.GetSafeHwnd()) return TRUE;
 
 		OpenEditor::GlobalSettingsPtr s = m_manager.GetGlobalSettings();
 
-		int v = 0;
+		s->SetFmtSimpleStmtEnabled      (m_simpleStmtOn,   false);  s->SetFmtSimpleStmtMaxLen      (m_simpleStmtLen,  false);
+		s->SetFmtSelectShortListEnabled (m_selectListOn,   false);  s->SetFmtSelectShortListMaxLen (m_selectListLen,  false);
+		s->SetFmtFromShortListEnabled   (m_fromListOn,     false);  s->SetFmtFromShortListMaxLen   (m_fromListLen,    false);
+		s->SetFmtGroupByShortListEnabled(m_groupByOn,      false);  s->SetFmtGroupByShortListMaxLen(m_groupByLen,     false);
+		s->SetFmtOrderByShortListEnabled(m_orderByOn,      false);  s->SetFmtOrderByShortListMaxLen(m_orderByLen,     false);
+		s->SetFmtSelectStmtEnabled      (m_selectStmtOn,   false);  s->SetFmtSelectStmtMaxLen      (m_selectStmtLen,  false);
+		s->SetFmtBlockShortMaxLen       (m_blockLen,       false);
+		s->SetFmtCaseWhenShortMaxLen    (m_caseWhenLen,    false);
+		s->SetFmtReturningMaxLen        (m_returningLen,   false);
+		s->SetFmtReturningMaxItems      (m_returningItems, false);
 
-		m_pSimpleStmt->GetItemValue(v);
-		s->SetFmtSimpleStmtEnabled      (m_pSimpleStmt->IsChecked()   ? true : false, false);
-		s->SetFmtSimpleStmtMaxLen       (v,                                            false);
+		s->SetFmtAlignColumnAliases     (m_alignAliases,        false);
+		s->SetFmtSetOpBlankLine         (m_setOpBlankLine,      false);
+		s->SetFmtAlignSetAssignments    (m_alignSetAssignments, false);
+		s->SetFmtAlignCaseInSet         (m_alignCaseInSet,      false);
+		s->SetFmtLogErrorsMaxLen        (m_logErrorsLen,        false);
 
-		m_pSelectList->GetItemValue(v);
-		s->SetFmtSelectShortListEnabled (m_pSelectList->IsChecked()   ? true : false, false);
-		s->SetFmtSelectShortListMaxLen  (v,                                            false);
-
-		m_pFromList->GetItemValue(v);
-		s->SetFmtFromShortListEnabled   (m_pFromList->IsChecked()     ? true : false, false);
-		s->SetFmtFromShortListMaxLen    (v,                                            false);
-
-		m_pGroupByList->GetItemValue(v);
-		s->SetFmtGroupByShortListEnabled(m_pGroupByList->IsChecked()  ? true : false, false);
-		s->SetFmtGroupByShortListMaxLen (v,                                            false);
-
-		m_pOrderByList->GetItemValue(v);
-		s->SetFmtOrderByShortListEnabled(m_pOrderByList->IsChecked()  ? true : false, false);
-		s->SetFmtOrderByShortListMaxLen (v,                                            false);
-
-		m_pSelectStmt->GetItemValue(v);
-		s->SetFmtSelectStmtEnabled      (m_pSelectStmt->IsChecked()   ? true : false, false);
-		s->SetFmtSelectStmtMaxLen       (v,                                            false);
-
-		m_pBlock->GetItemValue(v);
-		s->SetFmtBlockShortMaxLen       (v,                                            false);
-
-		m_pCaseWhen->GetItemValue(v);
-		s->SetFmtCaseWhenShortMaxLen    (v,                                            false);
-
-		m_pReturningMaxLen->GetItemValue(v);
-		s->SetFmtReturningMaxLen        (v,                                            false);
-
-		m_pReturningMaxItems->GetItemValue(v);
-		s->SetFmtReturningMaxItems      (v,                                            false);
-
-		s->SetFmtAlignColumnAliases     (m_pAlignAliases->IsChecked()        ? true : false, false);
-		s->SetFmtSetOpBlankLine         (m_pSetOpBlankLine->IsChecked()      ? true : false, false);
-		s->SetFmtAlignSetAssignments    (m_pAlignSetAssignments->IsChecked() ? true : false, false);
-		s->SetFmtAlignCaseInSet         (m_pAlignCaseInSet->IsChecked()      ? true : false, false);
-
-		m_pLogErrorsMaxLen->GetItemValue(v);
-		s->SetFmtLogErrorsMaxLen        (v,                                                  false);
-
-		s->SetFmtBrickListEnabled       (m_pBrickListEnabled->IsChecked()    ? true : false, false);
-
-		m_pBrickListMaxLineLen->GetItemValue(v);
-		s->SetFmtBrickListMaxLineLen    (v,                                            false);
-
-		m_pBrickListMaxLineItems->GetItemValue(v);
-		s->SetFmtBrickListMaxLineItems  (v,                                            false);
-
-		m_pBrickListMinItems->GetItemValue(v);
-		s->SetFmtBrickListMinItems      (v,                                            false);
-
-		s->SetFmtBrickListLinkedInsert  (m_pBrickListLinkedInsert->IsChecked() ? true : false, false);
-		s->SetFmtBrickListLinkedSetOp   (m_pBrickListLinkedSetOp->IsChecked()  ? true : false, false);
-
-		//if (m_recipient)
-		//	m_recipient->OnCmdMsg(m_recipientCommand, CN_COMMAND, NULL, NULL);
-
+		s->SetFmtBrickListEnabled       (m_brickEnabled,      false);
+		s->SetFmtBrickListMaxLineLen    (m_brickLineLen,      false);
+		s->SetFmtBrickListMaxLineItems  (m_brickLineItems,    false);
+		s->SetFmtBrickListMinItems      (m_brickMinItems,     false);
+		s->SetFmtBrickListLinkedInsert  (m_brickLinkedInsert, false);
+		s->SetFmtBrickListLinkedSetOp   (m_brickLinkedSetOp,  false);
 	}
 	_OE_DEFAULT_HANDLER_;
 
@@ -330,6 +168,6 @@ void COESqlFormatPageTree::OnSize(UINT nType, int cx, int cy)
 {
 	CPropertyPage::OnSize(nType, cx, cy);
 
-	if (IsWindow(m_tree.m_hWnd))
-		m_tree.MoveWindow(0, 0, cx, cy);
+	if (IsWindow(m_list.m_hWnd))
+		m_list.MoveWindow(0, 0, cx, cy);
 }

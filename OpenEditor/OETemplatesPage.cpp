@@ -254,6 +254,8 @@ void COETemplatesPage::OnCbnSelchange_Category()
         {
             m_templateList.Init();
             m_templateListInitialized = true;
+            if (CHeaderCtrl* header = m_templateList.GetHeaderCtrl())
+                m_modernHeader.Attach(header->GetSafeHwnd());
         }
         m_templateList.Refresh();
         

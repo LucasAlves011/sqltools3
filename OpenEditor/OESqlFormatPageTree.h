@@ -7,12 +7,11 @@
 
 #include "resource.h"
 #include "OpenEditor/OESettings.h"
-#include "PropTree\PropTree.h"
-#include "PropTree\PropTreeItemEdit.h"
-#include "PropTree\PropTreeItemStatic.h"
+#include "Theme/ModernOptionList.h"
 
 	using OpenEditor::SettingsManager;
 
+// pagina "SQL Format" das configuracoes: lista de opcoes no visual do programa (segue o tema claro/escuro)
 class COESqlFormatPageTree : public CPropertyPage
 {
 public:
@@ -21,52 +20,29 @@ public:
 
 	enum { IDD = IDD_OE_SQL_FORMAT_TREE };
 
-	//void SetApplyRecipient (CWnd* recipient, UINT command);
-
 protected:
 	virtual BOOL OnInitDialog ();
 	virtual BOOL OnApply ();
+	virtual BOOL OnCommand (WPARAM wParam, LPARAM lParam);
 	virtual void DoDataExchange (CDataExchange* pDX);
-
-	afx_msg void OnPropTreeNotify (NMHDR* pNMHDR, LRESULT* pResult);
 
 	DECLARE_MESSAGE_MAP()
 
 private:
-	void BuildTree ();
+	void LoadValues ();
 
-	//CWnd* m_recipient;
-	//UINT m_recipientCommand;
+	SettingsManager&  m_manager;
+	CModernOptionList m_list;
 
-	SettingsManager& m_manager;
-	CPropTree        m_tree;
+	// valores editados (copiados das configuracoes e gravados em OnApply)
+	bool m_simpleStmtOn, m_selectListOn, m_fromListOn, m_groupByOn, m_orderByOn, m_selectStmtOn;
+	int  m_simpleStmtLen, m_selectListLen, m_fromListLen, m_groupByLen, m_orderByLen, m_selectStmtLen;
+	int  m_blockLen, m_caseWhenLen, m_returningLen, m_returningItems;
+	bool m_alignAliases, m_setOpBlankLine, m_alignSetAssignments, m_alignCaseInSet;
+	int  m_logErrorsLen;
+	bool m_brickEnabled, m_brickLinkedInsert, m_brickLinkedSetOp;
+	int  m_brickLineLen, m_brickLineItems, m_brickMinItems;
 
-	// Short-line heuristics
-	CPropTreeItemEdit*   m_pSimpleStmt;
-	CPropTreeItemEdit*   m_pSelectList;
-	CPropTreeItemEdit*   m_pFromList;
-	CPropTreeItemEdit*   m_pGroupByList;
-	CPropTreeItemEdit*   m_pOrderByList;
-	CPropTreeItemEdit*   m_pSelectStmt;
-	CPropTreeItemEdit*   m_pBlock;
-	CPropTreeItemEdit*   m_pCaseWhen;
-	CPropTreeItemEdit*   m_pReturningMaxLen;
-	CPropTreeItemEdit*   m_pReturningMaxItems;
-
-	// Miscellaneous
-	CPropTreeItemStatic* m_pAlignAliases;
-	CPropTreeItemStatic* m_pSetOpBlankLine;
-	CPropTreeItemStatic* m_pAlignSetAssignments;
-	CPropTreeItemStatic* m_pAlignCaseInSet;
-	CPropTreeItemEdit*   m_pLogErrorsMaxLen;
-
-	// Brick list
-	CPropTreeItemStatic* m_pBrickListEnabled;
-	CPropTreeItemEdit*   m_pBrickListMaxLineLen;
-	CPropTreeItemEdit*   m_pBrickListMaxLineItems;
-	CPropTreeItemEdit*   m_pBrickListMinItems;
-	CPropTreeItemStatic* m_pBrickListLinkedInsert;
-	CPropTreeItemStatic* m_pBrickListLinkedSetOp;
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

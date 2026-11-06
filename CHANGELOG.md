@@ -2,6 +2,21 @@ SQLTools Changelog
 ==================
 
 
+3.6.2
+-----
+Date: 2026-11-06
+
+  Improvements
+    * Settings > Templates: the list header and its filter boxes follow the
+      light and dark themes.
+    * Settings > Fonts and Colors: modern color buttons (rounded box with the
+      color sample) and a cleaner category tree, in the colors of the theme.
+    * Settings > SQL Format: the old property table was replaced by a modern list
+      that follows the theme: groups that open and close, on/off switches,
+      numbers with - / + buttons (click the number to type it) and the
+      description of the selected option at the bottom.
+
+
 3.6.1
 -----
 Date: 2026-11-04
