@@ -203,6 +203,11 @@ void BaseSettings::NotifySettingsChanged ()
     CMN_IMPL_PROPERTY(GlobalSettings, FmtBrickListMinItems,            5);
     CMN_IMPL_PROPERTY(GlobalSettings, FmtBrickListLinkedInsert,        true);
     CMN_IMPL_PROPERTY(GlobalSettings, FmtBrickListLinkedSetOp,         true);
+    CMN_IMPL_PROPERTY(GlobalSettings, FmtPlsqlIndentSize,              0);
+    CMN_IMPL_PROPERTY(GlobalSettings, FmtPlsqlKeywordCase,             0);
+    CMN_IMPL_PROPERTY(GlobalSettings, FmtPlsqlIdentifierCase,          0);
+    CMN_IMPL_PROPERTY(GlobalSettings, FmtPlsqlIndentDeclarations,      true);
+    CMN_IMPL_PROPERTY(GlobalSettings, FmtPlsqlIndentWhen,              true);
 
     // PlSql navigation and outline settings
     CMN_IMPL_PROPERTY(GlobalSettings, PlSqlKeywordNavigation   , true);

@@ -2172,6 +2172,9 @@
     <ClCompile Include="..\OpenEditor\OEPlsSqlSmartIndent.cpp">
       <Filter>OpenEditor</Filter>
     </ClCompile>
+    <ClCompile Include="..\OpenEditor\OEPlsSqlIndenter.cpp">
+      <Filter>OpenEditor</Filter>
+    </ClCompile>
     <ClCompile Include="AutomatedTesting\handlers\SqlFormatterHandler.cpp">
       <Filter>SQLToolsApp\AutomatedTesting</Filter>
     </ClCompile>

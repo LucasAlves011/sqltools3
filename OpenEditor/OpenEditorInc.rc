@@ -1348,6 +1348,7 @@ BEGIN
     ID_WORKSPACE_QUICK_MRU_FILE16 "Open this workspace"
     ID_EDIT_FORMAT_SQL      "Format the selected SQL text\nFormat SQL"
     ID_EDIT_FORMAT_SQL_WITH_SETTINGS "Show settings then Format the selected SQL text\nFormat SQL with Settings"
+    ID_EDIT_REINDENT_BLOCK  "Re-indent the selected PL/SQL code (or the whole text) by its block structure\nIndent PL/SQL"
 END
 
 STRINGTABLE

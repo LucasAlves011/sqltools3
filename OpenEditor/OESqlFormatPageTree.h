@@ -10,6 +10,7 @@
 #include "PropTree\PropTree.h"
 #include "PropTree\PropTreeItemEdit.h"
 #include "PropTree\PropTreeItemStatic.h"
+#include "PropTree\PropTreeItemCombo.h"
 
 	using OpenEditor::SettingsManager;
 
@@ -67,6 +68,13 @@ private:
 	CPropTreeItemEdit*   m_pBrickListMinItems;
 	CPropTreeItemStatic* m_pBrickListLinkedInsert;
 	CPropTreeItemStatic* m_pBrickListLinkedSetOp;
+
+	// PL/SQL indentation
+	CPropTreeItemEdit*   m_pPlsqlIndentSize;
+	CPropTreeItemCombo*  m_pPlsqlKeywordCase;
+	CPropTreeItemCombo*  m_pPlsqlIdentifierCase;
+	CPropTreeItemStatic* m_pPlsqlIndentDeclarations;
+	CPropTreeItemStatic* m_pPlsqlIndentWhen;
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

@@ -72,6 +72,7 @@
 #include "OpenEditor/OECursorPeekDlg.h"
 #include "OpenEditor/OEPlsSqlBlockMatcher.h"
 #include "OpenEditor/OEPlsSqlSmartIndent.h"
+#include "OpenEditor/OEPlsSqlIndenter.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -176,6 +177,7 @@ BEGIN_MESSAGE_MAP(COEditorView, CView)
     ON_COMMAND(ID_EDIT_FIND_MATCH_N_SELECT, OnEditFindMatchAndSelect)
     ON_COMMAND(ID_EDIT_PEEK_CURSOR, OnEditPeekCursor)
     ON_COMMAND(ID_EDIT_REINDENT_BLOCK, OnEditReindentBlock)
+    ON_UPDATE_COMMAND_UI(ID_EDIT_REINDENT_BLOCK, OnUpdate_ReindentBlock)
     ON_COMMAND(ID_EDIT_COMMENT, OnEditComment)
     ON_COMMAND(ID_EDIT_UNCOMMENT, OnEditUncomment)
     ON_UPDATE_COMMAND_UI(ID_EDIT_COMMENT, OnUpdate_CommentUncomment)
@@ -2473,23 +2475,140 @@ void COEditorView::OnEditPeekCursor()
     }
 }
 
+// Text/Format > Indent PL/SQL: reindenta a selecao (ou o texto todo) pela estrutura dos blocos PL/SQL
 void COEditorView::OnEditReindentBlock()
 {
+    RETURN_IF_LOCKED
+
     if (GetSettings().GetLanguage() != "PL/SQL")
         return;
 
-    UndoGroup undoGroup(*this);
-    if (!IsSelectionEmpty())
+    const int nlines = GetLineCount();
+    if (!nlines)
+        return;
+
+    const bool hadSelection = !IsSelectionEmpty();
+    int first = 0, last = nlines - 1;
+    if (hadSelection)
     {
         Square sel;
         GetSelection(sel);
         sel.normalize();
-        PlSqlSmartIndent::ReindentRange(this, sel.start.line, sel.end.line, GetIndentSpacing());
+        first = sel.start.line;
+        last  = min(sel.end.line, nlines - 1);
+        if (sel.end.column == 0 && last > first)    // selecao de linhas inteiras termina no inicio da proxima
+            --last;
+    }
+
+    // o contexto (blocos abertos antes da selecao) vem das linhas anteriores
+    std::vector<std::wstring> lines;
+    lines.reserve(last + 1);
+    for (int i = 0; i <= last; ++i)
+    {
+        OEStringW buff;
+        GetLineW(i, buff);
+        lines.emplace_back(buff.data(), buff.length());
+    }
+
+    const Settings& settings = GetSettings();
+    PlSqlIndentOptions options;
+    options.indentSize         = settings.GetFmtPlsqlIndentSize() > 0 ? settings.GetFmtPlsqlIndentSize() : GetIndentSpacing();
+    options.tabSize            = GetTabSpacing();
+    options.useTabs            = !settings.GetTabExpand();
+    options.keywordCase        = settings.GetFmtPlsqlKeywordCase();
+    options.identifierCase     = settings.GetFmtPlsqlIdentifierCase();
+    options.indentDeclarations = settings.GetFmtPlsqlIndentDeclarations();
+    options.indentWhen         = settings.GetFmtPlsqlIndentWhen();
+
+    std::vector<std::wstring> result = PlSqlIndenter::Reindent(lines, first, last, options);
+
+    // so o trecho que mudou e substituido (desfazer fica menor e o resto nem e tocado)
+    int a = first, b = last;
+    while (a <= b && result[a - first] == lines[a]) ++a;
+    while (b >= a && result[b - first] == lines[b]) --b;
+    if (a > b)
+    {
+        Global::SetStatusText("Indent PL/SQL: nothing to change.");
+        return;
+    }
+
+    // seguranca: so espacos do inicio das linhas e a caixa das palavras podem mudar
+    {
+        std::wstring before, after;
+        for (int i = a; i <= b; ++i)
+        {
+            for (wchar_t c : lines[i])          if (!iswspace(c)) before += (wchar_t)towupper(c);
+            for (wchar_t c : result[i - first]) if (!iswspace(c)) after  += (wchar_t)towupper(c);
+        }
+        if (before != after)
+        {
+            MessageBeep((UINT)-1);
+            AfxMessageBox(L"Indent PL/SQL stopped: the result would change the text, not only its indentation. "
+                          L"Nothing was modified.", MB_OK | MB_ICONSTOP);
+            return;
+        }
+    }
+
+    std::wstring text;
+    for (int i = a; i <= b; ++i)
+    {
+        if (i > a) text += L'\n';
+        text += result[i - first];
+    }
+
+    const Position caret = GetPosition();
+    const int caretIndex = PosToInx(caret.line, caret.column);
+
+    UndoGroup undoGroup(*this);
+    PushInUndoStack(caret);
+
+    if (GetBlockMode() != ebtStream)
+        SetBlockMode(ebtStream);
+
+    Square range;
+    range.start.line = a;
+    range.start.column = 0;
+    range.end.line = b;
+    range.end.column = InxToPos(b, (int)lines[b].length());
+    SetSelection(range);
+    InsertBlock(text.c_str(), true, true);
+
+    if (hadSelection)
+    {
+        Square sel;
+        sel.start.line = first;
+        sel.start.column = 0;
+        sel.end.line = last;
+        OEStringW buff;
+        GetLineW(last, buff);
+        sel.end.column = InxToPos(last, (int)buff.length());
+        MoveTo(sel.end);
+        SetSelection(sel);
     }
     else
     {
-        PlSqlSmartIndent::ReindentRange(this, 0, GetLineCount() - 1, GetIndentSpacing());
+        // o cursor fica na mesma linha, no mesmo ponto do texto (o recuo pode ter mudado)
+        OEStringW buff;
+        GetLineW(caret.line, buff);
+        const std::wstring cur(buff.data(), buff.length());
+        const int oldIndent = (int)(lines.size() > (size_t)caret.line ? lines[caret.line].find_first_not_of(L" \t") : 0);
+        const int newIndent = (int)cur.find_first_not_of(L" \t");
+        int inx = caretIndex;
+        if (caret.line >= a && caret.line <= b && oldIndent >= 0 && newIndent >= 0)
+            inx = max(newIndent, caretIndex - oldIndent + newIndent);
+        inx = min(inx, (int)cur.length());
+        Position pos;
+        pos.line = caret.line;
+        pos.column = InxToPos(caret.line, inx);
+        MoveTo(pos);
     }
+
+    Global::SetStatusText("Indent PL/SQL: done.");
+}
+
+void COEditorView::OnUpdate_ReindentBlock (CCmdUI* pCmdUI)
+{
+    pCmdUI->Enable(!IsLocked() && GetSettings().GetLanguage() == "PL/SQL");
 }
 
 void COEditorView::OnUpdate_CommentUncomment (CCmdUI* pCmdUI)

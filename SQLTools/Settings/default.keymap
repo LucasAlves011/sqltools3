@@ -2,7 +2,6 @@
 # Description: OpenEitor keymap layout.
 # Please don't edit it manually, it'll be replaced without confirmation.
 # I think to copy it to Custom.keymap and edit will be a good idea.
-# Ctrl+K+[EZ] are still available 
 
 #File
 File.New                      Ctrl+N
@@ -90,6 +89,7 @@ Edit.FindInFile               Ctrl+Shift+F
 #Format
 Edit.Sort                     Ctrl+K,S
 Edit.FormatSQL                Ctrl+K,E
+Edit.IndentPlSql              Ctrl+K,Z
 Edit.FormatSQLwithSettings    Ctrl+Shift+K,E
 Edit.IndentSelection          Ctrl+I
 Edit.UndentSelection          Ctrl+U

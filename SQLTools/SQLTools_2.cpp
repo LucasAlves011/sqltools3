@@ -176,6 +176,7 @@ void CSQLToolsApp::InitGUICommand ()
     GUICommandDictionary::InsertCommand("Edit.OpenFileUnderCursor",        ID_EDIT_OPENFILEUNDERCURSOR);
     GUICommandDictionary::InsertCommand("Edit.FormatSQL",                  ID_EDIT_FORMAT_SQL);
     GUICommandDictionary::InsertCommand("Edit.FormatSQLwithSettings",      ID_EDIT_FORMAT_SQL_WITH_SETTINGS);
+    GUICommandDictionary::InsertCommand("Edit.IndentPlSql",                ID_EDIT_REINDENT_BLOCK);
 //Text/Format
     GUICommandDictionary::InsertCommand("Edit.JoinLines",                  ID_EDIT_FORMAT_JOIN_LINES);
     GUICommandDictionary::InsertCommand("Edit.SplitLine",                  ID_EDIT_FORMAT_SPLIT_LINES);
