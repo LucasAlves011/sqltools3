@@ -65,6 +65,8 @@ protected:
     afx_msg void OnClose();
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
     afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
+    afx_msg BOOL OnNcActivate(BOOL bActive);
+    afx_msg void OnNcPaint();
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
     afx_msg void OnMouseLeave();

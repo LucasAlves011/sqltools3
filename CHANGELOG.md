@@ -2,6 +2,18 @@ SQLTools Changelog
 ==================
 
 
+3.6.3
+-----
+Date: 2026-11-06
+
+  Bug fixes
+    * Cursor viewer: it no longer opens just because the name of a cursor is
+      selected (with the keyboard or by dragging the mouse); it opens only with a
+      double-click on the name (or Alt+F12 / right-click menu, as before).
+    * Cursor viewer: a pinned viewer no longer shows a thick white border when
+      it loses the focus.
+
+
 3.6.2
 -----
 Date: 2026-11-06

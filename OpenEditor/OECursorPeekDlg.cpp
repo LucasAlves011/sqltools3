@@ -366,6 +366,8 @@ BEGIN_MESSAGE_MAP(COECursorPeekDlg, CWnd)
     ON_WM_MOUSEMOVE()
     ON_WM_MOUSELEAVE()
     ON_WM_NCCALCSIZE()
+    ON_WM_NCACTIVATE()
+    ON_WM_NCPAINT()
     ON_WM_TIMER()
 END_MESSAGE_MAP()
 
@@ -771,6 +773,17 @@ void COECursorPeekDlg::OnTimer(UINT_PTR nIDEvent)
         return;
     }
     CWnd::OnTimer(nIDEvent);
+}
+
+// a janela nao tem moldura visivel: quando perde o foco (fixada), o Windows redesenharia a moldura de janela
+// inativa (WS_THICKFRAME) por cima do conteudo, como uma borda branca grossa
+BOOL COECursorPeekDlg::OnNcActivate(BOOL /*bActive*/)
+{
+    return TRUE;
+}
+
+void COECursorPeekDlg::OnNcPaint()
+{
 }
 
 void COECursorPeekDlg::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* /*lpncsp*/)
