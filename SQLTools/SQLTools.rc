@@ -1519,6 +1519,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Format SQL",                 ID_EDIT_FORMAT_SQL
         MENUITEM "&Indent PL/SQL",              ID_EDIT_REINDENT_BLOCK
+        MENUITEM "Indent PL/SQL &with Settings...", ID_EDIT_REINDENT_WITH_SETTINGS
         MENUITEM SEPARATOR
         MENUITEM "&Insert/Fill Columns...",     ID_EDIT_COLUMN_INSERT_FILL
         MENUITEM "Insert &Number...",           ID_EDIT_COLUMN_INSERT_NUMBER

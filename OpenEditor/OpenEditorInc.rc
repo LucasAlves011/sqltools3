@@ -1138,6 +1138,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Go To...",                   ID_EDIT_GOTO
         MENUITEM SEPARATOR
+        MENUITEM "&Indent PL/SQL",              ID_EDIT_REINDENT_BLOCK
+        MENUITEM "Indent PL/SQL with &Settings...", ID_EDIT_REINDENT_WITH_SETTINGS
+        MENUITEM SEPARATOR
         MENUITEM "&Create Template",            ID_EDIT_CREATE_TEMPLATE
         MENUITEM "&Open file under cursor",     ID_EDIT_OPENFILEUNDERCURSOR
         MENUITEM SEPARATOR
@@ -1349,6 +1352,7 @@ BEGIN
     ID_EDIT_FORMAT_SQL      "Format the selected SQL text\nFormat SQL"
     ID_EDIT_FORMAT_SQL_WITH_SETTINGS "Show settings then Format the selected SQL text\nFormat SQL with Settings"
     ID_EDIT_REINDENT_BLOCK  "Re-indent the selected PL/SQL code (or the whole text) by its block structure\nIndent PL/SQL"
+    ID_EDIT_REINDENT_WITH_SETTINGS "Show the PL/SQL indentation settings with a live preview, then re-indent\nIndent PL/SQL with Settings"
 END
 
 STRINGTABLE

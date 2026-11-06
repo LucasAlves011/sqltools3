@@ -69,3 +69,5 @@ jobs:
           tag_name: ${{ github.event.release.tag_name || github.ref_name }}
           body_path: release_notes.md
           files: ${{ env.EXE_NAME }}
+          # tags como v3.7.0-beta.1 viram pre-release (nao ficam como "Latest" nem disparam o aviso de atualizacao)
+          prerelease: ${{ contains(github.event.release.tag_name || github.ref_name, '-') }}

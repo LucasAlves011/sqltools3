@@ -2,6 +2,31 @@ SQLTools - Histórico de alterações
 =================================
 
 
+3.7.0-beta.1
+------------
+Data: 2026-11-06 (beta, pre-release)
+
+  Novas funcionalidades
+    * Editor de código: novo formatador de PL/SQL, "Indent PL/SQL" (Ctrl+Alt+L),
+      também no menu do botão direito do editor e em Text/Format. Formata a
+      seleção ou o texto todo: recuo pela estrutura dos blocos (DECLARE/BEGIN/
+      EXCEPTION, IF, LOOP, CASE, procedures, functions, packages, triggers), um
+      comando por linha, espaços em volta dos operadores, alinhamento de
+      declarações e parâmetros, e maiúsculas/minúsculas de palavras-chave, nomes,
+      tipos e funções. Só espaços, quebras de linha e a caixa das palavras mudam;
+      o resultado é conferido palavra por palavra com o original. O Ctrl+Z desfaz
+      tudo de uma vez.
+    * Editor de código: "Indent PL/SQL with Settings..." (Ctrl+Alt+Shift+L) abre a
+      janela Code Style: abas com opções em grupos (Case, Tabs and Indents,
+      Wrapping, Alignment, Spaces) e uma prévia ao vivo que é o próprio editor de
+      código, onde você pode digitar ou colar o seu código. Ligar e desligar uma
+      opção volta a prévia exatamente ao que era.
+
+  Melhorias
+    * Verificação de atualizações: versões beta (como a 3.7.0-beta.1) são avisadas
+      quando a versão final for lançada.
+
+
 3.6.1
 -----
 Data: 2026-11-04

@@ -288,11 +288,7 @@ namespace OpenEditor
         OES_DECL_STREAMABLE_PROPERTY(int,    FmtBrickListMinItems);
         OES_DECL_STREAMABLE_PROPERTY(bool,   FmtBrickListLinkedInsert);
         OES_DECL_STREAMABLE_PROPERTY(bool,   FmtBrickListLinkedSetOp);
-        OES_DECL_STREAMABLE_PROPERTY(int,    FmtPlsqlIndentSize);
-        OES_DECL_STREAMABLE_PROPERTY(int,    FmtPlsqlKeywordCase);
-        OES_DECL_STREAMABLE_PROPERTY(int,    FmtPlsqlIdentifierCase);
-        OES_DECL_STREAMABLE_PROPERTY(bool,   FmtPlsqlIndentDeclarations);
-        OES_DECL_STREAMABLE_PROPERTY(bool,   FmtPlsqlIndentWhen);
+        OES_DECL_STREAMABLE_PROPERTY(string, FmtPlsqlRules);
 
         // PlSql outline settings
         OES_DECL_STREAMABLE_PROPERTY(bool,   PlSqlKeywordNavigation   );
@@ -470,11 +466,7 @@ namespace OpenEditor
         OES_AGGREGATE_GLOBAL_PROPERTY(int,    FmtBrickListMinItems);
         OES_AGGREGATE_GLOBAL_PROPERTY(bool,   FmtBrickListLinkedInsert);
         OES_AGGREGATE_GLOBAL_PROPERTY(bool,   FmtBrickListLinkedSetOp);
-        OES_AGGREGATE_GLOBAL_PROPERTY(int,    FmtPlsqlIndentSize);           // 0 = indent size of the editor
-        OES_AGGREGATE_GLOBAL_PROPERTY(int,    FmtPlsqlKeywordCase);          // 0 keep, 1 upper, 2 lower
-        OES_AGGREGATE_GLOBAL_PROPERTY(int,    FmtPlsqlIdentifierCase);       // 0 keep, 1 upper, 2 lower
-        OES_AGGREGATE_GLOBAL_PROPERTY(bool,   FmtPlsqlIndentDeclarations);
-        OES_AGGREGATE_GLOBAL_PROPERTY(bool,   FmtPlsqlIndentWhen);
+        OES_AGGREGATE_GLOBAL_PROPERTY(string, FmtPlsqlRules);                // PL/SQL formatter rules, see PlSqlIndentOptions::ToString
 
         // PlSql navigation and outline settings
         OES_AGGREGATE_GLOBAL_PROPERTY(bool,   PlSqlKeywordNavigation   ); // navigation between SELECT/FROM/WHERE and IF/ESLSE/END IF, also required for PlSql Outline

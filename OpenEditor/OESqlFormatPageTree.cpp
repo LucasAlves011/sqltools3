@@ -28,11 +28,6 @@ COESqlFormatPageTree::COESqlFormatPageTree (SettingsManager& manager)
 	, m_pBrickListMinItems(nullptr)
 	, m_pBrickListLinkedInsert(nullptr)
 	, m_pBrickListLinkedSetOp(nullptr)
-	, m_pPlsqlIndentSize(nullptr)
-	, m_pPlsqlKeywordCase(nullptr)
-	, m_pPlsqlIdentifierCase(nullptr)
-	, m_pPlsqlIndentDeclarations(nullptr)
-	, m_pPlsqlIndentWhen(nullptr)
 {
 	//m_psp.dwFlags &= ~PSP_HASHELP;
 }
@@ -109,20 +104,6 @@ static CPropTreeItemStatic* InsertCheckedStatic (CPropTree& tree, CPropTreeItem*
 	p->SetInfoText(info);
 	p->HasCheckBox(TRUE);
 	p->Check(checked ? TRUE : FALSE);
-	return p;
-}
-
-static CPropTreeItemCombo* InsertCaseCombo (CPropTree& tree, CPropTreeItem* parent,
-	LPCTSTR label, LPCTSTR info, int value)
-{
-	CPropTreeItemCombo* p = (CPropTreeItemCombo*)tree.InsertItem(new CPropTreeItemCombo(), parent);
-	p->SetLabelText(label);
-	p->SetInfoText(info);
-	p->CreateComboBox(WS_CHILD | WS_VSCROLL | CBS_DROPDOWNLIST);
-	const LPCTSTR names[] = { _T("Keep as typed"), _T("UPPER CASE"), _T("lower case") };
-	for (int i = 0; i < 3; ++i)
-		p->SetItemData(p->AddString(names[i]), i);
-	p->SetItemValue(value >= 0 && value <= 2 ? value : 0);
 	return p;
 }
 
@@ -255,41 +236,6 @@ void COESqlFormatPageTree::BuildTree ()
 		_T("Linked UNION / INTERSECT / MINUS"),
 		_T("Wrap each SELECT column list in a compound query at the same positions as the first branch"),
 		s->GetFmtBrickListLinkedSetOp());
-
-	// ── PL/SQL indentation ────────────────────────────────────────────────
-	CPropTreeItem* pRoot4 = m_tree.InsertItem(new CPropTreeItem());
-	pRoot4->SetLabelText(_T("PL/SQL indentation"));
-	pRoot4->SetInfoText(_T("Rules for Text/Format > Indent PL/SQL (Ctrl+K,Z). It re-indents procedures, functions, packages, "
-						   "triggers and anonymous blocks by their block structure and keeps your line breaks. "
-						   "Continuation lines of a statement (multi-line SELECT, IF conditions, parameters) keep their offset "
-						   "from the first line of the statement."));
-	pRoot4->Expand();
-
-	m_pPlsqlIndentSize = InsertEdit(m_tree, pRoot4,
-		_T("Indent size"),
-		_T("Spaces per block level; 0 uses the indent size of the editor. "
-		   "Tabs or spaces follow the editor setting."),
-		s->GetFmtPlsqlIndentSize());
-
-	m_pPlsqlKeywordCase = InsertCaseCombo(m_tree, pRoot4,
-		_T("Keyword case"),
-		_T("Case of PL/SQL and SQL keywords (BEGIN, IF, SELECT, NUMBER...). Strings and comments are never changed."),
-		s->GetFmtPlsqlKeywordCase());
-
-	m_pPlsqlIdentifierCase = InsertCaseCombo(m_tree, pRoot4,
-		_T("Identifier case"),
-		_T("Case of names (tables, columns, variables, functions). Quoted names, :binds and &substitutions are never changed."),
-		s->GetFmtPlsqlIdentifierCase());
-
-	m_pPlsqlIndentDeclarations = InsertCheckedStatic(m_tree, pRoot4,
-		_T("Indent declarations"),
-		_T("Indent the declaration section after IS / AS of procedures, functions and packages one level"),
-		s->GetFmtPlsqlIndentDeclarations());
-
-	m_pPlsqlIndentWhen = InsertCheckedStatic(m_tree, pRoot4,
-		_T("Indent WHEN"),
-		_T("Indent WHEN clauses one level inside EXCEPTION and CASE statements"),
-		s->GetFmtPlsqlIndentWhen());
 }
 
 void COESqlFormatPageTree::OnPropTreeNotify (NMHDR* /*pNMHDR*/, LRESULT* pResult)
@@ -370,13 +316,6 @@ BOOL COESqlFormatPageTree::OnApply ()
 
 		s->SetFmtBrickListLinkedInsert  (m_pBrickListLinkedInsert->IsChecked() ? true : false, false);
 		s->SetFmtBrickListLinkedSetOp   (m_pBrickListLinkedSetOp->IsChecked()  ? true : false, false);
-
-		m_pPlsqlIndentSize->GetItemValue(v);
-		s->SetFmtPlsqlIndentSize        (v < 0 ? 0 : v > 16 ? 16 : v,                  false);
-		s->SetFmtPlsqlKeywordCase       ((int)m_pPlsqlKeywordCase->GetItemValue(),     false);
-		s->SetFmtPlsqlIdentifierCase    ((int)m_pPlsqlIdentifierCase->GetItemValue(),  false);
-		s->SetFmtPlsqlIndentDeclarations(m_pPlsqlIndentDeclarations->IsChecked() ? true : false, false);
-		s->SetFmtPlsqlIndentWhen        (m_pPlsqlIndentWhen->IsChecked()         ? true : false, false);
 
 		//if (m_recipient)
 		//	m_recipient->OnCmdMsg(m_recipientCommand, CN_COMMAND, NULL, NULL);

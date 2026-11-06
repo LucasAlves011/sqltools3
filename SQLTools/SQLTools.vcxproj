@@ -633,6 +633,7 @@ echo.
     </ClInclude>
     <ClInclude Include="..\OpenEditor\OESqlFormatPageTree.h" />
     <ClInclude Include="..\OpenEditor\OEPlsSqlIndenter.h" />
+    <ClInclude Include="..\OpenEditor\OEPlsSqlIndentDlg.h" />
     <ClInclude Include="..\OpenEditor\OEWorkspaceManager.h" />
     <ClInclude Include="..\OpenEditor\OEWorkspacePage.h" />
     <ClInclude Include="..\OpenEditor\RecentFileList.h" />
@@ -1273,6 +1274,7 @@ makehm /h ID_,HID_,0x10000 IDM_,HIDM_,0x10000 "..\OpenEditor\OpenEditorInc.rh" &
     <ClCompile Include="..\OpenEditor\OEPlsSqlBlockMatcher.cpp" />
     <ClCompile Include="..\OpenEditor\OEPlsSqlSmartIndent.cpp" />
     <ClCompile Include="..\OpenEditor\OEPlsSqlIndenter.cpp" />
+    <ClCompile Include="..\OpenEditor\OEPlsSqlIndentDlg.cpp" />
     <ClCompile Include="..\OpenEditor\OEPrintPageSetup.cpp" />
     <ClCompile Include="..\OpenEditor\OEPropPage.cpp" />
     <ClCompile Include="..\OpenEditor\OESaveModifiedDlg.cpp" />

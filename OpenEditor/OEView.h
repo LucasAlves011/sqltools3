@@ -434,6 +434,7 @@ protected:
     afx_msg void OnEditPeekCursor();
     afx_msg void OnEditReindentBlock();
     afx_msg void OnUpdate_ReindentBlock (CCmdUI* pCmdUI);
+    afx_msg void OnEditReindentWithSettings();
     afx_msg void OnUpdate_CommentUncomment (CCmdUI* pCmdUI);
     afx_msg void OnEditComment();
     afx_msg void OnEditUncomment();

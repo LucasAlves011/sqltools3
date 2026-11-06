@@ -89,7 +89,8 @@ Edit.FindInFile               Ctrl+Shift+F
 #Format
 Edit.Sort                     Ctrl+K,S
 Edit.FormatSQL                Ctrl+K,E
-Edit.IndentPlSql              Ctrl+K,Z
+Edit.IndentPlSql              Ctrl+Alt+L
+Edit.IndentPlSqlWithSettings  Ctrl+Alt+Shift+L
 Edit.IndentSelection          Ctrl+I
 Edit.UndentSelection          Ctrl+U
 Edit.UntabifySelection        Ctrl+K,U

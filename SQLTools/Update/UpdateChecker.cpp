@@ -274,6 +274,8 @@ namespace Update
         std::wstring s = buf;
         if (v[3] > 0 && v[3] <= 26)
             s += (wchar_t)(L'a' + v[3] - 1);
+        else if (v[3] < 0)
+            s += L"-beta";      // diferente da versao final (o "What's New" aparece de novo ao atualizar)
         return s;
     }
 
@@ -303,6 +305,8 @@ namespace Update
         }
         if (p < text.size() && text[p] >= 'a' && text[p] <= 'z')
             r.v[3] = text[p] - 'a' + 1;
+        else if (p < text.size() && text[p] == '-')
+            r.v[3] = -1;        // "3.7.0-beta.1": antes da 3.7.0 final, para quem usa o beta ser avisado dela
 
         r.valid = true;
         return r;
