@@ -27,6 +27,21 @@ Data: 2026-11-06 (beta, pre-release)
       quando a versão final for lançada.
 
 
+3.6.2
+-----
+Data: 2026-11-06
+
+  Melhorias
+    * Configurações > Templates: o cabeçalho da lista e as caixas de filtro
+      seguem os temas claro e escuro.
+    * Configurações > Fonts and Colors: botões de cor modernos (caixa arredondada
+      com a amostra da cor) e árvore de categorias mais limpa, nas cores do tema.
+    * Configurações > SQL Format: a tabela de propriedades antiga foi trocada por
+      uma lista moderna que segue o tema: grupos que abrem e fecham, chaves
+      liga/desliga, números com botões - / + (clique no número para digitar) e a
+      descrição da opção selecionada no rodapé.
+
+
 3.6.1
 -----
 Data: 2026-11-04

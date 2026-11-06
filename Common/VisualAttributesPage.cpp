@@ -211,6 +211,10 @@ BOOL CVisualAttributesPage::OnInitDialog()
     m_Foreground.SetDefaultText(_T(""));
     m_Background.SetDefaultText(_T(""));
 
+    // arvore no visual moderno: sem as linhas pontilhadas e com linhas um pouco mais altas
+    m_Categories.ModifyStyle(TVS_HASLINES, 0);
+    m_Categories.SetItemHeight((SHORT)std::max(20, (int)m_Categories.GetItemHeight() + 4));
+
     // fill a tree control
     //m_Categories.SetIndent(0);
 

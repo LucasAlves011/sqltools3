@@ -26,6 +26,7 @@
 #include "resource.h"
 #include "OpenEditor/OESettings.h"
 #include "COMMON\ManagedListCtrl.h"
+#include "Theme/ModernHeader.h"
 
 
     class TemplateAdapter : public Common::ListCtrlDataProvider, Common::ListCtrlDataProviderHelper
@@ -109,6 +110,7 @@ class COETemplatesPage : public CPropertyPage
     enum { IDD = IDD_OE_TEMPLATES };
     //CListCtrl m_templateList;
     Common::CManagedListCtrl m_templateList;
+    CModernHeader m_modernHeader;      // cabecalho e barra de filtros no visual do programa
     CString  m_templateName;
     int m_startEntry;
     string m_newTemplateText;

@@ -24,6 +24,7 @@
 #include <vector>
 #include "resource.h"
 #include "ColourPickerXP\ColourPickerXP.h"
+#include "Theme/ModernColourButton.h"
 #include "VisualAttributes.h"
 
     using std::map;
@@ -54,8 +55,8 @@ public:
     CButton	    m_FontBold;
     CButton	    m_FontItalic;
     CButton	    m_FontUnderline;
-    CColourPickerXP m_Foreground;
-    CColourPickerXP m_Background;
+    CModernColourButton m_Foreground;
+    CModernColourButton m_Background;
     CStatic	    m_Sample;
     //}}AFX_DATA
 
