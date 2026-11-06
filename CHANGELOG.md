@@ -2,6 +2,16 @@ SQLTools Changelog
 ==================
 
 
+3.7.0-beta.2
+------------
+Date: 2026-11-06 (beta, pre-release)
+
+  Improvements
+    * Includes the changes of 3.6.2: the Settings pages Templates, Fonts and
+      Colors and SQL Format in the modern look, following the light and dark
+      themes.
+
+
 3.7.0-beta.1
 ------------
 Date: 2026-11-06 (beta, pre-release)

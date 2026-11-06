@@ -2,6 +2,16 @@ SQLTools - Histórico de alterações
 =================================
 
 
+3.7.0-beta.2
+------------
+Data: 2026-11-06 (beta, pre-release)
+
+  Melhorias
+    * Inclui as mudanças da 3.6.2: as páginas Templates, Fonts and Colors e SQL
+      Format das configurações no visual moderno, seguindo os temas claro e
+      escuro.
+
+
 3.7.0-beta.1
 ------------
 Data: 2026-11-06 (beta, pre-release)
